@@ -269,7 +269,7 @@
                 walkFrames: 53, deathFrames: 145, attackFrames: 13,
                 walkCols: 8, deathCols: 13, attackCols: 4,
                 walkSize: 512, deathSize: 512, attackSize: 512, // Correct frame size from metadata
-                walkAnimSpeed: 0.02, attackAnimSpeed: 1.0, deathAnimSpeed: 1.5,
+                walkAnimSpeed: 0.02, attackAnimSpeed: 1.0, deathAnimSpeed: 1.0,
                 baseRotation: Math.PI / 2, // Facing North (Up)
                 isSideways: false
             }
@@ -689,7 +689,8 @@
 
             for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
-                if (data[idx + 8] <= 0) continue;
+                // Reason 1: Grid Persistence - Include dead enemies so the renderer can find them
+                if (data[idx + 8] <= 0 && data[idx + 9] <= 0) continue;
                 const gx = Math.floor((data[idx] - player.x + gridOffset) / GRID_CELL);
                 const gy = Math.floor((data[idx + 1] - player.y + gridOffset) / GRID_CELL);
                 const cIdx = gy * GRID_DIM + gx;
@@ -714,9 +715,12 @@
                         let ptr = heads[(pgy + oy) * GRID_DIM + (pgx + ox)];
                         while (ptr !== -1) {
                             const idx = ptr * stride;
-                            const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
-                            const dSq = dx * dx + dy * dy;
-                            if (dSq < closestDist) { closestDist = dSq; found = ptr; }
+                            // Reason 5: Ghost Targeting - Don't target dead things
+                            if (data[idx + 8] > 0) {
+                                const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
+                                const dSq = dx * dx + dy * dy;
+                                if (dSq < closestDist) { closestDist = dSq; found = ptr; }
+                            }
                             ptr = next[ptr];
                         }
                     }
@@ -810,7 +814,12 @@
                                         damageNumbers.push({ x: data[idx], y: data[idx + 1] - 50, val: DAMAGE_PER_POP, life: 1.0, vx: (Math.random() - 0.5) * 2, vy: -2 - Math.random() * 2 });
                                     }
 
-                                    if (data[idx + 8] <= 0) { killCount++; data[idx + 8] = 0; data[idx + 9] = 1; }
+                                    if (data[idx + 8] <= 0) {
+                                        killCount++;
+                                        data[idx + 8] = 0;
+                                        // Reason 3: Frame 0 Sync - Start at a small value to show 1st frame
+                                        data[idx + 9] = 0.001;
+                                    }
                                 }
                                 ptr = next[ptr];
                             }
@@ -826,7 +835,8 @@
 
                 if (data[idx + 8] <= 0) {
                     if (data[idx + 9] > 0) {
-                        data[idx + 9] += cfg.deathAnimSpeed;
+                        // Reason 4: Speed Sync - Apply delta time and game speed to death
+                        data[idx + 9] += cfg.deathAnimSpeed * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
                         if (data[idx + 9] >= cfg.deathFrames) spawnEnemy(i, typeKey, true);
                     }
                     continue;
@@ -1042,12 +1052,11 @@
             const activeTierID = PERFORMANCE.LOD_TIERS[activeTierIdx].id;
 
             // Update Map Pointers (Lazy update only when needed)
+            // Reason 2: Data-Driven Map - Build from keys, not strings
             if (!this.cachedReadyMap || readyMapDirty) {
-                this.cachedReadyMap = {
-                    Tiyger: { walk: [], death: [], attack: [] },
-                    GalaxyDragon: { walk: [], death: [], attack: [] }
-                };
-                for (const type of ["Tiyger", "GalaxyDragon"]) {
+                this.cachedReadyMap = {};
+                for (const type of enemyKeys) {
+                    if (!this.cachedReadyMap[type]) this.cachedReadyMap[type] = { walk: [], death: [], attack: [] };
                     const cache = enemyAssets[type].caches;
                     ["walk", "death", "attack"].forEach(anim => {
                         this.cachedReadyMap[type][anim] = PERFORMANCE.LOD_TIERS.map(t => ({ id: t.id, frames: cache[anim][t.id] }));
@@ -1070,15 +1079,16 @@
                         const idx = ptr * stride;
                         const x = data[idx], y = data[idx + 1];
                         if (x > left && x < right && y > top && y < bottom) {
-                            const h = data[idx + 8], df = data[idx + 9];
-                            if (h > 0 || df > 0) {
+                            const h = data[idx + 8], currentDeathF = data[idx + 9];
+                            if (h > 0 || currentDeathF > 0) {
                                 onScreenCount++;
                                 const f = Math.floor(data[idx + 5]), rot = data[idx + 4], look = data[idx + 7], af = Math.floor(data[idx + 10]);
+                                const dfIdx = Math.floor(currentDeathF); // Unified indexing name
                                 const typeKey = enemyKeys[data[idx + 11] | 0];
                                 const cfg = Enemy[typeKey], assets = enemyAssets[typeKey];
 
-                                const animType = (h <= 0 && df > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
-                                const frameIdx = (h <= 0 && df > 0) ? df : (af > 0 ? af : f);
+                                const animType = (h <= 0 && currentDeathF > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
+                                const frameIdx = (h <= 0 && currentDeathF > 0) ? dfIdx : (af > 0 ? af : f);
                                 const tiers = readyMap[typeKey][animType];
 
                                 let frameToDraw = null;
@@ -1103,7 +1113,13 @@
                                 ctx.translate(x, y);
                                 ctx.rotate(rot);
                                 if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
-                                if (h <= 0 && df > 0) ctx.globalAlpha = Math.max(0, 1 - (df / cfg.deathFrames - 0.7) * 3);
+
+                                // Reason 7: High-Quality Fade - Cap at 1.0 explicitly
+                                if (h <= 0 && currentDeathF > 0) {
+                                    ctx.globalAlpha = Math.max(0, Math.min(1, 1 - (currentDeathF / cfg.deathFrames - 0.7) * 3.3));
+                                } else {
+                                    ctx.globalAlpha = 1.0;
+                                }
 
                                 if (frameToDraw) ctx.drawImage(frameToDraw, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
                                 else {
