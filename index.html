@@ -714,9 +714,14 @@
             }
 
             document.getElementById('kills').innerText = `Kills: ${killCount}`;
+        }
 
-            // Update Active Skills
+        function updateSkills(dt, now) {
             const cfg = SKILLS.MulticolorXFlame;
+            const gridOffset = (GRID_DIM * GRID_CELL) / 2;
+            const rSq = (cfg.visualSize / 2 * cfg.aoeMult) ** 2;
+            const rCell = Math.ceil((cfg.visualSize * cfg.aoeMult) / GRID_CELL);
+
             for (let i = activeSkills.length - 1; i >= 0; i--) {
                 const s = activeSkills[i];
                 s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
@@ -725,29 +730,28 @@
                 const x = player.x + Math.cos(s.angle) * cfg.orbitRadius;
                 const y = player.y + Math.sin(s.angle) * cfg.orbitRadius;
 
-                // Damage using Spatial Grid
-                const gridOffset = (GRID_DIM * GRID_CELL) / 2;
-                const rCell = Math.ceil((cfg.visualSize * cfg.aoeMult) / GRID_CELL);
-                const gx = Math.floor((x - player.x + gridOffset) / GRID_CELL);
-                const gy = Math.floor((y - player.y + gridOffset) / GRID_CELL);
-                const rSq = (cfg.visualSize / 2 * cfg.aoeMult) ** 2;
+                // Optimization: Only damage every 4 frames (staggered)
+                if (Math.floor(s.frame) % 4 === 0) {
+                    const gx = Math.floor((x - player.x + gridOffset) / GRID_CELL);
+                    const gy = Math.floor((y - player.y + gridOffset) / GRID_CELL);
 
-                // Simple check: damage every frame? and trigger aoe 
-                for (let ox = -rCell; ox <= rCell; ox++) {
-                    for (let oy = -rCell; oy <= rCell; oy++) {
-                        const cellIdx = (gy + oy) * GRID_DIM + (gx + ox);
-                        if (cellIdx < 0 || cellIdx >= heads.length) continue;
-                        let ptr = heads[cellIdx];
-                        while (ptr !== -1) {
-                            const idx = ptr * stride;
-                            if (data[idx + 8] > 0) {
-                                const dx = data[idx] - x, dy = data[idx + 1] - y;
-                                if (dx * dx + dy * dy < rSq) {
-                                    data[idx + 8] -= (DAMAGE_PER_POP * cfg.damageMult) * (dt / 100);
-                                    if (data[idx + 8] <= 0) { killCount++; data[idx + 8] = 0; data[idx + 9] = 1; }
+                    for (let ox = -rCell; ox <= rCell; ox++) {
+                        for (let oy = -rCell; oy <= rCell; oy++) {
+                            const cellIdx = (gy + oy) * GRID_DIM + (gx + ox);
+                            if (cellIdx < 0 || cellIdx >= heads.length) continue;
+                            let ptr = heads[cellIdx];
+                            while (ptr !== -1) {
+                                const idx = ptr * stride;
+                                const enemyH = data[idx + 8];
+                                if (enemyH > 0) {
+                                    const dx = data[idx] - x, dy = data[idx + 1] - y;
+                                    if (dx * dx + dy * dy < rSq) {
+                                        data[idx + 8] -= (DAMAGE_PER_POP * cfg.damageMult);
+                                        if (data[idx + 8] <= 0) { killCount++; data[idx + 8] = 0; data[idx + 9] = 1; }
+                                    }
                                 }
+                                ptr = next[ptr];
                             }
-                            ptr = next[ptr];
                         }
                     }
                 }
@@ -937,6 +941,7 @@
                     for (let s = 0; s < steps; s++) {
                         update(stepDt, now + (s * stepDt));
                     }
+                    updateSkills(dt, now);
                     physicsTimeSum += (performance.now() - sUpdate);
 
                     const sDraw = performance.now();
@@ -969,9 +974,9 @@
 
                     const timerEl = document.getElementById('skill-timer');
                     if (isCooldown) {
-                        const remaining = Math.floor(elapsed / 1000);
-                        timerEl.innerText = remaining === 10 ? "" : remaining;
-                        timerEl.style.display = 'block';
+                        const remaining = 10 - Math.floor(elapsed / 1000);
+                        timerEl.innerText = remaining < 1 ? "" : remaining;
+                        timerEl.style.display = (remaining < 1 || remaining > 10) ? 'none' : 'block';
                     } else {
                         timerEl.style.display = 'none';
                     }
