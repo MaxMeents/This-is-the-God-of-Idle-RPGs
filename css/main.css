@@ -75,10 +75,31 @@ h1 {
 #player-health-bar {
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, #0096ff, #00d4ff);
+    /* Alive/Moving Gradient using CSS variables */
+    background: linear-gradient(135deg,
+            var(--hp-top, #4169e1),
+            var(--hp-bot, #00008b),
+            var(--hp-top, #4169e1));
+    background-size: 400% 400%;
+    animation: healthFlow 3s ease infinite;
     transition: width 0.1s ease-out;
     position: relative;
     z-index: 1;
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes healthFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 #player-shield-bar {
@@ -87,10 +108,14 @@ h1 {
     left: 0;
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, #ffd700, #ffcc00);
+    /* Living Golden Shield */
+    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+    background-size: 400% 400%;
+    animation: healthFlow 2s ease-in-out infinite;
     z-index: 2;
     transition: width 0.1s ease-out;
-    box-shadow: 0 0 15px #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.6),
+        inset 0 0 10px rgba(255, 255, 255, 0.4);
 }
 
 #shield-charge-container {
@@ -141,37 +166,29 @@ input[type=range] {
     accent-color: #00ff88;
 }
 
+:root {
+    --btn-size: 140px;
+}
+
 #skill-button-container {
-    position: absolute;
-    bottom: 40px;
-    right: 40px;
-    width: 420px;
-    height: 420px;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: var(--btn-size);
+    height: var(--btn-size);
     cursor: pointer;
     z-index: 2000;
     pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 50%;
+    overflow: hidden;
 }
 
 #skill-button-canvas {
+    position: absolute;
     width: 100%;
     height: 100%;
-}
-
-#skill-timer {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 180px;
-    font-weight: 900;
-    color: #fff;
-    text-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px #ffcc00;
+    z-index: 10;
     pointer-events: none;
-    display: none;
-    line-height: 1;
 }
 
 /* --- SEXY STAGE NAVIGATION --- */

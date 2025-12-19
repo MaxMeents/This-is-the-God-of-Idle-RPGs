@@ -41,73 +41,81 @@ function draw() {
     const gxMin = Math.max(0, Math.floor((left - player.x + gridOffset) / GRID_CELL)), gxMax = Math.min(GRID_DIM - 1, Math.floor((right - player.x + gridOffset) / GRID_CELL));
     const gyMin = Math.max(0, Math.floor((top - player.y + gridOffset) / GRID_CELL)), gyMax = Math.min(GRID_DIM - 1, Math.floor((bottom - player.y + gridOffset) / GRID_CELL));
 
+    // BRANCHING OPTIMIZATION:
+    const visibleCellCount = (gxMax - gxMin + 1) * (gyMax - gyMin + 1);
+    const useGrid = visibleCellCount < spawnIndex * 0.4;
+
     onScreenCount = 0;
     const sizeMult = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
 
-    for (let gy = gyMin; gy <= gyMax; gy++) {
-        for (let gx = gxMin; gx <= gxMax; gx++) {
-            let ptr = heads[gy * GRID_DIM + gx];
-            while (ptr !== -1) {
-                const idx = ptr * STRIDE;
-                const x = data[idx], y = data[idx + 1];
-                if (x > left && x < right && y > top && y < bottom) {
-                    const h = data[idx + 8], currentDeathF = data[idx + 9];
-                    if (h > 0 || currentDeathF > 0) {
-                        onScreenCount++;
-                        const f = Math.floor(data[idx + 5]), rot = data[idx + 4], look = data[idx + 7], af = Math.floor(data[idx + 10]);
-                        const dfIdx = Math.floor(currentDeathF);
-                        const typeKey = enemyKeys[data[idx + 11] | 0];
-                        const cfg = Enemy[typeKey], assets = enemyAssets[typeKey];
+    const drawEntity = (ptr) => {
+        const idx = ptr * STRIDE;
+        const x = data[idx], y = data[idx + 1];
+        if (x > left && x < right && y > top && y < bottom) {
+            const h = data[idx + 8], currentDeathF = data[idx + 9];
+            if (h > 0 || currentDeathF > 0) {
+                onScreenCount++;
+                const f = Math.floor(data[idx + 5]), rot = data[idx + 4], look = data[idx + 7], af = Math.floor(data[idx + 10]);
+                const typeKey = enemyKeys[data[idx + 11] | 0];
+                const cfg = Enemy[typeKey];
 
-                        const animType = (h <= 0 && currentDeathF > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
-                        const frameIdx = (h <= 0 && currentDeathF > 0) ? dfIdx : (af > 0 ? af : f);
-                        const tiers = readyMap[typeKey][animType];
+                const animType = (h <= 0 && currentDeathF > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
+                const frameIdx = (h <= 0 && currentDeathF > 0) ? Math.floor(currentDeathF) : (af > 0 ? af : f);
+                const tiers = readyMap[typeKey][animType];
 
-                        let frameToDraw = null;
-                        if (tiers[activeTierIdx].frames && tiers[activeTierIdx].frames[frameIdx]) {
-                            frameToDraw = tiers[activeTierIdx].frames[frameIdx];
-                        }
+                let frameToDraw = (tiers[activeTierIdx].frames && tiers[activeTierIdx].frames[frameIdx]) ? tiers[activeTierIdx].frames[frameIdx] : null;
 
-                        ctx.save();
-                        ctx.translate(x, y);
-                        ctx.rotate(rot);
-                        if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+                // OPTIMIZATION: Avoid save/restore if possible
+                ctx.translate(x, y);
+                ctx.rotate(rot);
+                if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+                if (h <= 0 && currentDeathF > 0) ctx.globalAlpha = Math.max(0, Math.min(1, 1 - (currentDeathF / cfg.deathFrames - 0.7) * 3.3));
 
-                        if (h <= 0 && currentDeathF > 0) {
-                            ctx.globalAlpha = Math.max(0, Math.min(1, 1 - (currentDeathF / cfg.deathFrames - 0.7) * 3.3));
-                        } else {
-                            ctx.globalAlpha = 1.0;
-                        }
-
-                        const drawSize = cfg.size * sizeMult;
-                        if (frameToDraw) {
-                            ctx.drawImage(frameToDraw, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-                        } else {
-                            const sheet = assets[animType];
-                            const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
-                            ctx.drawImage(sheet, (frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
-                        }
-                        ctx.restore();
-                    }
+                const drawSize = cfg.size * sizeMult;
+                if (frameToDraw) {
+                    ctx.drawImage(frameToDraw, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+                } else {
+                    const sheet = enemyAssets[typeKey][animType];
+                    const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
+                    ctx.drawImage(sheet, (frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
                 }
-                ptr = next[ptr];
+
+                // Reset transformation manually (faster than restore)
+                if (h <= 0 && currentDeathF > 0) ctx.globalAlpha = 1.0;
+                if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+                ctx.rotate(-rot);
+                ctx.translate(-x, -y);
             }
         }
+    };
+
+    if (useGrid) {
+        for (let gy = gyMin; gy <= gyMax; gy++) {
+            const row = gy * GRID_DIM;
+            for (let gx = gxMin; gx <= gxMax; gx++) {
+                let ptr = heads[row + gx];
+                while (ptr !== -1) { drawEntity(ptr); ptr = next[ptr]; }
+            }
+        }
+    } else {
+        for (let i = 0; i < spawnIndex; i++) { drawEntity(i); }
     }
 
-    // Skills
+    // --- SKILLS (Drawn within world space) ---
     if (skillAssets.baked) {
         const sCfg = SKILLS.MulticolorXFlame;
-        for (const s of activeSkills) {
+        for (let i = 0; i < activeSkills.length; i++) {
+            const s = activeSkills[i];
             const f = Math.floor(s.frame) % sCfg.skillFrames;
             const sx = player.x + Math.cos(s.angle) * sCfg.orbitRadius;
             const sy = player.y + Math.sin(s.angle) * sCfg.orbitRadius;
             const frameImg = skillAssets.skillCache[f];
-            if (frameImg) {
-                ctx.drawImage(frameImg, sx - sCfg.visualSize / 2, sy - sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
-            }
+            if (frameImg) ctx.drawImage(frameImg, sx - sCfg.visualSize / 2, sy - sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
         }
     }
+
+    // Reset transform for ship/static items
+    ctx.restore();
 
     // Ship
     ctx.setTransform(zoom, 0, 0, zoom, cx, cy);
@@ -119,22 +127,18 @@ function draw() {
     const sCache = isFull ? shipAssets.fullCache : shipAssets.onCache;
     const curFrame = sf % (isFull ? sc.fullFrames : sc.onFrames);
 
-    if (shipAssets.baked && sCache[curFrame]) {
-        ctx.drawImage(sCache[curFrame], -sc.visualSize / 2, -sc.visualSize / 2, sc.visualSize, sc.visualSize);
-    }
+    if (shipAssets.baked && sCache[curFrame]) ctx.drawImage(sCache[curFrame], -sc.visualSize / 2, -sc.visualSize / 2, sc.visualSize, sc.visualSize);
 
     // Shield
     if (player.shieldActive && player.shieldAnimState !== 'OFF') {
         const isIsOn = player.shieldAnimState === 'ON';
         const shCache = isIsOn ? shipAssets.shieldOnCache : shipAssets.shieldTurnOnCache;
         const shf = Math.floor(player.shieldFrame) % (isIsOn ? sc.shieldOnFrames : sc.shieldTurnOnFrames);
-        if (shipAssets.baked && shCache[shf]) {
-            ctx.drawImage(shCache[shf], -sc.shieldVisualSize / 2, -sc.shieldVisualSize / 2, sc.shieldVisualSize, sc.shieldVisualSize);
-        }
+        if (shipAssets.baked && shCache[shf]) ctx.drawImage(shCache[shf], -sc.shieldVisualSize / 2, -sc.shieldVisualSize / 2, sc.shieldVisualSize, sc.shieldVisualSize);
     }
     ctx.restore();
 
-    // Damage Numbers & UI
+    // Damage Numbers
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.font = "bold 24px Arial";
     for (const dn of damageNumbers) {

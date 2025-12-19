@@ -1,17 +1,17 @@
 const PERFORMANCE = {
     LOD_TIERS: [
         { id: 'Ultra', size: 1024, max: 10 },
-        { id: 'High', size: 1024, max: 20 },
-        { id: 'MidHigh', size: 768, max: 30 },
-        { id: 'Med', size: 512, max: 60 },
-        { id: 'MedLow', size: 256, max: 200 },
-        { id: 'Low', size: 128, max: 500 },
-        { id: 'VLow', size: 64, max: 1000 },
+        { id: 'High', size: 1024, max: 30 },
+        { id: 'MidHigh', size: 768, max: 60 },
+        { id: 'Med', size: 512, max: 150 },
+        { id: 'MedLow', size: 256, max: 350 },
+        { id: 'Low', size: 128, max: 700 },
+        { id: 'VLow', size: 64, max: 1200 },
         { id: 'Tiny', size: 32, max: 2000 },
-        { id: 'Micro', size: 16, max: 3333 }
+        { id: 'Micro', size: 16, max: 9999 }
     ],
     LOD_INIT_TIME_SLICE: 1,
-    SPAWNS_PER_FRAME: 50,
+    SPAWNS_PER_FRAME: 20, // Reduced from 50 to prevent reset lag
     GAME_SPEED: 1.0
 };
 

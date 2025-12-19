@@ -19,14 +19,43 @@ function init(firstLoad = false) {
     activeSkills.length = 0;
     damageNumbers.length = 0;
 
-    // Set initial grid position based on stage
+    // Reset Camera & Travel (Partial)
+    isTraveling = false;
+    bossMode = false;
+    if (firstLoad) {
+        zoom = 0.05;
+        targetZoom = 0.05;
+    }
+
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     player.x = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     player.y = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
+    data.fill(0); // Wipe physics data
+}
+
+function updateDamageNumbers(dt) {
+    for (let i = damageNumbers.length - 1; i >= 0; i--) {
+        const dn = damageNumbers[i];
+        dn.life -= 0.02 * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+        dn.x += dn.vx * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+        dn.y += dn.vy * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+        if (dn.life <= 0) damageNumbers.splice(i, 1);
+    }
+}
+
+function handleSpawning() {
+    const targetCap = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
+    for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < targetCap; i++) {
+        spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
+        spawnIndex++;
+    }
 }
 
 function softReset() {
     currentStage = 1; // Death penalty
+    lastGridUpdate = 0;
+    lastTargetUpdate = 0;
+    lastCombatUpdate = 0;
     init();
 }
 
@@ -83,6 +112,9 @@ function loop(now) {
 
     const steps = Math.min(10, Math.ceil(PERFORMANCE.GAME_SPEED));
     const stepDt = dt * (PERFORMANCE.GAME_SPEED / steps);
+
+    handleSpawning();
+    updateDamageNumbers(dt);
 
     const sUpdate = performance.now();
     for (let s = 0; s < steps; s++) {

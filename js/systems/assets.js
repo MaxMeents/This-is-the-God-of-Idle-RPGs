@@ -54,9 +54,9 @@ function bakeSkills() {
     if (skillAssets.baked) return;
     const cfg = SKILLS.MulticolorXFlame;
     for (let i = 0; i < cfg.buttonFrames; i++) {
-        const can = document.createElement('canvas'); can.width = 256; can.height = 256;
+        const can = document.createElement('canvas'); can.width = 512; can.height = 512;
         const cctx = can.getContext('2d');
-        cctx.drawImage(skillAssets.buttonImg, (i % cfg.buttonCols) * cfg.buttonSize, Math.floor(i / cfg.buttonCols) * cfg.buttonSize, cfg.buttonSize, cfg.buttonSize, 0, 0, 256, 256);
+        cctx.drawImage(skillAssets.buttonImg, (i % cfg.buttonCols) * cfg.buttonSize, Math.floor(i / cfg.buttonCols) * cfg.buttonSize, cfg.buttonSize, cfg.buttonSize, 0, 0, 512, 512);
         skillAssets.buttonCache.push(can);
     }
     for (let i = 0; i < cfg.skillFrames; i++) {
