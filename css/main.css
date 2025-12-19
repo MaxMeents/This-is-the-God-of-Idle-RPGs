@@ -1,0 +1,320 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #050505;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    background-image: none;
+    background-repeat: repeat;
+    background-attachment: fixed;
+}
+
+canvas {
+    display: block;
+    touch-action: none;
+}
+
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #ffcc00;
+    box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+    z-index: 100;
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+    color: #ffcc00;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.stat {
+    font-family: monospace;
+    font-size: 14px;
+    margin-top: 10px;
+    color: #00ff88;
+}
+
+.controls {
+    font-size: 12px;
+    margin-top: 15px;
+    color: #aaa;
+}
+
+#hud-bottom-center {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#player-health-container {
+    position: relative;
+    width: 100%;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 4px solid #fff;
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+#player-health-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #0096ff, #00d4ff);
+    transition: width 0.1s ease-out;
+    position: relative;
+    z-index: 1;
+}
+
+#player-shield-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ffcc00);
+    z-index: 2;
+    transition: width 0.1s ease-out;
+    box-shadow: 0 0 15px #ffd700;
+}
+
+#shield-charge-container {
+    width: 100%;
+    height: 10px;
+    background: #000;
+    border: 2px solid #000;
+    border-radius: 5px;
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#shield-charge-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffd700, #ffcc00);
+    box-shadow: 0 0 8px #ffd700;
+    transition: width 0.1s ease-out;
+}
+
+#speed-ctrl-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #00ff88;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+    z-index: 100;
+    pointer-events: auto;
+    width: 200px;
+}
+
+.speed-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #00ff88;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+input[type=range] {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #00ff88;
+}
+
+#skill-button-container {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    width: 420px;
+    height: 420px;
+    cursor: pointer;
+    z-index: 2000;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#skill-button-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#skill-timer {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 180px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px #ffcc00;
+    pointer-events: none;
+    display: none;
+    line-height: 1;
+}
+
+/* --- SEXY STAGE NAVIGATION --- */
+#stage-nav {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(15px);
+    padding: 12px 40px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 204, 0, 0.4);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8),
+        inset 0 0 15px rgba(255, 204, 0, 0.1);
+    z-index: 1000;
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#stage-nav:hover {
+    border-color: rgba(255, 204, 0, 0.8);
+    box-shadow: 0 0 40px rgba(255, 204, 0, 0.2);
+}
+
+.nav-arrow {
+    font-size: 32px;
+    color: #ffcc00;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.5));
+}
+
+.nav-arrow:hover {
+    transform: scale(1.4);
+    color: #fff;
+    filter: drop-shadow(0 0 15px #ffcc00);
+}
+
+.nav-arrow.disabled {
+    opacity: 0.15;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+#stage-display {
+    font-size: 26px;
+    font-weight: 800;
+    color: #fff;
+    min-width: 220px;
+    text-align: center;
+    letter-spacing: 3px;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+    background: linear-gradient(180deg, #fff 0%, #ffcc00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* --- SEXY CHALLENGE BUTTON --- */
+#challenge-btn {
+    position: fixed;
+    top: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #fff9d6 0%, #ffcc00 50%, #b8860b 100%);
+    background-size: 200% auto;
+    color: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 16px 40px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    z-index: 1000;
+    box-shadow: 0 10px 30px rgba(255, 204, 0, 0.3),
+        inset 0 0 15px rgba(255, 255, 255, 0.4);
+    display: none;
+    pointer-events: auto;
+    animation: challengePulse 2.5s infinite, bgFlow 4s linear infinite;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+}
+
+#challenge-btn:hover {
+    transform: translateX(-50%) translateY(-8px) scale(1.08);
+    box-shadow: 0 20px 40px rgba(255, 204, 0, 0.5),
+        0 0 25px rgba(255, 255, 255, 0.2);
+    filter: brightness(1.1);
+}
+
+@keyframes challengePulse {
+    0% {
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.03);
+        filter: brightness(1.2);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+@keyframes bgFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Boss Health Bar */
+#boss-health-container {
+    position: fixed;
+    top: 150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 15px;
+    background: #000;
+    border: 2px solid #333;
+    display: none;
+    z-index: 1000;
+}
+
+#boss-health-bar {
+    width: 100%;
+    height: 100%;
+    background: #ff0000;
+}
