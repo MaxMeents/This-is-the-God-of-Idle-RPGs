@@ -78,6 +78,41 @@
             height: 100%;
             background: linear-gradient(90deg, #0096ff, #00d4ff);
             transition: width 0.1s ease-out;
+            position: relative;
+            z-index: 1;
+        }
+
+        #player-shield-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffcc00);
+            z-index: 2;
+            transition: width 0.1s ease-out;
+            box-shadow: 0 0 15px #ffd700;
+        }
+
+        #shield-charge-container {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 3px;
+            overflow: hidden;
+            z-index: 1001;
+        }
+
+        #shield-charge-bar {
+            width: 100%;
+            height: 100%;
+            background: #ffff00;
+            box-shadow: 0 0 5px #ffff00;
+            transition: width 0.1s ease-out;
         }
 
         #speed-ctrl-container {
@@ -165,7 +200,11 @@
         <input type="range" id="speed-slider" min="1" max="20" step="1" value="1">
     </div>
     <div id="player-health-container">
+        <div id="shield-charge-container">
+            <div id="shield-charge-bar"></div>
+        </div>
         <div id="player-health-bar"></div>
+        <div id="player-shield-bar"></div>
     </div>
     <div id="skill-button-container">
         <canvas id="skill-button-canvas" width="256" height="256"></canvas>
@@ -256,6 +295,40 @@
             GAME_SPEED: 1.0 // Can be set up to 20.0
         };
 
+        const SHIP_CONFIG = {
+            onPath: 'img/Ship/Ship Engines on/Spritesheet/768x768/Ship Engines on_768x768_sheet.png',
+            fullPath: 'img/Ship/Ship Full Engine Power/Spritesheet/768x768/Ship Full Engine Power_768x768_sheet.png',
+            onFrames: 27, onCols: 6, onSize: 768,
+            fullFrames: 18, fullCols: 5, fullSize: 768,
+
+            idleFrames: 3, // Frames to loop when "at" destination
+            animSpeed: 0.5,
+            fullPowerDist: 8000,
+            thrustDist: 1500, // Engines kick in at this distance
+            reachDist: 200,
+            visualSize: 800,
+            stopRange: 10,
+            turnSpeed: Math.PI * 3, // Rads per sec (180 deg in 1/3 sec)
+
+            // Shield Settings
+            shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.png',
+            shieldTurnOnPath: 'img/Ship/Ship Shield Turn On/Spritesheet/768x768/Ship Shield Turn On_768x768_sheet.png',
+            shieldOnFrames: 14, shieldOnCols: 4, shieldOnSize: 1024,
+            shieldTurnOnFrames: 145, shieldTurnOnCols: 13, shieldTurnOnSize: 768,
+
+            shieldMaxHealthMult: 3,
+            shieldDuration: 10000, // 10s
+            shieldCooldown: 15000,  // 15s
+            shieldVisualSize: 1200
+        };
+
+        const shipAssets = {
+            onImg: new Image(),
+            fullImg: new Image(),
+            shieldOnImg: new Image(),
+            shieldTurnOnImg: new Image()
+        };
+
         const SKILLS = {
             MulticolorXFlame: {
                 buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
@@ -292,7 +365,24 @@
 
         let zoom = 0.35;
         let targetZoom = 0.35;
-        const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0, health: PLAYER_HEALTH_MAX };
+        const player = {
+            x: 0, y: 0,
+            targetIdx: -1,
+            lastDamageTime: 0,
+            health: PLAYER_HEALTH_MAX,
+            shipFrame: 0,
+            shipState: 'IDLE', // IDLE, THRUST, FULL, REVERSE
+            rotation: 0,
+
+            // Shield state
+            shieldHP: 0,
+            shieldMaxHP: PLAYER_HEALTH_MAX * SHIP_CONFIG.shieldMaxHealthMult,
+            shieldActive: false,
+            shieldCooldownRemaining: 0,
+            shieldDurationRemaining: 0,
+            shieldAnimState: 'OFF', // OFF, TURNING_ON, ON
+            shieldFrame: 0
+        };
         let killCount = 0;
         let smoothedEnemies = 0;
         let onScreenCount = 0;
@@ -347,6 +437,16 @@
             damageNumbers.length = 0;
             activeSkills.length = 0;
             skillCooldownRemaining = 0;
+
+            // Shield Reset
+            player.shieldMaxHP = PLAYER_HEALTH_MAX * SHIP_CONFIG.shieldMaxHealthMult;
+            player.shieldHP = player.shieldMaxHP;
+            player.shieldActive = false;
+            player.shieldCooldownRemaining = 0;
+            player.shieldDurationRemaining = 0;
+            player.shieldAnimState = 'OFF';
+            player.shieldFrame = 0;
+
             data.fill(0);
             spawnIndex = 0;
 
@@ -518,6 +618,43 @@
 
         function update(dt, now) {
             if (player.health <= 0) return;
+            const sc = SHIP_CONFIG;
+
+            // --- SHIELD UPDATE ---
+            if (player.shieldActive) {
+                player.shieldDurationRemaining -= dt * PERFORMANCE.GAME_SPEED;
+
+                if (player.shieldAnimState === 'TURNING_ON') {
+                    player.shieldFrame += 1.5 * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+                    if (player.shieldFrame >= sc.shieldTurnOnFrames) {
+                        player.shieldAnimState = 'ON';
+                        player.shieldFrame = 0;
+                    }
+                } else if (player.shieldAnimState === 'ON') {
+                    player.shieldFrame = (player.shieldFrame + 0.4 * (dt / 16.6) * PERFORMANCE.GAME_SPEED) % sc.shieldOnFrames;
+                }
+
+                if (player.shieldDurationRemaining <= 0 || player.shieldHP <= 0) {
+                    player.shieldActive = false;
+                    player.shieldAnimState = 'OFF';
+                    player.shieldCooldownRemaining = sc.shieldCooldown;
+                }
+            } else {
+                if (player.shieldCooldownRemaining > 0) {
+                    player.shieldCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
+                    if (player.shieldCooldownRemaining < 0) player.shieldCooldownRemaining = 0;
+                }
+            }
+
+            // Sync Shield UI
+            const shieldBar = document.getElementById('player-shield-bar');
+            const chargeBar = document.getElementById('shield-charge-bar');
+            if (player.shieldActive) {
+                shieldBar.style.width = (player.shieldHP / player.shieldMaxHP * 100) + '%';
+            } else {
+                shieldBar.style.width = '0%';
+            }
+            chargeBar.style.width = ((sc.shieldCooldown - player.shieldCooldownRemaining) / sc.shieldCooldown * 100) + '%';
 
             for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < totalEnemies; i++) {
                 spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
@@ -570,13 +707,67 @@
 
             // 3. Movement and AOE Logic
             if (player.targetIdx !== -1) {
+                const sc = SHIP_CONFIG;
                 const tIdx = player.targetIdx * stride;
                 const dx = data[tIdx] - player.x;
                 const dy = data[tIdx + 1] - player.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
+
+                const targetRot = Math.atan2(dy, dx);
+                let diff = targetRot - player.rotation;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+
+                const step = sc.turnSpeed * (dt / 1000) * PERFORMANCE.GAME_SPEED;
+                if (Math.abs(diff) < step) player.rotation = targetRot;
+                else player.rotation += Math.sign(diff) * step;
+
                 if (dist > 10) {
                     player.x += (dx / dist) * PLAYER_SPEED;
                     player.y += (dy / dist) * PLAYER_SPEED;
+                }
+
+                // --- SHIP ANIMATION LOGIC ---
+                const spd = sc.animSpeed * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+
+                if (dist > sc.fullPowerDist) {
+                    player.shipState = 'FULL';
+                    player.shipFrame = (player.shipFrame + spd) % sc.fullFrames;
+                } else if (dist > sc.thrustDist) {
+                    player.shipState = 'THRUST';
+                    player.shipFrame = (player.shipFrame + spd) % sc.onFrames;
+                } else if (dist > sc.reachDist) {
+                    // COASTING - Moving but engines not "on"
+                    if (player.shipState === 'FULL' || player.shipState === 'THRUST' || player.shipState === 'REVERSE') {
+                        if (player.shipState !== 'REVERSE') {
+                            player.shipState = 'REVERSE';
+                            player.shipFrame = Math.min(sc.stopRange, player.shipFrame);
+                        }
+                        player.shipFrame -= spd * 2;
+                        if (player.shipFrame <= sc.idleFrames) {
+                            player.shipFrame = 0;
+                            player.shipState = 'IDLE';
+                        }
+                    } else {
+                        player.shipState = 'IDLE';
+                        player.shipFrame = (player.shipFrame + spd) % sc.idleFrames;
+                    }
+                } else {
+                    // REACHED 
+                    if (player.shipState === 'FULL' || player.shipState === 'THRUST' || player.shipState === 'REVERSE') {
+                        if (player.shipState !== 'REVERSE') {
+                            player.shipState = 'REVERSE';
+                            player.shipFrame = Math.min(sc.stopRange, player.shipFrame);
+                        }
+                        player.shipFrame -= spd * 2;
+                        if (player.shipFrame <= sc.idleFrames) {
+                            player.shipFrame = 0;
+                            player.shipState = 'IDLE';
+                        }
+                    } else {
+                        player.shipState = 'IDLE';
+                        player.shipFrame = (player.shipFrame + spd) % sc.idleFrames;
+                    }
                 }
 
                 if (now - player.lastDamageTime > DAMAGE_INTERVAL) {
@@ -699,10 +890,30 @@
                         data[idx + 10] += cfg.attackAnimSpeed;
                         const currF = Math.floor(data[idx + 10]);
                         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
-                            player.health -= cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin);
-                            if (player.health <= 0) {
-                                softReset();
-                                return;
+                            const dmg = cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin);
+
+                            // SHIELD TRIGGER
+                            if (!player.shieldActive && player.shieldCooldownRemaining <= 0) {
+                                player.shieldActive = true;
+                                player.shieldAnimState = 'TURNING_ON';
+                                player.shieldFrame = 0;
+                                player.shieldHP = player.shieldMaxHP;
+                                player.shieldDurationRemaining = sc.shieldDuration;
+                            }
+
+                            if (player.shieldActive) {
+                                player.shieldHP -= dmg;
+                                if (player.shieldHP <= 0) {
+                                    player.shieldActive = false;
+                                    player.shieldAnimState = 'OFF';
+                                    player.shieldCooldownRemaining = sc.shieldCooldown;
+                                }
+                            } else {
+                                player.health -= dmg;
+                                if (player.health <= 0) {
+                                    softReset();
+                                    return;
+                                }
                             }
                         }
                         if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
@@ -903,11 +1114,39 @@
                 }
             }
 
-            // Player Visual
+            // Player Visual (SHIP)
             ctx.setTransform(zoom, 0, 0, zoom, cx, cy);
-            ctx.beginPath(); ctx.arc(0, 0, 80, 0, Math.PI * 2);
-            ctx.fillStyle = "#0ff"; ctx.shadowColor = "#0ff"; ctx.shadowBlur = 40; ctx.fill();
-            ctx.shadowBlur = 0;
+            ctx.save();
+            ctx.rotate(player.rotation); // East side faces movement direction
+            const sc = SHIP_CONFIG;
+            const sf = Math.floor(player.shipFrame);
+            const isFull = player.shipState === 'FULL';
+            const sImg = isFull ? shipAssets.fullImg : shipAssets.onImg;
+            const sFrames = isFull ? sc.fullFrames : sc.onFrames;
+            const sCols = isFull ? sc.fullCols : sc.onCols;
+            const sSize = isFull ? sc.fullSize : sc.onSize;
+
+            const curFrame = sf % sFrames;
+            ctx.drawImage(sImg,
+                (curFrame % sCols) * sSize, Math.floor(curFrame / sCols) * sSize, sSize, sSize,
+                -sc.visualSize / 2, -sc.visualSize / 2, sc.visualSize, sc.visualSize
+            );
+
+            // --- DRAW SHIELD ---
+            if (player.shieldActive && player.shieldAnimState !== 'OFF') {
+                const isIsOn = player.shieldAnimState === 'ON';
+                const shImg = isIsOn ? shipAssets.shieldOnImg : shipAssets.shieldTurnOnImg;
+                const shFrames = isIsOn ? sc.shieldOnFrames : sc.shieldTurnOnFrames;
+                const shCols = isIsOn ? sc.shieldOnCols : sc.shieldTurnOnCols;
+                const shSize = isIsOn ? sc.shieldOnSize : sc.shieldTurnOnSize;
+                const shf = Math.floor(player.shieldFrame) % shFrames;
+
+                ctx.drawImage(shImg,
+                    (shf % shCols) * shSize, Math.floor(shf / shCols) * shSize, shSize, shSize,
+                    -sc.shieldVisualSize / 2, -sc.shieldVisualSize / 2, sc.shieldVisualSize, sc.shieldVisualSize
+                );
+            }
+            ctx.restore();
 
             // Damage Numbers
             ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -925,7 +1164,7 @@
         window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom)); });
 
         let loadedCt = 0;
-        const totalToLoad = 7;
+        const totalToLoad = 11; // 7 skills + 4 ship assets
         function onAssetLoad() {
             loadedCt++;
             if (loadedCt === totalToLoad) {
@@ -1046,6 +1285,16 @@
 
         loadSkill(SKILLS.MulticolorXFlame.buttonSheet, skillAssets.buttonImg);
         loadSkill(SKILLS.MulticolorXFlame.skillSheet, skillAssets.skillImg);
+
+        // Ship Assets
+        const loadShip = (path, img) => {
+            img.onload = onAssetLoad;
+            img.src = path;
+        };
+        loadShip(SHIP_CONFIG.onPath, shipAssets.onImg);
+        loadShip(SHIP_CONFIG.fullPath, shipAssets.fullImg);
+        loadShip(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
+        loadShip(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
 
         document.getElementById('skill-button-container').addEventListener('click', triggerSkill);
 
