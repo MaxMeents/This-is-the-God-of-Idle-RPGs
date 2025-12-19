@@ -110,8 +110,9 @@
         const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.png';
         const DEATH_PATH = 'img/Figer Death/Spritesheet/512x512/Figer Death_512x512_sheet.png';
 
-        const MAX_ZOOM = 2.0;
-        const TIGER_SPACING = 2200;
+        const MIN_ZOOM = 0.05;
+        const MAX_ZOOM = 20.0;
+        const TIGER_SPACING = 3400;
 
         // Camera & World State
         let zoom = 0.35;
@@ -149,7 +150,9 @@
         function spawnTiger(i, far = false) {
             const idx = i * stride;
             const angle = Math.random() * Math.PI * 2;
-            const dist = far ? (1500 + Math.random() * 2000) : (500 + Math.random() * 2000);
+            const baseRadius = (TIGER_COUNT * TIGER_SPACING) / (Math.PI * 2);
+            // Spawn tigers near or beyond their target formation radius
+            const dist = far ? (baseRadius * 1.2 + Math.random() * baseRadius) : (baseRadius * 0.9 + Math.random() * baseRadius * 0.2);
 
             data[idx] = player.x + Math.cos(angle) * dist;     // x
             data[idx + 1] = player.y + Math.sin(angle) * dist; // y
@@ -160,7 +163,7 @@
         }
 
         function init() {
-            for (let i = 0; i < TIGER_COUNT; i++) spawnTiger(i);
+            for (let i = 0; i < TIGER_COUNT; i++) spawnTiger(i, true);
             document.getElementById('loading').style.display = 'none';
         }
 
@@ -256,11 +259,12 @@
             }
 
             // --- TIGER PACK LOGIC ---
+            const gridOffset = (GRID_DIM * GRID_CELL) / 2;
             heads.fill(-1);
             for (let i = 0; i < TIGER_COUNT; i++) {
                 const idx = i * stride;
-                const gx = Math.floor((data[idx] + 20000) / GRID_CELL);
-                const gy = Math.floor((data[idx + 1] + 20000) / GRID_CELL);
+                const gx = Math.floor((data[idx] - player.x + gridOffset) / GRID_CELL);
+                const gy = Math.floor((data[idx + 1] - player.y + gridOffset) / GRID_CELL);
                 const cIdx = gy * GRID_DIM + gx;
                 if (cIdx >= 0 && cIdx < heads.length) {
                     next[i] = heads[cIdx];
@@ -270,7 +274,8 @@
 
             const pSpace = TIGER_SPACING;
             const pSpaceSq = pSpace * pSpace;
-            const targetRadius = 8000;
+            // Scale rotation circle based on spacing and count
+            const targetRadius = (TIGER_COUNT * pSpace) / (Math.PI * 2);
 
             for (let i = 0; i < TIGER_COUNT; i++) {
                 const idx = i * stride;
@@ -298,8 +303,8 @@
                 let steerX = lookX * fLimit * 0.2;
                 let steerY = lookY * fLimit * 0.2;
 
-                const gx = Math.floor((px + 20000) / GRID_CELL);
-                const gy = Math.floor((py + 20000) / GRID_CELL);
+                const gx = Math.floor((px - player.x + gridOffset) / GRID_CELL);
+                const gy = Math.floor((py - player.y + gridOffset) / GRID_CELL);
                 for (let ox = -1; ox <= 1; ox++) {
                     for (let oy = -1; oy <= 1; oy++) {
                         const cell = (gy + oy) * GRID_DIM + (gx + ox);
@@ -311,7 +316,8 @@
                                 const dSq = vx * vx + vy * vy;
                                 if (dSq < pSpaceSq && dSq > 0) {
                                     const dist = Math.sqrt(dSq);
-                                    const force = ((pSpace - dist) / pSpace) * 8;
+                                    // Massive boost to repulsion force for giant tigers
+                                    const force = ((pSpace - dist) / pSpace) * 40;
                                     steerX += (vx / dist) * force;
                                     steerY += (vy / dist) * force;
                                 }
@@ -321,19 +327,18 @@
                     }
                 }
 
-                // --- FORWARD ONLY LOCK ---
-                // Calculate dot product of steering force vs looking direction
+                // --- STRICT FORWARD ONLY LOCK ---
                 const dot = steerX * lookX + steerY * lookY;
+                // If dot is negative, tiger is being pushed backwards.
+                // We strictly remove the backward component so they only swerve or stop.
                 if (dot < 0) {
-                    // If pushing backwards, remove the 'backward' component
-                    // This creates a 'swerving' effect around obstacles
                     steerX -= lookX * dot;
                     steerY -= lookY * dot;
                 }
 
                 const mag = Math.sqrt(steerX * steerX + steerY * steerY);
                 if (mag > 0.1) {
-                    const speed = Math.min(data[idx + 6], mag * 5);
+                    const speed = Math.min(data[idx + 6] * 2, mag * 20); // Much more aggressive reaction
                     const moveAngle = Math.atan2(steerY, steerX);
                     data[idx] += Math.cos(moveAngle) * speed;
                     data[idx + 1] += Math.sin(moveAngle) * speed;
@@ -424,7 +429,7 @@
         }
 
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-        window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(0.1, Math.min(MAX_ZOOM, targetZoom)); });
+        window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom)); });
 
         let loadedCount = 0;
         function onAssetLoad() {
