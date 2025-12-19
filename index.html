@@ -126,12 +126,14 @@
                 deathPath: 'img/Figer Death/Spritesheet/512x512/Figer Death_512x512_sheet.png',
                 attackPath: 'img/Fiyger Forward Attack/Spritesheet/512x512/Fiyger Forward Attack_512x512_sheet.png',
                 walkFrames: 52, deathFrames: 145, attackFrames: 77,
+                walkCols: 8, deathCols: 13, attackCols: 9,
+                walkSize: 1024, deathSize: 512, attackSize: 512,
                 walkAnimSpeed: 0.04, attackAnimSpeed: 4.0, deathAnimSpeed: 1.5,
                 baseRotation: Math.PI, // Facing Right (PI rotation from Left base)
                 isSideways: true
             },
             GalaxyDragon: {
-                count: 1500,
+                count: 7500,
                 size: 3200,
                 healthMax: 50,
                 moveSpeed: 12,
@@ -176,7 +178,9 @@
                 { id: 'VLow', size: 64, max: 1000 },
                 { id: 'Tiny', size: 32, max: 2000 },
                 { id: 'Micro', size: 16, max: 9999 }
-            ]
+            ],
+            LOD_INIT_TIME_SLICE: 2, // ms per frame to dedicate to cache building
+            SPAWNS_PER_FRAME: 100 // Prevent lag spikes on load/restart
         };
 
         let zoom = 0.35;
@@ -184,6 +188,8 @@
         const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0, health: PLAYER_HEALTH_MAX };
         let killCount = 0;
         let smoothedEnemies = 0;
+        let spawnIndex = 0;
+        const spawnList = [];
 
         // Data: [x, y, vx, vy, rot, frame, speed, look, health, deathFrame, attackFrame, typeIndex]
         const stride = 12;
@@ -224,53 +230,99 @@
             data[idx + 11] = typeKey === "Tiyger" ? 0 : 1;
         }
 
-        function init() {
-            let countT = 0;
-            for (let i = 0; i < Enemy.Tiyger.count; i++) spawnEnemy(countT++, "Tiyger", true);
-            for (let i = 0; i < Enemy.GalaxyDragon.count; i++) spawnEnemy(countT++, "GalaxyDragon", true);
-            document.getElementById('loading').style.display = 'none';
+        function init(firstLoad = false) {
+            player.health = PLAYER_HEALTH_MAX;
+            player.x = 0; player.y = 0;
+            killCount = 0;
+            damageNumbers.length = 0;
+            data.fill(0);
+            spawnIndex = 0;
+
+            if (firstLoad || spawnList.length === 0) {
+                spawnList.length = 0;
+                for (let i = 0; i < Enemy.Tiyger.count; i++) spawnList.push("Tiyger");
+                for (let i = 0; i < Enemy.GalaxyDragon.count; i++) spawnList.push("GalaxyDragon");
+            }
+
+            if (firstLoad) document.getElementById('loading').style.display = 'none';
+        }
+
+        function softReset() {
+            init(false);
+            targetZoom = 0.35;
         }
 
         function buildEnemyCache(typeKey) {
             const cfg = Enemy[typeKey];
             const assets = enemyAssets[typeKey];
+            const queue = [];
 
-            const generateTiers = (img, key, frameCount, cols, sourceSize) => {
-                for (let tier of PERFORMANCE.LOD_TIERS) {
-                    const size = tier.size;
-                    const canvas = document.createElement('canvas');
-                    canvas.width = size;
-                    canvas.height = size * frameCount;
-                    const ctx = canvas.getContext('2d');
+            // Add all animation/tier combinations to the queue
+            for (let tier of PERFORMANCE.LOD_TIERS) {
+                for (let type of ['walk', 'death', 'attack']) {
+                    queue.push({
+                        type,
+                        tier,
+                        frameCount: cfg[type + 'Frames'],
+                        cols: cfg[type + 'Cols'],
+                        sourceSize: cfg[type + 'Size'],
+                        currentFrame: 0,
+                        canvas: null
+                    });
+                }
+            }
+
+            // Process queue over several frames to prevent blocking
+            const process = () => {
+                const startTime = performance.now();
+                while (queue.length > 0 && performance.now() - startTime < PERFORMANCE.LOD_INIT_TIME_SLICE) {
+                    const task = queue[0];
+                    const img = assets[task.type];
+
+                    if (!task.canvas) {
+                        task.canvas = document.createElement('canvas');
+                        task.canvas.width = task.tier.size;
+                        task.canvas.height = task.tier.size * task.frameCount;
+                    }
+
+                    const ctx = task.canvas.getContext('2d');
                     ctx.imageSmoothingEnabled = true;
 
-                    for (let i = 0; i < frameCount; i++) {
-                        ctx.drawImage(img, (i % cols) * sourceSize, Math.floor(i / cols) * sourceSize, sourceSize, sourceSize, 0, i * size, size, size);
-                    }
-                    assets.caches[key][tier.id] = canvas;
-                }
-            };
+                    // Inner loop: process frames for this specific task until budget is exceeded
+                    while (task.currentFrame < task.frameCount && performance.now() - startTime < PERFORMANCE.LOD_INIT_TIME_SLICE) {
+                        const i = task.currentFrame;
+                        const size = task.tier.size;
+                        const srcX = (i % task.cols) * task.sourceSize;
+                        const srcY = Math.floor(i / task.cols) * task.sourceSize;
 
-            if (typeKey === "Tiyger") {
-                generateTiers(assets.walk, "walk", cfg.walkFrames, 8, 1024);
-                generateTiers(assets.death, "death", cfg.deathFrames, 13, 512);
-                generateTiers(assets.attack, "attack", cfg.attackFrames, 9, 512);
-            } else {
-                generateTiers(assets.walk, "walk", cfg.walkFrames, cfg.walkCols, cfg.walkSize);
-                generateTiers(assets.death, "death", cfg.deathFrames, cfg.deathCols, cfg.deathSize);
-                generateTiers(assets.attack, "attack", cfg.attackFrames, cfg.attackCols, cfg.attackSize);
-            }
+                        ctx.drawImage(img, srcX, srcY, task.sourceSize, task.sourceSize, 0, i * size, size, size);
+                        task.currentFrame++;
+                    }
+
+                    if (task.currentFrame >= task.frameCount) {
+                        assets.caches[task.type][task.tier.id] = task.canvas;
+                        queue.shift();
+                    }
+                }
+                if (queue.length > 0) requestAnimationFrame(process);
+            };
+            requestAnimationFrame(process);
         }
 
         function update(dt, now) {
-            // Smooth Camera Zoom
+            if (player.health <= 0) return;
+
+            for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < totalEnemies; i++) {
+                spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
+                spawnIndex++;
+            }
+
             zoom += (targetZoom - zoom) * 0.1;
 
-            // --- PLAYER COMBAT LOGIC ---
-            // Nearest Finding
+            // Nearest Finding - only check spawned enemies
             let closestDist = Infinity;
             let found = -1;
-            for (let i = 0; i < totalEnemies; i++) {
+            for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
                 if (data[idx + 8] <= 0) continue;
                 const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
@@ -295,7 +347,7 @@
                     player.lastDamageTime = now;
                     const rSq = AOE_RADIUS * AOE_RADIUS;
                     const px = player.x, py = player.y; // Player position for AOE
-                    for (let i = 0; i < totalEnemies; i++) {
+                    for (let i = 0; i < spawnIndex; i++) {
                         const idx = i * stride;
                         if (data[idx + 8] <= 0) continue;
 
@@ -329,8 +381,9 @@
             // --- PACK PHYSICS ---
             const gridOffset = (GRID_DIM * GRID_CELL) / 2;
             heads.fill(-1);
-            for (let i = 0; i < totalEnemies; i++) {
+            for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
+                if (data[idx + 8] <= 0) continue; // Skip unspawned/dead
                 const gx = Math.floor((data[idx] - player.x + gridOffset) / GRID_CELL);
                 const gy = Math.floor((data[idx + 1] - player.y + gridOffset) / GRID_CELL);
                 const cIdx = gy * GRID_DIM + gx;
@@ -340,7 +393,7 @@
                 }
             }
 
-            for (let i = 0; i < totalEnemies; i++) {
+            for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
                 const typeKey = data[idx + 11] === 0 ? "Tiyger" : "GalaxyDragon";
                 const cfg = Enemy[typeKey];
@@ -428,7 +481,10 @@
                         const currF = Math.floor(data[idx + 10]);
                         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
                             player.health -= cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin);
-                            if (player.health < 0) { player.health = 0; setTimeout(() => location.reload(), 1000); }
+                            if (player.health < 0) {
+                                player.health = 0;
+                                setTimeout(softReset, 1000);
+                            }
                         }
                         if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
                     }
@@ -477,7 +533,7 @@
 
             // Dynamic LOD Selection (Exact On-Screen Count + Smoothing)
             let onScreen = 0;
-            for (let i = 0; i < totalEnemies; i++) {
+            for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
                 if (data[idx + 8] <= 0 && data[idx + 9] <= 0) continue;
                 if (data[idx] > left && data[idx] < right && data[idx + 1] > top && data[idx + 1] < bottom) onScreen++;
@@ -496,7 +552,7 @@
             const currentSize = activeTier.size;
             const tierID = activeTier.id;
 
-            for (let i = 0; i < totalEnemies; i++) {
+            for (let i = 0; i < spawnIndex; i++) {
                 const idx = i * stride;
                 const x = data[idx], y = data[idx + 1];
                 if (x < left || x > right || y < top || y > bottom) continue;
@@ -509,20 +565,40 @@
                 ctx.setTransform(zoom * Math.cos(rot), zoom * Math.sin(rot), -zoom * Math.sin(rot), zoom * Math.cos(rot), cx + (x - player.x) * zoom, cy + (y - player.y) * zoom);
                 if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
 
+                // Safe Tier Fallback (check if cache is ready)
+                const getReadyCache = (key) => {
+                    const group = assets.caches[key];
+                    if (group[tierID]) return { canvas: group[tierID], size: currentSize };
+                    // fallback to any ready tier
+                    for (let t of PERFORMANCE.LOD_TIERS) {
+                        if (group[t.id]) return { canvas: group[t.id], size: t.size };
+                    }
+                    return null;
+                };
+
                 if (health > 0) {
                     if (attackFrame > 0) {
-                        const safeF = Math.min(cfg.attackFrames - 1, attackFrame);
-                        ctx.drawImage(assets.caches.attack[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                        const ready = getReadyCache('attack');
+                        if (ready) {
+                            const safeF = Math.min(cfg.attackFrames - 1, attackFrame);
+                            ctx.drawImage(ready.canvas, 0, safeF * ready.size, ready.size, ready.size, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                        }
                     } else {
-                        const safeF = Math.min(cfg.walkFrames - 1, frame);
-                        ctx.drawImage(assets.caches.walk[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                        const ready = getReadyCache('walk');
+                        if (ready) {
+                            const safeF = Math.min(cfg.walkFrames - 1, frame);
+                            ctx.drawImage(ready.canvas, 0, safeF * ready.size, ready.size, ready.size, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                        }
                     }
                 } else if (deathFrame > 0) {
-                    const alpha = Math.max(0, 1 - (deathFrame / cfg.deathFrames - 0.7) * 3);
-                    ctx.globalAlpha = alpha;
-                    const safeF = Math.min(cfg.deathFrames - 1, deathFrame);
-                    ctx.drawImage(assets.caches.death[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
-                    ctx.globalAlpha = 1.0;
+                    const ready = getReadyCache('death');
+                    if (ready) {
+                        const alpha = Math.max(0, 1 - (deathFrame / cfg.deathFrames - 0.7) * 3);
+                        ctx.globalAlpha = alpha;
+                        const safeF = Math.min(cfg.deathFrames - 1, deathFrame);
+                        ctx.drawImage(ready.canvas, 0, safeF * ready.size, ready.size, ready.size, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                        ctx.globalAlpha = 1.0;
+                    }
                 }
             }
 
@@ -556,7 +632,7 @@
                 floorPattern = true;
                 buildEnemyCache("Tiyger");
                 buildEnemyCache("GalaxyDragon");
-                init();
+                init(true);
                 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
                 let last = 0, f = 0, t = 0;
                 function loop(now) {
