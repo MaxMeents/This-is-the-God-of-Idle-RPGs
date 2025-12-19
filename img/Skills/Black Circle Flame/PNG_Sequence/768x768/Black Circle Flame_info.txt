@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Black Circle Flame
+FORMAT: PNG Sequence
+SIZE: 768x768 (768x768px)
+----------------------------------------
+Total Frames: 132
+
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 3x
+Target Playback FPS: 72.00
+----------------------------------------
+USER COMMENTS:
+2.11
+4.33

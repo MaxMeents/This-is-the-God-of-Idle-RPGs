@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Multicolor X Flame
+FORMAT: Sprite Sheet
+SIZE: 128x128 (128x128px)
+----------------------------------------
+Total Frames: 109
+Grid Layout: 11 columns x 10 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 1.1x
+Target Playback FPS: 26.40
+----------------------------------------
+USER COMMENTS:
+2.11
+4.33
