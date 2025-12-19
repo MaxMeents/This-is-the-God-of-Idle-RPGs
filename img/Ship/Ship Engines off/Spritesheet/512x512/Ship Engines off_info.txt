@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Ship Engines off
+FORMAT: Sprite Sheet
+SIZE: 512x512 (512x512px)
+----------------------------------------
+Total Frames: 27
+Grid Layout: 6 columns x 5 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 1.4x
+Target Playback FPS: 33.60
+----------------------------------------
+USER COMMENTS:
+2.11
+4.33

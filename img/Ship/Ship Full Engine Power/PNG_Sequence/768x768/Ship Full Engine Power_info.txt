@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Ship Full Engine Power
+FORMAT: PNG Sequence
+SIZE: 768x768 (768x768px)
+----------------------------------------
+Total Frames: 18
+
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 1.4x
+Target Playback FPS: 33.60
+----------------------------------------
+USER COMMENTS:
+2.11
+4.33

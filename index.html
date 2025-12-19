@@ -130,12 +130,16 @@
 
         #skill-timer {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             font-size: 80px;
             font-weight: 900;
             color: #fff;
             text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px #ffcc00;
             pointer-events: none;
             display: none;
+            line-height: 1;
         }
     </style>
 </head>
@@ -231,8 +235,8 @@
         const PLAYER_SPEED = 20;
         const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.png';
         const PLAYER_HEALTH_MAX = 35000;
-        const MIN_ZOOM = 0.05;
-        const MAX_ZOOM = 590.0;
+        const MIN_ZOOM = 0.0001;
+        const MAX_ZOOM = 2590.0;
 
         const PERFORMANCE = {
             // LOD Tiers sorted from Highest to Lowest quality
@@ -254,19 +258,19 @@
 
         const SKILLS = {
             MulticolorXFlame: {
-                buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/1024x1024/Multicolor X Flame Button_1024x1024_sheet.png',
-                skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/1024x1024/Multicolor X Flame_1024x1024_sheet.png',
-                buttonFrames: 121, buttonCols: 11, buttonSize: 1024,
-                skillFrames: 109, skillCols: 11, skillSize: 1024,
+                buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
+                skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+                buttonFrames: 121, buttonCols: 11, buttonSize: 768,
+                skillFrames: 109, skillCols: 11, skillSize: 512,
 
                 // ADJUSTABLE SETTINGS
-                animSpeedButton: 0.5,
-                animSpeedSkill: 0.8,
-                cooldownTime: 10000, // ms
+                animSpeedButton: 0.9,
+                animSpeedSkill: 2,
+                cooldownTime: 7000,
                 instanceCount: 12,
-                damageMult: 30.0, // 3000%
-                aoeMult: 1.25, // slightly larger than skill size
-                visualSize: 1800, // world size (big for high map impact)
+                damageMult: 30.0,
+                aoeMult: 1.25,
+                visualSize: 1800,
                 orbitRadius: 1500
             }
         };
@@ -274,11 +278,14 @@
         const skillAssets = {
             buttonImg: new Image(),
             skillImg: new Image(),
-            ready: false
+            buttonCache: [],
+            skillCache: [],
+            ready: false,
+            baked: false
         };
 
         const activeSkills = [];
-        let skillCooldownStart = -Infinity;
+        let skillCooldownRemaining = 0;
         let skillBtnFrame = 0;
         const skillBtnCanvas = document.getElementById('skill-button-canvas');
         const skillBtnCtx = skillBtnCanvas.getContext('2d');
@@ -338,6 +345,8 @@
             player.x = 0; player.y = 0;
             killCount = 0;
             damageNumbers.length = 0;
+            activeSkills.length = 0;
+            skillCooldownRemaining = 0;
             data.fill(0);
             spawnIndex = 0;
 
@@ -352,7 +361,6 @@
 
         function softReset() {
             init(false);
-            targetZoom = 0.35;
         }
 
         // Global Cache Manager
@@ -493,11 +501,10 @@
         }
 
         function triggerSkill() {
-            const now = performance.now();
-            if (now - skillCooldownStart < SKILLS.MulticolorXFlame.cooldownTime) return;
-
-            skillCooldownStart = now;
             const cfg = SKILLS.MulticolorXFlame;
+            if (skillCooldownRemaining > 0) return;
+
+            skillCooldownRemaining = cfg.cooldownTime;
 
             for (let i = 0; i < cfg.instanceCount; i++) {
                 const angle = (i / cfg.instanceCount) * Math.PI * 2;
@@ -693,9 +700,9 @@
                         const currF = Math.floor(data[idx + 10]);
                         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
                             player.health -= cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin);
-                            if (player.health < 0) {
-                                player.health = 0;
-                                setTimeout(softReset, 1000);
+                            if (player.health <= 0) {
+                                softReset();
+                                return;
                             }
                         }
                         if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
@@ -718,6 +725,13 @@
 
         function updateSkills(dt, now) {
             const cfg = SKILLS.MulticolorXFlame;
+
+            // Sync Cooldown with Game Speed
+            if (skillCooldownRemaining > 0) {
+                skillCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
+                if (skillCooldownRemaining < 0) skillCooldownRemaining = 0;
+            }
+
             const gridOffset = (GRID_DIM * GRID_CELL) / 2;
             const rSq = (cfg.visualSize / 2 * cfg.aoeMult) ** 2;
             const rCell = Math.ceil((cfg.visualSize * cfg.aoeMult) / GRID_CELL);
@@ -876,21 +890,17 @@
             }
 
             // --- DRAW SKILLS ---
-            const sCfg = SKILLS.MulticolorXFlame;
-            for (const s of activeSkills) {
-                const f = Math.floor(s.frame);
-                const sx = player.x + Math.cos(s.angle) * sCfg.orbitRadius;
-                const sy = player.y + Math.sin(s.angle) * sCfg.orbitRadius;
-
-                ctx.save();
-                ctx.translate(sx, sy);
-                const frameSize = sCfg.buttonSize; // both are 1024
-                const fIdx = f % sCfg.skillFrames;
-                ctx.drawImage(skillAssets.skillImg,
-                    (fIdx % sCfg.skillCols) * sCfg.skillSize, Math.floor(fIdx / sCfg.skillCols) * sCfg.skillSize,
-                    sCfg.skillSize, sCfg.skillSize,
-                    -sCfg.visualSize / 2, -sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
-                ctx.restore();
+            if (skillAssets.baked) {
+                const sCfg = SKILLS.MulticolorXFlame;
+                for (const s of activeSkills) {
+                    const f = Math.floor(s.frame) % sCfg.skillFrames;
+                    const sx = player.x + Math.cos(s.angle) * sCfg.orbitRadius;
+                    const sy = player.y + Math.sin(s.angle) * sCfg.orbitRadius;
+                    const frameImg = skillAssets.skillCache[f];
+                    if (frameImg) {
+                        ctx.drawImage(frameImg, sx - sCfg.visualSize / 2, sy - sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
+                    }
+                }
             }
 
             // Player Visual
@@ -959,24 +969,26 @@
 
                     // --- DRAW SKILL BUTTON UI ---
                     const cfg = SKILLS.MulticolorXFlame;
-                    const elapsed = now - skillCooldownStart;
-                    const isCooldown = elapsed < cfg.cooldownTime;
+                    const isCooldown = skillCooldownRemaining > 0;
+                    const progress = (cfg.cooldownTime - skillCooldownRemaining) / cfg.cooldownTime;
 
                     skillBtnCtx.clearRect(0, 0, skillBtnCanvas.width, skillBtnCanvas.height);
-                    skillBtnCtx.globalAlpha = isCooldown ? 0.1 + (elapsed / cfg.cooldownTime) * 0.9 : 1.0;
+                    skillBtnCtx.globalAlpha = isCooldown ? 0.1 + (progress * 0.9) : 1.0;
 
                     skillBtnFrame = (skillBtnFrame + cfg.animSpeedButton * (dt / 16.6)) % cfg.buttonFrames;
                     const bf = Math.floor(skillBtnFrame);
-                    skillBtnCtx.drawImage(skillAssets.buttonImg,
-                        (bf % cfg.buttonCols) * cfg.buttonSize, Math.floor(bf / cfg.buttonCols) * cfg.buttonSize,
-                        cfg.buttonSize, cfg.buttonSize,
-                        0, 0, skillBtnCanvas.width, skillBtnCanvas.height);
+                    if (skillAssets.baked) {
+                        const frameImg = skillAssets.buttonCache[bf];
+                        if (frameImg) skillBtnCtx.drawImage(frameImg, 0, 0, skillBtnCanvas.width, skillBtnCanvas.height);
+                    }
 
                     const timerEl = document.getElementById('skill-timer');
                     if (isCooldown) {
-                        const remaining = 10 - Math.floor(elapsed / 1000);
-                        timerEl.innerText = remaining < 1 ? "" : remaining;
-                        timerEl.style.display = (remaining < 1 || remaining > 10) ? 'none' : 'block';
+                        const targetCount = Math.floor(cfg.cooldownTime / 1000);
+                        const currentCount = Math.floor(progress * targetCount);
+
+                        timerEl.innerText = currentCount;
+                        timerEl.style.display = 'block';
                     } else {
                         timerEl.style.display = 'none';
                     }
@@ -1001,9 +1013,37 @@
 
         // Skill Assets
         const loadSkill = (path, img) => {
-            img.onload = () => { if (skillAssets.buttonImg.complete && skillAssets.skillImg.complete) skillAssets.ready = true; };
+            img.onload = () => {
+                if (skillAssets.buttonImg.complete && skillAssets.skillImg.complete) {
+                    skillAssets.ready = true;
+                    bakeSkills();
+                }
+            };
             img.src = path;
         };
+
+        function bakeSkills() {
+            if (skillAssets.baked) return;
+            const cfg = SKILLS.MulticolorXFlame;
+
+            // Bake Button (to 256px)
+            for (let i = 0; i < cfg.buttonFrames; i++) {
+                const can = document.createElement('canvas'); can.width = 256; can.height = 256;
+                const cctx = can.getContext('2d');
+                cctx.drawImage(skillAssets.buttonImg, (i % cfg.buttonCols) * cfg.buttonSize, Math.floor(i / cfg.buttonCols) * cfg.buttonSize, cfg.buttonSize, cfg.buttonSize, 0, 0, 256, 256);
+                skillAssets.buttonCache.push(can);
+            }
+            // Bake Skill (to 512px)
+            for (let i = 0; i < cfg.skillFrames; i++) {
+                const can = document.createElement('canvas'); can.width = 512; can.height = 512;
+                const cctx = can.getContext('2d');
+                cctx.drawImage(skillAssets.skillImg, (i % cfg.skillCols) * cfg.skillSize, Math.floor(i / cfg.skillCols) * cfg.skillSize, cfg.skillSize, cfg.skillSize, 0, 0, 512, 512);
+                skillAssets.skillCache.push(can);
+            }
+            skillAssets.baked = true;
+            console.log("Skill animations baked and ready.");
+        }
+
         loadSkill(SKILLS.MulticolorXFlame.buttonSheet, skillAssets.buttonImg);
         loadSkill(SKILLS.MulticolorXFlame.skillSheet, skillAssets.skillImg);
 
