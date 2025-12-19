@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>God of Idle RPGs - Combat Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #050505;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
+            background-image: none;
+            /* Set dynamically */
+            background-repeat: repeat;
+            background-attachment: fixed;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #ffcc00;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #ffcc00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .stat {
+            font-family: monospace;
+            font-size: 14px;
+            margin-top: 10px;
+            color: #00ff88;
+        }
+
+        .controls {
+            font-size: 12px;
+            margin-top: 15px;
+            color: #aaa;
+        }
+
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            z-index: 1000;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">Initializing Combat Engine...</div>
+    <div id="ui">
+        <h1>GOD OF IDLE RPGs</h1>
+        <div id="count" class="stat">Tigers: 300</div>
+        <div id="kills" class="stat">Kills: 0</div>
+        <div id="fps" class="stat">FPS: 0</div>
+        <div class="controls">
+            [SCROLL] Zoom Camera<br>
+            Player ball automatically hunts nearest tiger.<br>
+            Screen follows player.
+        </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        /**
+         * God of Idle RPGs - Combat Engine Prototype
+         * Focus: Automated Combat, Floating Damage Numbers, Optimized Data.
+         */
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+
+        // CONFIG
+        const TIGER_COUNT = 300;
+        const TARGET_SIZE = 2540;
+        const TOTAL_FRAMES = 52;
+        const TIGER_HEALTH_MAX = 30;
+        const DAMAGE_PER_POP = 10;
+        const DAMAGE_INTERVAL = 100; // ms
+        const AOE_RADIUS = 800;
+        const PLAYER_SPEED = 20;
+        const SPRITE_PATH = 'img/Figer Walking/Spritesheet/1024x1024/grok-video-c940ad13-8ea0-454d-8b91-76e181b1f208 (10)_1024x1024_sheet.png';
+        const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.png';
+        const DEATH_PATH = 'img/Figer Death/Spritesheet/512x512/Figer Death_512x512_sheet.png';
+
+        const MAX_ZOOM = 2.0;
+        const TIGER_SPACING = 2200;
+
+        // Camera & World State
+        let zoom = 0.35;
+        let targetZoom = 0.35;
+        const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0 };
+        let killCount = 0;
+
+        // Tiger Data: [x, y, vx, vy, rot, frame, speed, look, health, damageCooldown]
+        const data = new Float32Array(TIGER_COUNT * 10);
+        const stride = 10;
+
+        // Floating Numbers Pooled
+        const damageNumbers = []; // {x, y, val, life}
+
+        // Spatial Grid
+        const GRID_CELL = TIGER_SPACING * 1.1;
+        const GRID_DIM = 200;
+        const heads = new Int32Array(GRID_DIM * GRID_DIM).fill(-1);
+        const next = new Int32Array(TIGER_COUNT);
+
+        // Assets
+        const spriteSheet = new Image();
+        const frameCache = document.createElement('canvas');
+        const fCtx = frameCache.getContext('2d');
+        const cacheSize = 320;
+
+        const floorImg = new Image();
+        let floorPattern = null;
+
+        const deathSheet = new Image();
+        const deathCache = document.createElement('canvas');
+        const dCtx = deathCache.getContext('2d');
+        const DEATH_FRAMES = 145;
+
+        function spawnTiger(i, far = false) {
+            const idx = i * stride;
+            const angle = Math.random() * Math.PI * 2;
+            const dist = far ? (1500 + Math.random() * 2000) : (500 + Math.random() * 2000);
+
+            data[idx] = player.x + Math.cos(angle) * dist;     // x
+            data[idx + 1] = player.y + Math.sin(angle) * dist; // y
+            data[idx + 6] = 7 + Math.random() * 8;  // Triple Speed
+            data[idx + 8] = TIGER_HEALTH_MAX;       // health
+            data[idx + 9] = 0;                      // damage cooldown
+            data[idx + 5] = Math.random() * TOTAL_FRAMES;
+        }
+
+        function init() {
+            for (let i = 0; i < TIGER_COUNT; i++) spawnTiger(i);
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function buildCache() {
+            frameCache.width = cacheSize;
+            frameCache.height = cacheSize * TOTAL_FRAMES;
+            const cols = 8;
+            const sw = 1024, sh = 1024;
+            for (let i = 0; i < TOTAL_FRAMES; i++) {
+                fCtx.drawImage(spriteSheet, (i % cols) * sw, Math.floor(i / cols) * sh, sw, sh, 0, i * cacheSize, cacheSize, cacheSize);
+            }
+
+            // Build Death Cache
+            deathCache.width = cacheSize;
+            deathCache.height = cacheSize * DEATH_FRAMES;
+            const dCols = 13;
+            const dSw = 512, dSh = 512;
+            for (let i = 0; i < DEATH_FRAMES; i++) {
+                dCtx.drawImage(deathSheet, (i % dCols) * dSw, Math.floor(i / dCols) * dSh, dSw, dSh, 0, i * cacheSize, cacheSize, cacheSize);
+            }
+        }
+
+        function update(dt, now) {
+            // Smooth Camera Zoom
+            zoom += (targetZoom - zoom) * 0.1;
+
+            // --- PLAYER COMBAT LOGIC ---
+            // Always look for the nearest tiger every frame
+            let closestDist = Infinity;
+            let found = -1;
+            for (let i = 0; i < TIGER_COUNT; i++) {
+                const idx = i * stride;
+                if (data[idx + 8] <= 0) continue; // Skip dead/respawning
+                const dx = data[idx] - player.x;
+                const dy = data[idx + 1] - player.y;
+                const dSq = dx * dx + dy * dy;
+                if (dSq < closestDist) {
+                    closestDist = dSq;
+                    found = i;
+                }
+            }
+            player.targetIdx = found;
+
+            // Move to Current Nearest Target
+            if (player.targetIdx !== -1) {
+                const tIdx = player.targetIdx * stride;
+                const dx = data[tIdx] - player.x;
+                const dy = data[tIdx + 1] - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist > 10) {
+                    player.x += (dx / dist) * PLAYER_SPEED;
+                    player.y += (dy / dist) * PLAYER_SPEED;
+                }
+
+                // 3. AOE Damage Ticks
+                if (now - player.lastDamageTime > DAMAGE_INTERVAL) {
+                    player.lastDamageTime = now;
+                    // Detect all tigers in radius
+                    const px = player.x;
+                    const py = player.y;
+                    const rSq = AOE_RADIUS * AOE_RADIUS;
+
+                    for (let i = 0; i < TIGER_COUNT; i++) {
+                        const idx = i * stride;
+                        if (data[idx + 8] <= 0) continue;
+
+                        const ddx = data[idx] - px;
+                        const ddy = data[idx + 1] - py;
+                        if (ddx * ddx + ddy * ddy < rSq) {
+                            // Take Damage
+                            data[idx + 8] -= DAMAGE_PER_POP;
+
+                            // Pop Damage Number
+                            damageNumbers.push({
+                                x: data[idx],
+                                y: data[idx + 1] - 50,
+                                val: DAMAGE_PER_POP,
+                                life: 1.0,
+                                vx: (Math.random() - 0.5) * 2,
+                                vy: -2 - Math.random() * 2
+                            });
+
+                            if (data[idx + 8] <= 0) {
+                                killCount++;
+                                // Initial death mark - start animation
+                                data[idx + 8] = 0;
+                                data[idx + 9] = 1; // Start death frame
+                            }
+                        }
+                    }
+                }
+            }
+
+            // --- TIGER PACK LOGIC ---
+            heads.fill(-1);
+            for (let i = 0; i < TIGER_COUNT; i++) {
+                const idx = i * stride;
+                const gx = Math.floor((data[idx] + 20000) / GRID_CELL);
+                const gy = Math.floor((data[idx + 1] + 20000) / GRID_CELL);
+                const cIdx = gy * GRID_DIM + gx;
+                if (cIdx >= 0 && cIdx < heads.length) {
+                    next[i] = heads[cIdx];
+                    heads[cIdx] = i;
+                }
+            }
+
+            const pSpace = TIGER_SPACING;
+            const pSpaceSq = pSpace * pSpace;
+            const targetRadius = 8000;
+
+            for (let i = 0; i < TIGER_COUNT; i++) {
+                const idx = i * stride;
+                if (data[idx + 8] <= 0) {
+                    // Death Animation Progress
+                    if (data[idx + 9] > 0) {
+                        data[idx + 9] += 1.5; // playback speed
+                        if (data[idx + 9] >= DEATH_FRAMES) {
+                            spawnTiger(i, true);
+                        }
+                    }
+                    continue;
+                }
+
+                const px = data[idx], py = data[idx + 1];
+                const dx = player.x - px, dy = player.y - py;
+                const d = Math.sqrt(dx * dx + dy * dy);
+
+                const look = Math.atan2(player.y - py, player.x - px);
+                const lookX = Math.cos(look);
+                const lookY = Math.sin(look);
+
+                // 1. Formation (Only pull forward, never push back)
+                const fLimit = Math.max(0, d - targetRadius);
+                let steerX = lookX * fLimit * 0.2;
+                let steerY = lookY * fLimit * 0.2;
+
+                const gx = Math.floor((px + 20000) / GRID_CELL);
+                const gy = Math.floor((py + 20000) / GRID_CELL);
+                for (let ox = -1; ox <= 1; ox++) {
+                    for (let oy = -1; oy <= 1; oy++) {
+                        const cell = (gy + oy) * GRID_DIM + (gx + ox);
+                        let nIdx = heads[cell];
+                        while (nIdx !== -1) {
+                            if (nIdx !== i) {
+                                const oIdx = nIdx * stride;
+                                const vx = px - data[oIdx], vy = py - data[oIdx + 1];
+                                const dSq = vx * vx + vy * vy;
+                                if (dSq < pSpaceSq && dSq > 0) {
+                                    const dist = Math.sqrt(dSq);
+                                    const force = ((pSpace - dist) / pSpace) * 8;
+                                    steerX += (vx / dist) * force;
+                                    steerY += (vy / dist) * force;
+                                }
+                            }
+                            nIdx = next[nIdx];
+                        }
+                    }
+                }
+
+                // --- FORWARD ONLY LOCK ---
+                // Calculate dot product of steering force vs looking direction
+                const dot = steerX * lookX + steerY * lookY;
+                if (dot < 0) {
+                    // If pushing backwards, remove the 'backward' component
+                    // This creates a 'swerving' effect around obstacles
+                    steerX -= lookX * dot;
+                    steerY -= lookY * dot;
+                }
+
+                const mag = Math.sqrt(steerX * steerX + steerY * steerY);
+                if (mag > 0.1) {
+                    const speed = Math.min(data[idx + 6], mag * 5);
+                    const moveAngle = Math.atan2(steerY, steerX);
+                    data[idx] += Math.cos(moveAngle) * speed;
+                    data[idx + 1] += Math.sin(moveAngle) * speed;
+
+                    data[idx + 7] = look;
+                    data[idx + 4] = look + Math.PI;
+                    data[idx + 5] = (mag > 0.3) ? (data[idx + 5] + speed * 0.1) % TOTAL_FRAMES : 0;
+                } else { data[idx + 5] = 0; }
+            }
+
+            // Update Damage Numbers
+            for (let i = damageNumbers.length - 1; i >= 0; i--) {
+                const dn = damageNumbers[i];
+                dn.x += dn.vx; dn.y += dn.vy; dn.life -= 0.02;
+                if (dn.life <= 0) damageNumbers.splice(i, 1);
+            }
+
+            document.getElementById('kills').innerText = `Kills: ${killCount}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Sync CSS Background for Zero-Cost Tile Overheads
+            if (floorPattern) {
+                const bgSize = 1024 * zoom; // Assuming base tile is ~1024px or similar
+                const bgX = -player.x * zoom + (canvas.width / 2);
+                const bgY = -player.y * zoom + (canvas.height / 2);
+                document.body.style.backgroundPosition = `${bgX}px ${bgY}px`;
+                document.body.style.backgroundSize = `${bgSize}px`;
+            }
+
+            const cx = canvas.width / 2, cy = canvas.height / 2;
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.scale(zoom, zoom);
+            ctx.translate(-player.x, -player.y);
+
+            // Culling bounds (+100px margin)
+            const margin = 100 + (TARGET_SIZE / 2);
+            const left = player.x - (cx / zoom) - margin;
+            const right = player.x + (cx / zoom) + margin;
+            const top = player.y - (cy / zoom) - margin;
+            const bottom = player.y + (cy / zoom) + margin;
+
+            // Background Tile Texture (Handled by CSS)
+
+            // Tigers
+            for (let i = 0; i < TIGER_COUNT; i++) {
+                const idx = i * stride;
+                const x = data[idx], y = data[idx + 1];
+                if (x < left || x > right || y < top || y > bottom) continue;
+
+                const rot = data[idx + 4], frame = Math.floor(data[idx + 5]), look = data[idx + 7];
+                const health = data[idx + 8];
+                const deathFrame = Math.floor(data[idx + 9]);
+
+                ctx.setTransform(zoom * Math.cos(rot), zoom * Math.sin(rot), -zoom * Math.sin(rot), zoom * Math.cos(rot), cx + (x - player.x) * zoom, cy + (y - player.y) * zoom);
+                if (Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+
+                if (health > 0) {
+                    ctx.drawImage(frameCache, 0, frame * cacheSize, cacheSize, cacheSize, -TARGET_SIZE / 2, -TARGET_SIZE / 2, TARGET_SIZE, TARGET_SIZE);
+                } else if (deathFrame > 0) {
+                    // Fade out at end of animation
+                    const alpha = Math.max(0, 1 - (deathFrame / DEATH_FRAMES - 0.7) * 3);
+                    ctx.globalAlpha = alpha;
+                    ctx.drawImage(deathCache, 0, deathFrame * cacheSize, cacheSize, cacheSize, -TARGET_SIZE / 2, -TARGET_SIZE / 2, TARGET_SIZE, TARGET_SIZE);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            // Player Visual
+            ctx.setTransform(zoom, 0, 0, zoom, cx, cy);
+            ctx.beginPath(); ctx.arc(0, 0, 80, 0, Math.PI * 2);
+            ctx.fillStyle = "#0ff"; ctx.shadowColor = "#0ff"; ctx.shadowBlur = 40; ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Damage Numbers
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // UI relative to screen
+            ctx.font = "bold 24px Arial";
+            for (const dn of damageNumbers) {
+                const sx = (dn.x - player.x) * zoom + cx;
+                const sy = (dn.y - player.y) * zoom + cy;
+                ctx.fillStyle = `rgba(255, 0, 0, ${dn.life})`;
+                ctx.fillText(dn.val, sx, sy);
+            }
+            ctx.restore();
+        }
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(0.1, Math.min(MAX_ZOOM, targetZoom)); });
+
+        let loadedCount = 0;
+        function onAssetLoad() {
+            loadedCount++;
+            if (loadedCount === 3) {
+                // Apply texture to body instead of making a pattern
+                document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
+                floorPattern = true; // Flag for draw loop
+                buildCache(); init();
+                canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+                let last = 0, f = 0, t = 0;
+                function loop(now) {
+                    const dt = now - last; last = now;
+                    t += dt; f++;
+                    if (t > 1000) { document.getElementById('fps').innerText = `FPS: ${f}`; f = 0; t = 0; }
+                    update(dt, now); draw(); requestAnimationFrame(loop);
+                }
+                requestAnimationFrame(loop);
+            }
+        }
+
+        spriteSheet.onload = onAssetLoad;
+        floorImg.onload = onAssetLoad;
+        deathSheet.onload = onAssetLoad;
+
+        spriteSheet.src = SPRITE_PATH;
+        floorImg.src = FLOOR_PATH;
+        deathSheet.src = DEATH_PATH;
+    </script>
+</body>
+
+</html>
