@@ -79,6 +79,35 @@
             background: linear-gradient(90deg, #0096ff, #00d4ff);
             transition: width 0.1s ease-out;
         }
+
+        #speed-ctrl-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.2);
+            z-index: 100;
+            pointer-events: auto;
+            width: 200px;
+        }
+
+        .speed-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #00ff88;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #00ff88;
+        }
     </style>
 </head>
 
@@ -94,6 +123,13 @@
             Player ball automatically hunts nearest tiger.<br>
             Screen follows player.
         </div>
+    </div>
+    <div id="speed-ctrl-container">
+        <div class="speed-label">
+            <span>GAME SPEED</span>
+            <span id="speed-val">1.0x</span>
+        </div>
+        <input type="range" id="speed-slider" min="1" max="20" step="1" value="1">
     </div>
     <div id="player-health-container">
         <div id="player-health-bar"></div>
@@ -112,7 +148,7 @@
         // CONFIG
         const Enemy = {
             Tiyger: {
-                count: 0,
+                count: 0, // Default lower for broad compatibility, but scales to 10k
                 size: 2500,
                 healthMax: 35,
                 moveSpeed: 15,
@@ -133,7 +169,7 @@
                 isSideways: true
             },
             GalaxyDragon: {
-                count: 7500,
+                count: 1000,
                 size: 3200,
                 healthMax: 50,
                 moveSpeed: 12,
@@ -179,7 +215,8 @@
                 { id: 'Micro', size: 16, max: 9999 }
             ],
             LOD_INIT_TIME_SLICE: 1, // ms per frame
-            SPAWNS_PER_FRAME: 50
+            SPAWNS_PER_FRAME: 50,
+            GAME_SPEED: 1.0 // Can be set up to 20.0
         };
 
         let zoom = 0.35;
@@ -187,6 +224,7 @@
         const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0, health: PLAYER_HEALTH_MAX };
         let killCount = 0;
         let smoothedEnemies = 0;
+        let onScreenCount = 0;
         let spawnIndex = 0;
         const spawnList = [];
 
@@ -298,12 +336,25 @@
 
         const fallbackQueue = [];
         let isFallbackRunning = false;
+        const bakedStatus = {};
+        const inQueue = new Set();
 
         function runFallbackBaker() {
             if (fallbackQueue.length === 0) { isFallbackRunning = false; return; }
             isFallbackRunning = true;
 
-            for (let batch = 0; batch < 15 && fallbackQueue.length > 0; batch++) {
+            // Only sort when a new high-priority request comes in, not every tick
+            if (needsSort) {
+                fallbackQueue.sort((a, b) => {
+                    const aNeeded = (a.typeKey === lastRequestedType && a.tier.id === lastRequestedTier) ? 0 : 1;
+                    const bNeeded = (b.typeKey === lastRequestedType && b.tier.id === lastRequestedTier) ? 0 : 1;
+                    return aNeeded - bNeeded || a.tier.size - b.tier.size;
+                });
+                needsSort = false;
+            }
+
+            const startTime = performance.now();
+            while (fallbackQueue.length > 0 && (performance.now() - startTime < 2)) {
                 const task = fallbackQueue[0];
                 const assets = enemyAssets[task.typeKey];
                 if (!assets.caches[task.animType][task.tier.id]) assets.caches[task.animType][task.tier.id] = [];
@@ -319,47 +370,62 @@
                 task.currentFrame++;
 
                 if (task.currentFrame >= task.frameCount) {
+                    if (!bakedStatus[task.typeKey]) bakedStatus[task.typeKey] = {};
+                    if (!bakedStatus[task.typeKey][task.animType]) bakedStatus[task.typeKey][task.animType] = {};
+                    bakedStatus[task.typeKey][task.animType][task.tier.id] = true;
+
+                    inQueue.delete(`${task.typeKey}:${task.animType}:${task.tier.id}`);
                     fallbackQueue.shift();
                     workerTasksCount--;
+                    readyMapDirty = true; // Signal the draw loop to update its pointers
                 }
             }
-            if (fallbackQueue.length > 0) setTimeout(runFallbackBaker, 16);
+            if (fallbackQueue.length > 0) setTimeout(runFallbackBaker, 10);
             else isFallbackRunning = false;
         }
 
-        async function buildEnemyCache(typeKey) {
+        let lastRequestedType = null;
+        let lastRequestedTier = null;
+        let needsSort = false;
+        let readyMapDirty = true;
+
+        async function buildEnemyCache(typeKey, fullBake = false) {
             const cfg = Enemy[typeKey];
-            const assets = enemyAssets[typeKey];
-            const sortedTiers = [...PERFORMANCE.LOD_TIERS].sort((a, b) => a.size - b.size);
+            const tiersToQueue = fullBake ? PERFORMANCE.LOD_TIERS : PERFORMANCE.LOD_TIERS.filter(t => t.size <= 128);
 
-            let canUseWorker = isWorkerSafe;
-            let bitmaps = {};
-            if (canUseWorker) {
-                try {
-                    bitmaps = {
-                        walk: await createImageBitmap(assets.walk),
-                        death: await createImageBitmap(assets.death),
-                        attack: await createImageBitmap(assets.attack)
-                    };
-                } catch (e) {
-                    console.warn("[Baker] Image transfer blocked. Using fallback.");
-                    canUseWorker = false;
-                }
-            }
+            for (let tier of tiersToQueue) {
+                ['walk', 'death', 'attack'].forEach(anim => {
+                    const key = `${typeKey}:${anim}:${tier.id}`;
+                    if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) return;
 
-            for (let tier of sortedTiers) {
-                workerTasksCount += 3;
-                if (canUseWorker) {
-                    ['walk', 'death', 'attack'].forEach(a => {
-                        bakerWorker.postMessage({ typeKey, animType: a, sheet: bitmaps[a], tier, frameCount: cfg[a + 'Frames'], cols: cfg[a + 'Cols'], sourceSize: cfg[a + 'Size'] });
-                    });
-                } else {
-                    ['walk', 'death', 'attack'].forEach(a => {
-                        fallbackQueue.push({ typeKey, animType: a, tier, frameCount: cfg[a + 'Frames'], cols: cfg[a + 'Cols'], sourceSize: cfg[a + 'Size'], currentFrame: 0 });
-                    });
-                }
+                    workerTasksCount++;
+                    inQueue.add(key);
+                    fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
+                });
             }
-            if (!canUseWorker && !isFallbackRunning) runFallbackBaker();
+            needsSort = true;
+            if (!isFallbackRunning) runFallbackBaker();
+        }
+
+        function ensureTierBaking(typeKey, tierID) {
+            if (lastRequestedType === typeKey && lastRequestedTier === tierID) return;
+            const tier = PERFORMANCE.LOD_TIERS.find(t => t.id === tierID);
+            if (!tier) return;
+
+            lastRequestedType = typeKey;
+            lastRequestedTier = tierID;
+            needsSort = true;
+
+            const cfg = Enemy[typeKey];
+            ['walk', 'death', 'attack'].forEach(anim => {
+                const key = `${typeKey}:${anim}:${tier.id}`;
+                if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) return;
+
+                workerTasksCount++;
+                inQueue.add(key);
+                fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
+            });
+            if (!isFallbackRunning) runFallbackBaker();
         }
 
         function update(dt, now) {
@@ -372,68 +438,8 @@
 
             zoom += (targetZoom - zoom) * 0.1;
 
-            // Nearest Finding - only check spawned enemies
-            let closestDist = Infinity;
-            let found = -1;
-            for (let i = 0; i < spawnIndex; i++) {
-                const idx = i * stride;
-                if (data[idx + 8] <= 0) continue;
-                const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
-                const dSq = dx * dx + dy * dy;
-                if (dSq < closestDist) { closestDist = dSq; found = i; }
-            }
-            player.targetIdx = found;
-
-            // Move to Current Nearest Target
-            if (player.targetIdx !== -1) {
-                const tIdx = player.targetIdx * stride;
-                const dx = data[tIdx] - player.x;
-                const dy = data[tIdx + 1] - player.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                if (dist > 10) {
-                    player.x += (dx / dist) * PLAYER_SPEED;
-                    player.y += (dy / dist) * PLAYER_SPEED;
-                }
-
-                if (now - player.lastDamageTime > DAMAGE_INTERVAL) {
-                    player.lastDamageTime = now;
-                    const rSq = AOE_RADIUS * AOE_RADIUS;
-                    const px = player.x, py = player.y; // Player position for AOE
-                    for (let i = 0; i < spawnIndex; i++) {
-                        const idx = i * stride;
-                        if (data[idx + 8] <= 0) continue;
-
-                        const ddx = data[idx] - px;
-                        const ddy = data[idx + 1] - py;
-                        if (ddx * ddx + ddy * ddy < rSq) {
-                            // Take Damage
-                            data[idx + 8] -= DAMAGE_PER_POP;
-
-                            // Pop Damage Number
-                            damageNumbers.push({
-                                x: data[idx],
-                                y: data[idx + 1] - 50,
-                                val: DAMAGE_PER_POP,
-                                life: 1.0,
-                                vx: (Math.random() - 0.5) * 2,
-                                vy: -2 - Math.random() * 2
-                            });
-
-                            if (data[idx + 8] <= 0) {
-                                killCount++;
-                                // Initial death mark - start animation
-                                data[idx + 8] = 0;
-                                data[idx + 9] = 1; // Start death frame
-                            }
-                        }
-                    }
-                }
-            }
-
-            // --- PACK PHYSICS ---
+            // 1. CLEAR AND REBUILD GRID FIRST (Used for Physics AND Targeting)
             const gridOffset = (GRID_DIM * GRID_CELL) / 2;
-            // Selective clearing of grid
             for (let i = 0; i < occupiedCount; i++) heads[occupiedCells[i]] = -1;
             occupiedCount = 0;
 
@@ -447,6 +453,71 @@
                     if (heads[cIdx] === -1) occupiedCells[occupiedCount++] = cIdx;
                     next[i] = heads[cIdx];
                     heads[cIdx] = i;
+                }
+            }
+
+            // 2. Spatial Nearest Finding (Only every few steps or every frame for performance)
+            if (now - (player.lastTargetTime || 0) > 100) {
+                player.lastTargetTime = now;
+                let closestDist = Infinity;
+                let found = -1;
+                const searchRadius = 2; // Cells
+                const pgx = Math.floor(gridOffset / GRID_CELL);
+                const pgy = Math.floor(gridOffset / GRID_CELL);
+
+                for (let ox = -searchRadius; ox <= searchRadius; ox++) {
+                    for (let oy = -searchRadius; oy <= searchRadius; oy++) {
+                        let ptr = heads[(pgy + oy) * GRID_DIM + (pgx + ox)];
+                        while (ptr !== -1) {
+                            const idx = ptr * stride;
+                            const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
+                            const dSq = dx * dx + dy * dy;
+                            if (dSq < closestDist) { closestDist = dSq; found = ptr; }
+                            ptr = next[ptr];
+                        }
+                    }
+                }
+                player.targetIdx = found;
+            }
+
+            // 3. Movement and AOE Logic
+            if (player.targetIdx !== -1) {
+                const tIdx = player.targetIdx * stride;
+                const dx = data[tIdx] - player.x;
+                const dy = data[tIdx + 1] - player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 10) {
+                    player.x += (dx / dist) * PLAYER_SPEED;
+                    player.y += (dy / dist) * PLAYER_SPEED;
+                }
+
+                if (now - player.lastDamageTime > DAMAGE_INTERVAL) {
+                    player.lastDamageTime = now;
+                    const rSq = AOE_RADIUS * AOE_RADIUS;
+                    const pgx = Math.floor(gridOffset / GRID_CELL);
+                    const pgy = Math.floor(gridOffset / GRID_CELL);
+                    const rCell = Math.ceil(AOE_RADIUS / GRID_CELL);
+
+                    for (let ox = -rCell; ox <= rCell; ox++) {
+                        for (let oy = -rCell; oy <= rCell; oy++) {
+                            let ptr = heads[(pgy + oy) * GRID_DIM + (pgx + ox)];
+                            while (ptr !== -1) {
+                                const idx = ptr * stride;
+                                if (data[idx + 8] <= 0) { ptr = next[ptr]; continue; }
+                                const ddx = data[idx] - player.x, ddy = data[idx + 1] - player.y;
+                                if (ddx * ddx + ddy * ddy < rSq) {
+                                    data[idx + 8] -= DAMAGE_PER_POP;
+
+                                    if (damageNumbers.length < 100) {
+                                        damageNumbers.push({ x: data[idx], y: data[idx + 1] - 50, val: DAMAGE_PER_POP, life: 1.0, vx: (Math.random() - 0.5) * 2, vy: -2 - Math.random() * 2 });
+                                    }
+
+                                    if (data[idx + 8] <= 0) { killCount++; data[idx + 8] = 0; data[idx + 9] = 1; }
+                                }
+                                ptr = next[ptr];
+                            }
+                        }
+                    }
                 }
             }
 
@@ -481,10 +552,13 @@
                 const gx = Math.floor((px - player.x + gridOffset) / GRID_CELL);
                 const gy = Math.floor((py - player.y + gridOffset) / GRID_CELL);
                 let neighbors = 0;
+                const NEIGHBOR_CAP = 8; // Tighter cap for 10k enemies
+
                 for (let ox = -1; ox <= 1; ox++) {
                     for (let oy = -1; oy <= 1; oy++) {
-                        if (neighbors > 16) break; // Optimization: Cap neighbor checks
+                        if (neighbors > NEIGHBOR_CAP) break;
                         const cell = (gy + oy) * GRID_DIM + (gx + ox);
+                        if (cell < 0 || cell >= heads.length) continue;
                         let nIdx = heads[cell];
                         while (nIdx !== -1) {
                             if (nIdx !== i) {
@@ -497,7 +571,7 @@
                                     steerX += (vx / dist) * force;
                                     steerY += (vy / dist) * force;
                                     neighbors++;
-                                    if (neighbors > 16) break;
+                                    if (neighbors > NEIGHBOR_CAP) break;
                                 }
                             }
                             nIdx = next[nIdx];
@@ -566,7 +640,7 @@
 
             // Sync CSS Background for Zero-Cost Tile Overheads
             if (floorPattern) {
-                const bgSize = 1024 * zoom; // Assuming base tile is ~1024px or similar
+                const bgSize = 18144 * zoom; // 6x base tile size (1024 * 6)
                 const bgX = -player.x * zoom + (canvas.width / 2);
                 const bgY = -player.y * zoom + (canvas.height / 2);
                 document.body.style.backgroundPosition = `${bgX}px ${bgY}px`;
@@ -588,85 +662,92 @@
 
             // Background Tile Texture (Handled by CSS)
 
-            let onScreen = 0;
-            for (let i = 0; i < spawnIndex; i++) {
-                const idx = i * stride;
-                if (data[idx + 8] <= 0 && data[idx + 9] <= 0) continue;
-                if (data[idx] > left && data[idx] < right && data[idx + 1] > top && data[idx + 1] < bottom) onScreen++;
-            }
-
-            // Smoothing
-            smoothedEnemies += (onScreen - smoothedEnemies) * 0.15;
-
+            // Dynamic Smoothing Loop
+            smoothedEnemies += (onScreenCount - smoothedEnemies) * 0.15;
             let activeTierIdx = PERFORMANCE.LOD_TIERS.length - 1;
             for (let i = 0; i < PERFORMANCE.LOD_TIERS.length; i++) {
                 if (smoothedEnemies <= PERFORMANCE.LOD_TIERS[i].max) {
-                    activeTierIdx = i;
-                    break;
+                    activeTierIdx = i; break;
                 }
             }
+            const activeTierID = PERFORMANCE.LOD_TIERS[activeTierIdx].id;
 
-            const readyMap = {
-                Tiyger: { walk: [], death: [], attack: [] },
-                GalaxyDragon: { walk: [], death: [], attack: [] }
-            };
-
-            for (const type of ["Tiyger", "GalaxyDragon"]) {
-                const assets = enemyAssets[type];
-                ["walk", "death", "attack"].forEach(anim => {
-                    const cache = assets.caches[anim];
-                    readyMap[type][anim] = PERFORMANCE.LOD_TIERS.map(t => ({ id: t.id, frames: cache[t.id] }));
-                });
+            // Update Map Pointers (Lazy update only when needed)
+            if (!this.cachedReadyMap || readyMapDirty) {
+                this.cachedReadyMap = {
+                    Tiyger: { walk: [], death: [], attack: [] },
+                    GalaxyDragon: { walk: [], death: [], attack: [] }
+                };
+                for (const type of ["Tiyger", "GalaxyDragon"]) {
+                    const cache = enemyAssets[type].caches;
+                    ["walk", "death", "attack"].forEach(anim => {
+                        this.cachedReadyMap[type][anim] = PERFORMANCE.LOD_TIERS.map(t => ({ id: t.id, frames: cache[anim][t.id] }));
+                    });
+                }
+                readyMapDirty = false;
             }
 
-            for (let i = 0; i < spawnIndex; i++) {
-                const idx = i * stride;
-                const x = data[idx], y = data[idx + 1];
-                if (x < left || x > right || y < top || y > bottom) continue;
+            // High-Speed Direct Draw
+            const readyMap = this.cachedReadyMap;
+            const gridOffset = (GRID_DIM * GRID_CELL) / 2;
+            const gxMin = Math.max(0, Math.floor((left - player.x + gridOffset) / GRID_CELL)), gxMax = Math.min(GRID_DIM - 1, Math.floor((right - player.x + gridOffset) / GRID_CELL));
+            const gyMin = Math.max(0, Math.floor((top - player.y + gridOffset) / GRID_CELL)), gyMax = Math.min(GRID_DIM - 1, Math.floor((bottom - player.y + gridOffset) / GRID_CELL));
 
-                const rot = data[idx + 4], f = Math.floor(data[idx + 5]), look = data[idx + 7];
-                const health = data[idx + 8], df = Math.floor(data[idx + 9]), af = Math.floor(data[idx + 10]);
-                const typeKey = data[idx + 11] === 0 ? "Tiyger" : "GalaxyDragon";
-                const cfg = Enemy[typeKey], assets = enemyAssets[typeKey];
+            onScreenCount = 0;
+            for (let gy = gyMin; gy <= gyMax; gy++) {
+                for (let gx = gxMin; gx <= gxMax; gx++) {
+                    let ptr = heads[gy * GRID_DIM + gx];
+                    while (ptr !== -1) {
+                        const idx = ptr * stride;
+                        const x = data[idx], y = data[idx + 1];
+                        if (x > left && x < right && y > top && y < bottom) {
+                            const h = data[idx + 8], df = data[idx + 9];
+                            if (h > 0 || df > 0) {
+                                onScreenCount++;
+                                const f = Math.floor(data[idx + 5]), rot = data[idx + 4], look = data[idx + 7], af = Math.floor(data[idx + 10]);
+                                const typeKey = data[idx + 11] === 0 ? "Tiyger" : "GalaxyDragon";
+                                const cfg = Enemy[typeKey], assets = enemyAssets[typeKey];
 
-                const animType = (health <= 0 && df > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
-                const frameIdx = (health <= 0 && df > 0) ? df : (af > 0 ? af : f);
-                const tiers = readyMap[typeKey][animType];
-                let frameToDraw = null;
+                                const animType = (h <= 0 && df > 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
+                                const frameIdx = (h <= 0 && df > 0) ? df : (af > 0 ? af : f);
+                                const tiers = readyMap[typeKey][animType];
 
-                if (tiers[activeTierIdx].frames && tiers[activeTierIdx].frames[frameIdx]) {
-                    frameToDraw = tiers[activeTierIdx].frames[frameIdx];
-                } else {
-                    let offset = 1;
-                    while (activeTierIdx - offset >= 0 || activeTierIdx + offset < tiers.length) {
-                        const up = activeTierIdx - offset;
-                        if (up >= 0 && tiers[up].frames && tiers[up].frames[frameIdx]) {
-                            frameToDraw = tiers[up].frames[frameIdx]; break;
+                                let frameToDraw = null;
+                                if (tiers[activeTierIdx].frames && tiers[activeTierIdx].frames[frameIdx]) {
+                                    frameToDraw = tiers[activeTierIdx].frames[frameIdx];
+                                } else {
+                                    let offset = 1;
+                                    while (activeTierIdx - offset >= 0 || activeTierIdx + offset < tiers.length) {
+                                        const up = activeTierIdx - offset;
+                                        if (up >= 0 && tiers[up].frames && tiers[up].frames[frameIdx]) {
+                                            frameToDraw = tiers[up].frames[frameIdx]; break;
+                                        }
+                                        const down = activeTierIdx + offset;
+                                        if (down < tiers.length && tiers[down].frames && tiers[down].frames[frameIdx]) {
+                                            frameToDraw = tiers[down].frames[frameIdx]; break;
+                                        }
+                                        offset++;
+                                    }
+                                }
+
+                                ctx.save();
+                                ctx.translate(x, y);
+                                ctx.rotate(rot);
+                                if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+                                if (h <= 0 && df > 0) ctx.globalAlpha = Math.max(0, 1 - (df / cfg.deathFrames - 0.7) * 3);
+
+                                if (frameToDraw) ctx.drawImage(frameToDraw, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                                else {
+                                    const sheet = assets[animType];
+                                    const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
+                                    ctx.drawImage(sheet, (frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                                }
+                                ctx.restore();
+                            }
                         }
-                        const down = activeTierIdx + offset;
-                        if (down < tiers.length && tiers[down].frames && tiers[down].frames[frameIdx]) {
-                            frameToDraw = tiers[down].frames[frameIdx]; break;
-                        }
-                        offset++;
+                        ptr = next[ptr];
                     }
                 }
-
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(rot);
-                if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
-
-                const alpha = (health <= 0 && df > 0) ? Math.max(0, 1 - (df / cfg.deathFrames - 0.7) * 3) : 1.0;
-                if (alpha < 1) ctx.globalAlpha = alpha;
-
-                if (frameToDraw) {
-                    ctx.drawImage(frameToDraw, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
-                } else {
-                    const sheet = assets[animType];
-                    const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
-                    ctx.drawImage(sheet, (frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
-                }
-                ctx.restore();
             }
 
             // Player Visual
@@ -709,8 +790,14 @@
                     const dt = now - last; last = now;
                     t += dt; f++;
 
+                    // Sub-stepping logic for ultra-high speed without tunneling
+                    const steps = Math.min(10, Math.ceil(PERFORMANCE.GAME_SPEED));
+                    const stepDt = dt * (PERFORMANCE.GAME_SPEED / steps);
+
                     const sUpdate = performance.now();
-                    update(dt, now);
+                    for (let s = 0; s < steps; s++) {
+                        update(stepDt, now + (s * stepDt));
+                    }
                     physicsTimeSum += (performance.now() - sUpdate);
 
                     const sDraw = performance.now();
@@ -742,6 +829,15 @@
         load(Enemy.GalaxyDragon.deathPath, enemyAssets.GalaxyDragon.death);
         load(Enemy.GalaxyDragon.attackPath, enemyAssets.GalaxyDragon.attack);
         load(FLOOR_PATH, floorImg);
+
+        // Speed Controller Logic
+        const slider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        slider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            PERFORMANCE.GAME_SPEED = val;
+            speedVal.innerText = val.toFixed(1) + 'x';
+        });
     </script>
 </body>
 
