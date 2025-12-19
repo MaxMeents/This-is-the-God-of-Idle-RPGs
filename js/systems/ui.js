@@ -1,7 +1,7 @@
 function updateUI() {
     const hpPct = player.health / PLAYER_HEALTH_MAX;
     const hpBar = document.getElementById('player-health-bar');
-    hpBar.style.width = (hpPct * 100) + '%';
+    hpBar.style.height = (hpPct * 100) + '%';
 
     // Dynamic Color Interpolation (Redder Sooner)
     let topR, topG, topB, botR, botG, botB;
@@ -21,21 +21,21 @@ function updateUI() {
     hpBar.style.setProperty('--hp-top', `rgb(${topR},${topG},${topB})`);
     hpBar.style.setProperty('--hp-bot', `rgb(${botR},${botG},${botB})`);
 
-    // Shield Bar
+    // Shield Bar (Vertical)
     const shieldBar = document.getElementById('player-shield-bar');
     if (player.shieldActive) {
-        shieldBar.style.width = (player.shieldHP / player.shieldMaxHP * 100) + '%';
+        shieldBar.style.height = (player.shieldHP / player.shieldMaxHP * 100) + '%';
     } else {
-        shieldBar.style.width = '0%';
+        shieldBar.style.height = '0%';
     }
 
-    // Shield Charge Bar
+    // Shield Charge Bar (Vertical)
     const chargeBar = document.getElementById('shield-charge-bar');
     if (player.shieldActive) {
-        chargeBar.style.width = '100%'; // Full while active
+        chargeBar.style.height = '100%'; // Full while active
     } else {
         const pct = 1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown);
-        chargeBar.style.width = (pct * 100) + '%';
+        chargeBar.style.height = (pct * 100) + '%';
     }
 
     const targetKills = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
