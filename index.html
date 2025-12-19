@@ -58,17 +58,26 @@
             color: #aaa;
         }
 
-        #loading {
+        #player-health-container {
             position: fixed;
-            top: 0;
-            left: 0;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 30px;
+            background: #fff;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0, 150, 255, 0.5);
+            border-radius: 15px;
+            overflow: hidden;
+            z-index: 1000;
+        }
+
+        #player-health-bar {
             width: 100%;
             height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            z-index: 1000;
+            background: linear-gradient(90deg, #0096ff, #00d4ff);
+            transition: width 0.1s ease-out;
         }
     </style>
 </head>
@@ -86,6 +95,9 @@
             Screen follows player.
         </div>
     </div>
+    <div id="player-health-container">
+        <div id="player-health-bar"></div>
+    </div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -98,91 +110,155 @@
         const ctx = canvas.getContext('2d', { alpha: true });
 
         // CONFIG
-        const TIGER_COUNT = 300;
-        const TARGET_SIZE = 2540;
-        const TOTAL_FRAMES = 52;
-        const TIGER_HEALTH_MAX = 30;
+        const Enemy = {
+            Tiyger: {
+                count: 0,
+                size: 2500,
+                healthMax: 35,
+                moveSpeed: 15,
+                spacing: 120,
+                closestDist: 400,
+                startDist: 10000,
+                attackRange: 1500,
+                damageMin: 25,
+                damageMax: 100,
+                walkPath: 'img/Figer Walking/Spritesheet/1024x1024/grok-video-c940ad13-8ea0-454d-8b91-76e181b1f208 (10)_1024x1024_sheet.png',
+                deathPath: 'img/Figer Death/Spritesheet/512x512/Figer Death_512x512_sheet.png',
+                attackPath: 'img/Fiyger Forward Attack/Spritesheet/512x512/Fiyger Forward Attack_512x512_sheet.png',
+                walkFrames: 52, deathFrames: 145, attackFrames: 77,
+                walkAnimSpeed: 0.04, attackAnimSpeed: 4.0, deathAnimSpeed: 1.5,
+                baseRotation: Math.PI, // Facing Right (PI rotation from Left base)
+                isSideways: true
+            },
+            GalaxyDragon: {
+                count: 1500,
+                size: 3200,
+                healthMax: 50,
+                moveSpeed: 12,
+                spacing: 200,
+                closestDist: 600,
+                startDist: 12000,
+                attackRange: 2000,
+                damageMin: 40,
+                damageMax: 120,
+                walkPath: 'img/Enemies/Galaxy Dragon/Galaxy Dragon Flying Forward/Spritesheet/512x512/Galaxy Dragon Flying Forward_512x512_sheet.png',
+                deathPath: 'img/Enemies/Galaxy Dragon/Galaxy Dragon Flying Forward/Spritesheet/512x512/Galaxy Dragon Flying Forward_512x512_sheet.png',
+                attackPath: 'img/Enemies/Galaxy Dragon/Galaxy Dragon Flying Forward/Spritesheet/512x512/Galaxy Dragon Flying Forward_512x512_sheet.png',
+                walkFrames: 53, deathFrames: 53, attackFrames: 53,
+                walkCols: 8, deathCols: 8, attackCols: 8,
+                walkSize: 512, deathSize: 512, attackSize: 512, // Correct frame size from metadata
+                walkAnimSpeed: 0.02, attackAnimSpeed: 1.0, deathAnimSpeed: 1.0,
+                baseRotation: Math.PI / 2, // Facing North (Up)
+                isSideways: false
+            }
+        };
+
+        const totalEnemies = Enemy.Tiyger.count + Enemy.GalaxyDragon.count;
         const DAMAGE_PER_POP = 10;
         const DAMAGE_INTERVAL = 100; // ms
-        const AOE_RADIUS = 800;
+        const AOE_RADIUS = 900;
         const PLAYER_SPEED = 20;
-        const SPRITE_PATH = 'img/Figer Walking/Spritesheet/1024x1024/grok-video-c940ad13-8ea0-454d-8b91-76e181b1f208 (10)_1024x1024_sheet.png';
         const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.png';
-        const DEATH_PATH = 'img/Figer Death/Spritesheet/512x512/Figer Death_512x512_sheet.png';
-
+        const PLAYER_HEALTH_MAX = 35000;
         const MIN_ZOOM = 0.05;
-        const MAX_ZOOM = 20.0;
-        const TIGER_SPACING = 3400;
+        const MAX_ZOOM = 590.0;
 
-        // Camera & World State
+        const PERFORMANCE = {
+            // LOD Tiers sorted from Highest to Lowest quality
+            // Resolution options: 2048, 1024, 768, 512, 256, 128, 64, 32, 16
+            LOD_TIERS: [
+                { id: 'Ultra', size: 2048, max: 15 },
+                { id: 'High', size: 1024, max: 40 },
+                { id: 'MidHigh', size: 768, max: 70 },
+                { id: 'Med', size: 512, max: 120 },
+                { id: 'MedLow', size: 256, max: 250 },
+                { id: 'Low', size: 128, max: 500 },
+                { id: 'VLow', size: 64, max: 1000 },
+                { id: 'Tiny', size: 32, max: 2000 },
+                { id: 'Micro', size: 16, max: 9999 }
+            ]
+        };
+
         let zoom = 0.35;
         let targetZoom = 0.35;
-        const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0 };
+        const player = { x: 0, y: 0, targetIdx: -1, lastDamageTime: 0, health: PLAYER_HEALTH_MAX };
         let killCount = 0;
+        let smoothedEnemies = 0;
 
-        // Tiger Data: [x, y, vx, vy, rot, frame, speed, look, health, damageCooldown]
-        const data = new Float32Array(TIGER_COUNT * 10);
-        const stride = 10;
+        // Data: [x, y, vx, vy, rot, frame, speed, look, health, deathFrame, attackFrame, typeIndex]
+        const stride = 12;
+        const data = new Float32Array(totalEnemies * stride);
 
         // Floating Numbers Pooled
         const damageNumbers = []; // {x, y, val, life}
 
-        // Spatial Grid
-        const GRID_CELL = TIGER_SPACING * 1.1;
-        const GRID_DIM = 200;
+        // Spatial Grid - High-capacity for massive titans
+        const GRID_CELL = 4800; // GalaxyDragon.size * 1.5
+        const GRID_DIM = 400;
         const heads = new Int32Array(GRID_DIM * GRID_DIM).fill(-1);
-        const next = new Int32Array(TIGER_COUNT);
+        const next = new Int32Array(totalEnemies);
 
-        // Assets
-        const spriteSheet = new Image();
-        const frameCache = document.createElement('canvas');
-        const fCtx = frameCache.getContext('2d');
-        const cacheSize = 320;
+        // High-Performance Tiered Caching
+        const enemyAssets = {
+            Tiyger: { walk: new Image(), death: new Image(), attack: new Image(), caches: { walk: {}, death: {}, attack: {} } },
+            GalaxyDragon: { walk: new Image(), death: new Image(), attack: new Image(), caches: { walk: {}, death: {}, attack: {} } }
+        };
 
         const floorImg = new Image();
         let floorPattern = null;
 
-        const deathSheet = new Image();
-        const deathCache = document.createElement('canvas');
-        const dCtx = deathCache.getContext('2d');
-        const DEATH_FRAMES = 145;
-
-        function spawnTiger(i, far = false) {
+        function spawnEnemy(i, typeKey, far = false) {
+            const cfg = Enemy[typeKey];
             const idx = i * stride;
             const angle = Math.random() * Math.PI * 2;
-            const baseRadius = (TIGER_COUNT * TIGER_SPACING) / (Math.PI * 2);
-            // Spawn tigers near or beyond their target formation radius
-            const dist = far ? (baseRadius * 1.2 + Math.random() * baseRadius) : (baseRadius * 0.9 + Math.random() * baseRadius * 0.2);
+            const distBase = cfg.startDist + (Math.random() * cfg.startDist * 0.5);
+            const dist = far ? distBase * 1.5 : distBase;
 
-            data[idx] = player.x + Math.cos(angle) * dist;     // x
-            data[idx + 1] = player.y + Math.sin(angle) * dist; // y
-            data[idx + 6] = 7 + Math.random() * 8;  // Triple Speed
-            data[idx + 8] = TIGER_HEALTH_MAX;       // health
-            data[idx + 9] = 0;                      // damage cooldown
-            data[idx + 5] = Math.random() * TOTAL_FRAMES;
+            data[idx] = player.x + Math.cos(angle) * dist;
+            data[idx + 1] = player.y + Math.sin(angle) * dist;
+            data[idx + 6] = cfg.moveSpeed * (0.8 + Math.random() * 0.4);
+            data[idx + 8] = cfg.healthMax;
+            data[idx + 9] = 0;
+            data[idx + 5] = Math.random() * cfg.walkFrames;
+            data[idx + 10] = 0;
+            data[idx + 11] = typeKey === "Tiyger" ? 0 : 1;
         }
 
         function init() {
-            for (let i = 0; i < TIGER_COUNT; i++) spawnTiger(i, true);
+            let countT = 0;
+            for (let i = 0; i < Enemy.Tiyger.count; i++) spawnEnemy(countT++, "Tiyger", true);
+            for (let i = 0; i < Enemy.GalaxyDragon.count; i++) spawnEnemy(countT++, "GalaxyDragon", true);
             document.getElementById('loading').style.display = 'none';
         }
 
-        function buildCache() {
-            frameCache.width = cacheSize;
-            frameCache.height = cacheSize * TOTAL_FRAMES;
-            const cols = 8;
-            const sw = 1024, sh = 1024;
-            for (let i = 0; i < TOTAL_FRAMES; i++) {
-                fCtx.drawImage(spriteSheet, (i % cols) * sw, Math.floor(i / cols) * sh, sw, sh, 0, i * cacheSize, cacheSize, cacheSize);
-            }
+        function buildEnemyCache(typeKey) {
+            const cfg = Enemy[typeKey];
+            const assets = enemyAssets[typeKey];
 
-            // Build Death Cache
-            deathCache.width = cacheSize;
-            deathCache.height = cacheSize * DEATH_FRAMES;
-            const dCols = 13;
-            const dSw = 512, dSh = 512;
-            for (let i = 0; i < DEATH_FRAMES; i++) {
-                dCtx.drawImage(deathSheet, (i % dCols) * dSw, Math.floor(i / dCols) * dSh, dSw, dSh, 0, i * cacheSize, cacheSize, cacheSize);
+            const generateTiers = (img, key, frameCount, cols, sourceSize) => {
+                for (let tier of PERFORMANCE.LOD_TIERS) {
+                    const size = tier.size;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size * frameCount;
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+
+                    for (let i = 0; i < frameCount; i++) {
+                        ctx.drawImage(img, (i % cols) * sourceSize, Math.floor(i / cols) * sourceSize, sourceSize, sourceSize, 0, i * size, size, size);
+                    }
+                    assets.caches[key][tier.id] = canvas;
+                }
+            };
+
+            if (typeKey === "Tiyger") {
+                generateTiers(assets.walk, "walk", cfg.walkFrames, 8, 1024);
+                generateTiers(assets.death, "death", cfg.deathFrames, 13, 512);
+                generateTiers(assets.attack, "attack", cfg.attackFrames, 9, 512);
+            } else {
+                generateTiers(assets.walk, "walk", cfg.walkFrames, cfg.walkCols, cfg.walkSize);
+                generateTiers(assets.death, "death", cfg.deathFrames, cfg.deathCols, cfg.deathSize);
+                generateTiers(assets.attack, "attack", cfg.attackFrames, cfg.attackCols, cfg.attackSize);
             }
         }
 
@@ -191,19 +267,15 @@
             zoom += (targetZoom - zoom) * 0.1;
 
             // --- PLAYER COMBAT LOGIC ---
-            // Always look for the nearest tiger every frame
+            // Nearest Finding
             let closestDist = Infinity;
             let found = -1;
-            for (let i = 0; i < TIGER_COUNT; i++) {
+            for (let i = 0; i < totalEnemies; i++) {
                 const idx = i * stride;
-                if (data[idx + 8] <= 0) continue; // Skip dead/respawning
-                const dx = data[idx] - player.x;
-                const dy = data[idx + 1] - player.y;
+                if (data[idx + 8] <= 0) continue;
+                const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
                 const dSq = dx * dx + dy * dy;
-                if (dSq < closestDist) {
-                    closestDist = dSq;
-                    found = i;
-                }
+                if (dSq < closestDist) { closestDist = dSq; found = i; }
             }
             player.targetIdx = found;
 
@@ -219,15 +291,11 @@
                     player.y += (dy / dist) * PLAYER_SPEED;
                 }
 
-                // 3. AOE Damage Ticks
                 if (now - player.lastDamageTime > DAMAGE_INTERVAL) {
                     player.lastDamageTime = now;
-                    // Detect all tigers in radius
-                    const px = player.x;
-                    const py = player.y;
                     const rSq = AOE_RADIUS * AOE_RADIUS;
-
-                    for (let i = 0; i < TIGER_COUNT; i++) {
+                    const px = player.x, py = player.y; // Player position for AOE
+                    for (let i = 0; i < totalEnemies; i++) {
                         const idx = i * stride;
                         if (data[idx + 8] <= 0) continue;
 
@@ -258,10 +326,10 @@
                 }
             }
 
-            // --- TIGER PACK LOGIC ---
+            // --- PACK PHYSICS ---
             const gridOffset = (GRID_DIM * GRID_CELL) / 2;
             heads.fill(-1);
-            for (let i = 0; i < TIGER_COUNT; i++) {
+            for (let i = 0; i < totalEnemies; i++) {
                 const idx = i * stride;
                 const gx = Math.floor((data[idx] - player.x + gridOffset) / GRID_CELL);
                 const gy = Math.floor((data[idx + 1] - player.y + gridOffset) / GRID_CELL);
@@ -272,20 +340,15 @@
                 }
             }
 
-            const pSpace = TIGER_SPACING;
-            const pSpaceSq = pSpace * pSpace;
-            // Scale rotation circle based on spacing and count
-            const targetRadius = (TIGER_COUNT * pSpace) / (Math.PI * 2);
-
-            for (let i = 0; i < TIGER_COUNT; i++) {
+            for (let i = 0; i < totalEnemies; i++) {
                 const idx = i * stride;
+                const typeKey = data[idx + 11] === 0 ? "Tiyger" : "GalaxyDragon";
+                const cfg = Enemy[typeKey];
+
                 if (data[idx + 8] <= 0) {
-                    // Death Animation Progress
                     if (data[idx + 9] > 0) {
-                        data[idx + 9] += 1.5; // playback speed
-                        if (data[idx + 9] >= DEATH_FRAMES) {
-                            spawnTiger(i, true);
-                        }
+                        data[idx + 9] += cfg.deathAnimSpeed;
+                        if (data[idx + 9] >= cfg.deathFrames) spawnEnemy(i, typeKey, true);
                     }
                     continue;
                 }
@@ -293,20 +356,24 @@
                 const px = data[idx], py = data[idx + 1];
                 const dx = player.x - px, dy = player.y - py;
                 const d = Math.sqrt(dx * dx + dy * dy);
+                const look = Math.atan2(dy, dx);
+                const lookX = Math.cos(look), lookY = Math.sin(look);
 
-                const look = Math.atan2(player.y - py, player.x - px);
-                const lookX = Math.cos(look);
-                const lookY = Math.sin(look);
+                const targetRadius = cfg.closestDist;
+                const pSpace = cfg.size + cfg.spacing;
+                const pSpaceSq = pSpace * pSpace;
 
-                // 1. Formation (Only pull forward, never push back)
-                const fLimit = Math.max(0, d - targetRadius);
-                let steerX = lookX * fLimit * 0.2;
-                let steerY = lookY * fLimit * 0.2;
+                const distToTarget = Math.abs(d - targetRadius);
+                const pullDir = d > targetRadius ? 1 : -0.5;
+                let steerX = lookX * distToTarget * 0.5 * pullDir;
+                let steerY = lookY * distToTarget * 0.5 * pullDir;
 
                 const gx = Math.floor((px - player.x + gridOffset) / GRID_CELL);
                 const gy = Math.floor((py - player.y + gridOffset) / GRID_CELL);
+                let neighbors = 0;
                 for (let ox = -1; ox <= 1; ox++) {
                     for (let oy = -1; oy <= 1; oy++) {
+                        if (neighbors > 16) break; // Optimization: Cap neighbor checks
                         const cell = (gy + oy) * GRID_DIM + (gx + ox);
                         let nIdx = heads[cell];
                         while (nIdx !== -1) {
@@ -316,10 +383,11 @@
                                 const dSq = vx * vx + vy * vy;
                                 if (dSq < pSpaceSq && dSq > 0) {
                                     const dist = Math.sqrt(dSq);
-                                    // Massive boost to repulsion force for giant tigers
                                     const force = ((pSpace - dist) / pSpace) * 40;
                                     steerX += (vx / dist) * force;
                                     steerY += (vy / dist) * force;
+                                    neighbors++;
+                                    if (neighbors > 16) break;
                                 }
                             }
                             nIdx = next[nIdx];
@@ -327,27 +395,48 @@
                     }
                 }
 
-                // --- STRICT FORWARD ONLY LOCK ---
+                // --- SETTLING FORWARD LOCK ---
                 const dot = steerX * lookX + steerY * lookY;
-                // If dot is negative, tiger is being pushed backwards.
-                // We strictly remove the backward component so they only swerve or stop.
-                if (dot < 0) {
-                    steerX -= lookX * dot;
-                    steerY -= lookY * dot;
+                // Allow a small amount of backward movement to let the pack "settle"
+                // but keep it primarily forward-facing.
+                const backwardLimit = -2;
+                if (dot < backwardLimit) {
+                    steerX -= lookX * (dot - backwardLimit);
+                    steerY -= lookY * (dot - backwardLimit);
                 }
 
                 const mag = Math.sqrt(steerX * steerX + steerY * steerY);
                 if (mag > 0.1) {
-                    const speed = Math.min(data[idx + 6] * 2, mag * 20); // Much more aggressive reaction
+                    const speed = Math.min(data[idx + 6] * 2, mag * 20);
                     const moveAngle = Math.atan2(steerY, steerX);
                     data[idx] += Math.cos(moveAngle) * speed;
                     data[idx + 1] += Math.sin(moveAngle) * speed;
-
                     data[idx + 7] = look;
-                    data[idx + 4] = look + Math.PI;
-                    data[idx + 5] = (mag > 0.3) ? (data[idx + 5] + speed * 0.1) % TOTAL_FRAMES : 0;
-                } else { data[idx + 5] = 0; }
+                    data[idx + 4] = look + cfg.baseRotation;
+                    data[idx + 5] = (mag > 0.3) ? (data[idx + 5] + speed * cfg.walkAnimSpeed) % cfg.walkFrames : 0;
+                } else {
+                    data[idx + 5] = 0;
+                    if (d < cfg.attackRange * 1.5) { data[idx + 7] = look; data[idx + 4] = look + cfg.baseRotation; }
+                }
+
+                // --- ATTACK LOGIC ---
+                if (d < cfg.attackRange && data[idx + 8] > 0) {
+                    if (data[idx + 10] === 0) data[idx + 10] = 0.1;
+                    else {
+                        const prevF = Math.floor(data[idx + 10]);
+                        data[idx + 10] += cfg.attackAnimSpeed;
+                        const currF = Math.floor(data[idx + 10]);
+                        if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
+                            player.health -= cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin);
+                            if (player.health < 0) { player.health = 0; setTimeout(() => location.reload(), 1000); }
+                        }
+                        if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
+                    }
+                } else { data[idx + 10] = 0; }
             }
+
+            // Update UI
+            document.getElementById('player-health-bar').style.width = (player.health / PLAYER_HEALTH_MAX * 100) + '%';
 
             // Update Damage Numbers
             for (let i = damageNumbers.length - 1; i >= 0; i--) {
@@ -378,7 +467,7 @@
             ctx.translate(-player.x, -player.y);
 
             // Culling bounds (+100px margin)
-            const margin = 100 + (TARGET_SIZE / 2);
+            const margin = 100 + (Math.max(Enemy.Tiyger.size, Enemy.GalaxyDragon.size) / 2);
             const left = player.x - (cx / zoom) - margin;
             const right = player.x + (cx / zoom) + margin;
             const top = player.y - (cy / zoom) - margin;
@@ -386,26 +475,53 @@
 
             // Background Tile Texture (Handled by CSS)
 
-            // Tigers
-            for (let i = 0; i < TIGER_COUNT; i++) {
+            // Dynamic LOD Selection (Exact On-Screen Count + Smoothing)
+            let onScreen = 0;
+            for (let i = 0; i < totalEnemies; i++) {
+                const idx = i * stride;
+                if (data[idx + 8] <= 0 && data[idx + 9] <= 0) continue;
+                if (data[idx] > left && data[idx] < right && data[idx + 1] > top && data[idx + 1] < bottom) onScreen++;
+            }
+
+            // Apply smoothing to prevent resolution flicker
+            smoothedEnemies += (onScreen - smoothedEnemies) * 0.1;
+
+            let activeTier = PERFORMANCE.LOD_TIERS[PERFORMANCE.LOD_TIERS.length - 1];
+            for (let tier of PERFORMANCE.LOD_TIERS) {
+                if (smoothedEnemies <= tier.max) {
+                    activeTier = tier;
+                    break;
+                }
+            }
+            const currentSize = activeTier.size;
+            const tierID = activeTier.id;
+
+            for (let i = 0; i < totalEnemies; i++) {
                 const idx = i * stride;
                 const x = data[idx], y = data[idx + 1];
                 if (x < left || x > right || y < top || y > bottom) continue;
 
                 const rot = data[idx + 4], frame = Math.floor(data[idx + 5]), look = data[idx + 7];
-                const health = data[idx + 8];
-                const deathFrame = Math.floor(data[idx + 9]);
+                const health = data[idx + 8], deathFrame = Math.floor(data[idx + 9]), attackFrame = Math.floor(data[idx + 10]);
+                const typeKey = data[idx + 11] === 0 ? "Tiyger" : "GalaxyDragon";
+                const cfg = Enemy[typeKey], assets = enemyAssets[typeKey];
 
                 ctx.setTransform(zoom * Math.cos(rot), zoom * Math.sin(rot), -zoom * Math.sin(rot), zoom * Math.cos(rot), cx + (x - player.x) * zoom, cy + (y - player.y) * zoom);
-                if (Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
+                if (cfg.isSideways && Math.abs(look) < Math.PI / 2) ctx.scale(1, -1);
 
                 if (health > 0) {
-                    ctx.drawImage(frameCache, 0, frame * cacheSize, cacheSize, cacheSize, -TARGET_SIZE / 2, -TARGET_SIZE / 2, TARGET_SIZE, TARGET_SIZE);
+                    if (attackFrame > 0) {
+                        const safeF = Math.min(cfg.attackFrames - 1, attackFrame);
+                        ctx.drawImage(assets.caches.attack[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                    } else {
+                        const safeF = Math.min(cfg.walkFrames - 1, frame);
+                        ctx.drawImage(assets.caches.walk[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
+                    }
                 } else if (deathFrame > 0) {
-                    // Fade out at end of animation
-                    const alpha = Math.max(0, 1 - (deathFrame / DEATH_FRAMES - 0.7) * 3);
+                    const alpha = Math.max(0, 1 - (deathFrame / cfg.deathFrames - 0.7) * 3);
                     ctx.globalAlpha = alpha;
-                    ctx.drawImage(deathCache, 0, deathFrame * cacheSize, cacheSize, cacheSize, -TARGET_SIZE / 2, -TARGET_SIZE / 2, TARGET_SIZE, TARGET_SIZE);
+                    const safeF = Math.min(cfg.deathFrames - 1, deathFrame);
+                    ctx.drawImage(assets.caches.death[tierID], 0, safeF * currentSize, currentSize, currentSize, -cfg.size / 2, -cfg.size / 2, cfg.size, cfg.size);
                     ctx.globalAlpha = 1.0;
                 }
             }
@@ -431,14 +547,16 @@
         window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
         window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom)); });
 
-        let loadedCount = 0;
+        let loadedCt = 0;
+        const totalToLoad = 7; // T(3) + GD(3) + Floor(1)
         function onAssetLoad() {
-            loadedCount++;
-            if (loadedCount === 3) {
-                // Apply texture to body instead of making a pattern
+            loadedCt++;
+            if (loadedCt === totalToLoad) {
                 document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
-                floorPattern = true; // Flag for draw loop
-                buildCache(); init();
+                floorPattern = true;
+                buildEnemyCache("Tiyger");
+                buildEnemyCache("GalaxyDragon");
+                init();
                 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
                 let last = 0, f = 0, t = 0;
                 function loop(now) {
@@ -451,13 +569,14 @@
             }
         }
 
-        spriteSheet.onload = onAssetLoad;
-        floorImg.onload = onAssetLoad;
-        deathSheet.onload = onAssetLoad;
-
-        spriteSheet.src = SPRITE_PATH;
-        floorImg.src = FLOOR_PATH;
-        deathSheet.src = DEATH_PATH;
+        const load = (path, img) => { img.onload = onAssetLoad; img.src = path; };
+        load(Enemy.Tiyger.walkPath, enemyAssets.Tiyger.walk);
+        load(Enemy.Tiyger.deathPath, enemyAssets.Tiyger.death);
+        load(Enemy.Tiyger.attackPath, enemyAssets.Tiyger.attack);
+        load(Enemy.GalaxyDragon.walkPath, enemyAssets.GalaxyDragon.walk);
+        load(Enemy.GalaxyDragon.deathPath, enemyAssets.GalaxyDragon.death);
+        load(Enemy.GalaxyDragon.attackPath, enemyAssets.GalaxyDragon.attack);
+        load(FLOOR_PATH, floorImg);
     </script>
 </body>
 

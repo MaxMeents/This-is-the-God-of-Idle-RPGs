@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Galaxy Dragon Flying Forward
+FORMAT: Sprite Sheet
+SIZE: 256x256 (256x256px)
+----------------------------------------
+Total Frames: 53
+Grid Layout: 8 columns x 7 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 1.1x
+Target Playback FPS: 26.40
+----------------------------------------
+USER COMMENTS:
+2.11
+4.33

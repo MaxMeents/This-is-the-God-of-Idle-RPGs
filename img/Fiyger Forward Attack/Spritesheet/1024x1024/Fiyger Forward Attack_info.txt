@@ -1,0 +1,16 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Fiyger Forward Attack
+FORMAT: Sprite Sheet
+SIZE: 1024x1024 (1024x1024px)
+----------------------------------------
+Total Frames: 77
+Grid Layout: 9 columns x 9 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 5x
+Target Playback FPS: 120.00
+----------------------------------------
+USER COMMENTS:
+0
+3.21
