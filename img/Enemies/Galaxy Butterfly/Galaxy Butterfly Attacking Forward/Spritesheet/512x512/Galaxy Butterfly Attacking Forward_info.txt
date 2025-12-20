@@ -1,0 +1,15 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Galaxy Butterfly Attacking Forward
+FORMAT: Sprite Sheet
+SIZE: 512x512 (512x512px)
+----------------------------------------
+Total Frames: 57
+Grid Layout: 8 columns x 8 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 3x
+Target Playback FPS: 72.00
+----------------------------------------
+USER COMMENTS:
+No comments.

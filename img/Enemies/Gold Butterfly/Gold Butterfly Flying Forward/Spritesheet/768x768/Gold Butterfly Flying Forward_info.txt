@@ -1,0 +1,15 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Gold Butterfly Flying Forward
+FORMAT: Sprite Sheet
+SIZE: 768x768 (768x768px)
+----------------------------------------
+Total Frames: 18
+Grid Layout: 5 columns x 4 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 3x
+Target Playback FPS: 72.00
+----------------------------------------
+USER COMMENTS:
+No comments.
