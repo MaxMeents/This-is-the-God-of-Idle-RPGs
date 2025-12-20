@@ -57,6 +57,20 @@ let floorPattern = null;
  */
 function bakeShip() {
     if (shipAssets.baked) return;
+
+    // CRITICAL: Verify all ship images are fully loaded before baking
+    const allImagesLoaded =
+        shipAssets.onImg.complete && shipAssets.onImg.naturalWidth > 0 &&
+        shipAssets.fullImg.complete && shipAssets.fullImg.naturalWidth > 0 &&
+        shipAssets.shieldOnImg.complete && shipAssets.shieldOnImg.naturalWidth > 0 &&
+        shipAssets.shieldTurnOnImg.complete && shipAssets.shieldTurnOnImg.naturalWidth > 0;
+
+    if (!allImagesLoaded) {
+        console.warn('[SHIP] Cannot bake ship - images not fully loaded yet');
+        return;
+    }
+
+    console.log('[SHIP] All ship images loaded, baking textures...');
     const sc = SHIP_CONFIG;
     const bake = (img, frames, cols, size, targetCache, targetSize) => {
         for (let i = 0; i < frames; i++) {
@@ -78,6 +92,7 @@ function bakeShip() {
     shipAssets.pixiShieldOn = shipAssets.shieldOnCache.map(c => PIXI.Texture.from(c));
     shipAssets.pixiShieldTurnOn = shipAssets.shieldTurnOnCache.map(c => PIXI.Texture.from(c));
     shipAssets.baked = true;
+    console.log('[SHIP] Ship textures baked successfully!');
 }
 
 /**
@@ -209,6 +224,15 @@ function finalizeAssets() {
     floorPattern = true;
     bakeShip();
     bakeSkills(); // Bake buttons/skills now that images are loaded
+
+    // CRITICAL: Don't start the game until ship is baked
+    if (!shipAssets.baked) {
+        console.warn('[SHIP] Ship not baked yet, retrying in 100ms...');
+        setTimeout(finalizeAssets, 100);
+        return;
+    }
+
+    console.log('[GAME] All assets ready, initializing game...');
     init(true);
 }
 
@@ -227,12 +251,19 @@ window.addEventListener('DOMContentLoaded', () => {
 
     shipAssets.onImg.src = SHIP_CONFIG.onPath;
     shipAssets.onImg.onload = onAssetLoad;
+    shipAssets.onImg.onerror = () => console.error('[SHIP] Failed to load onImg:', SHIP_CONFIG.onPath);
+
     shipAssets.fullImg.src = SHIP_CONFIG.fullPath;
     shipAssets.fullImg.onload = onAssetLoad;
+    shipAssets.fullImg.onerror = () => console.error('[SHIP] Failed to load fullImg:', SHIP_CONFIG.fullPath);
+
     shipAssets.shieldOnImg.src = SHIP_CONFIG.shieldOnPath;
     shipAssets.shieldOnImg.onload = onAssetLoad;
+    shipAssets.shieldOnImg.onerror = () => console.error('[SHIP] Failed to load shieldOnImg:', SHIP_CONFIG.shieldOnPath);
+
     shipAssets.shieldTurnOnImg.src = SHIP_CONFIG.shieldTurnOnPath;
     shipAssets.shieldTurnOnImg.onload = onAssetLoad;
+    shipAssets.shieldTurnOnImg.onerror = () => console.error('[SHIP] Failed to load shieldTurnOnImg:', SHIP_CONFIG.shieldTurnOnPath);
 
     floorImg.src = FLOOR_PATH;
     floorImg.onload = onAssetLoad;
