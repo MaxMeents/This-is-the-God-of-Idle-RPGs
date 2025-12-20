@@ -120,10 +120,14 @@ function updatePlayerShield(dt, sc) {
 function findNearestEnemy() {
     let closestDistSq = Infinity;
     let found = -1;
+    const maxDetectionSq = SHIP_CONFIG.detectionRadius * SHIP_CONFIG.detectionRadius;
+
     // Localized search based on player's current grid cell
     const pgx = Math.floor((player.x + GRID_WORLD_OFFSET) / GRID_CELL);
     const pgy = Math.floor((player.y + GRID_WORLD_OFFSET) / GRID_CELL);
-    const searchRadius = 2;
+
+    // Calculate search radius based on detection range
+    const searchRadius = Math.ceil(SHIP_CONFIG.detectionRadius / GRID_CELL);
 
     for (let ox = -searchRadius; ox <= searchRadius; ox++) {
         const row = (pgy + ox);
@@ -141,13 +145,20 @@ function findNearestEnemy() {
                 if (data[idx + 8] > 0) {
                     const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
                     const dSq = dx * dx + dy * dy;
-                    if (dSq < closestDistSq) { closestDistSq = dSq; found = ptr; }
+                    if (dSq < closestDistSq && dSq < maxDetectionSq) {
+                        closestDistSq = dSq;
+                        found = ptr;
+                    }
                 }
                 ptr = next[ptr];
             }
         }
     }
     player.targetIdx = found;
+
+    if (Math.random() < 0.01) {
+        console.log(`[TARGETING] Nearest enemy: ${found}, closestDist: ${Math.sqrt(closestDistSq).toFixed(0)}, maxDetection: ${SHIP_CONFIG.detectionRadius}`);
+    }
 }
 
 /**
@@ -183,6 +194,10 @@ function updatePlayerMovement(dt, sc) {
         const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
         const dSq = dx * dx + dy * dy;
         const d = Math.sqrt(dSq);
+
+        if (Math.random() < 0.001) {
+            console.log(`[MOVEMENT] Target found! Distance: ${d.toFixed(0)}, TargetIdx: ${player.targetIdx}`);
+        }
 
         const targetRot = Math.atan2(dy, dx);
         let diff = targetRot - player.rotation;

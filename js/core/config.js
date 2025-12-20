@@ -41,7 +41,8 @@ const SHIP_CONFIG = {
     shieldMaxHealthMult: 3,
     shieldDuration: 10000,
     shieldCooldown: 15000,
-    shieldVisualSize: 1200
+    shieldVisualSize: 1200,
+    detectionRadius: 100000  // How far the ship can detect enemies
 };
 
 /**
@@ -108,7 +109,7 @@ const MAX_ZOOM = 2590.0;
 const DAMAGE_PER_POP = 10;
 const DAMAGE_INTERVAL = 100;
 const AOE_RADIUS = 900;
-const PLAYER_SPEED = 20;
+const PLAYER_SPEED = 80;
 
 /**
  * SPATIAL PARTITIONING

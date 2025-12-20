@@ -59,11 +59,12 @@ function initRendererPools() {
     playerContainer.addChild(shieldSprite);
 
     // 5. Skills (must be in worldContainer for world-space positioning)
+    // Add them right after the floor tile so they render UNDER enemies
     for (let i = 0; i < 200; i++) {
         const s = new PIXI.Sprite();
         s.anchor.set(0.5);
         s.visible = false;
-        worldContainer.addChild(s);
+        worldContainer.addChildAt(s, 1 + i); // Insert after floor (index 0)
         skillSpritePool.push(s);
     }
 
