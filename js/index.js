@@ -1,12 +1,33 @@
+/**
+ * GAME CORE (Index)
+ * This file coordinates the loading sequence, the main game loop, and 
+ * high-level stage mechanics.
+ */
+
+/**
+ * INITIALIZE GAME
+ * Sets up (or resets) all global variables for a new session.
+ */
 function init(firstLoad = false) {
     if (firstLoad) {
-        // Only use GalaxyDragon (filter keys with count > 0)
-        const validKeys = enemyKeys.filter(k => Enemy[k].count > 0);
-        for (let i = 0; i < totalEnemies; i++) {
-            spawnList.push(validKeys[i % validKeys.length]);
+        // Multi-type mixing: fill spawnList respecting count ratios
+        // e.g., 1800 Galaxy Dragons mixed with 200 Phoenixes.
+        enemyKeys.forEach(k => {
+            const c = Enemy[k].count;
+            for (let i = 0; i < c; i++) {
+                spawnList.push(k);
+            }
+        });
+
+        // Robust Fisher-Yates Shuffle
+        // Ensures that Galaxy Dragons and Phoenixes are evenly distributed across all stages.
+        for (let i = spawnList.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [spawnList[i], spawnList[j]] = [spawnList[j], spawnList[i]];
         }
-        spawnList.sort(() => Math.random() - 0.5);
     }
+
+    // Combat State Reset
     spawnIndex = 0;
     killCount = 0;
     stageKillCount = 0;
@@ -14,35 +35,48 @@ function init(firstLoad = false) {
     player.shieldActive = false;
     player.shieldCooldownRemaining = 0;
     player.shieldHP = player.shieldMaxHP;
-    player.x = 0; player.y = 0;
     player.targetIdx = -1;
     activeSkills.length = 0;
-    damageNumbers.length = 0;
+    damageNumbers.forEach(d => d.active = false);
 
-    // Reset Camera & Travel (Partial)
     isTraveling = false;
     bossMode = false;
+
+    // Initial Camera Setup
     if (firstLoad) {
         zoom = 0.05;
         targetZoom = 0.05;
     }
 
+    // Position player at the center of the current stage on the massive world coordinate grid
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     player.x = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     player.y = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
-    data.fill(0); // Wipe physics data
+    data.fill(0); // Clear physical presence of all enemies
 }
 
+/**
+ * FX UPDATER
+ * Handles the floating damage numbers.
+ */
 function updateDamageNumbers(dt) {
-    for (let i = damageNumbers.length - 1; i >= 0; i--) {
+    const gameSpd = PERFORMANCE.GAME_SPEED;
+    const dtMult = (dt / 16.6) * gameSpd;
+    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         const dn = damageNumbers[i];
-        dn.life -= 0.02 * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-        dn.x += dn.vx * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-        dn.y += dn.vy * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-        if (dn.life <= 0) damageNumbers.splice(i, 1);
+        if (!dn.active) continue;
+        dn.life -= 0.02 * dtMult;
+        dn.x += dn.vx * dtMult;
+        dn.y += dn.vy * dtMult;
+        if (dn.life <= 0) dn.active = false;
     }
 }
 
+/**
+ * PROGRESSIVE SPAWNING
+ * To prevent the game from lagging at the start of a stage, we only 
+ * spawn 20 enemies per frame until the requirement is met.
+ */
 function handleSpawning() {
     const targetCap = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
     for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < targetCap; i++) {
@@ -51,14 +85,21 @@ function handleSpawning() {
     }
 }
 
+/**
+ * GAME OVER / RESET
+ */
 function softReset() {
-    currentStage = 1; // Death penalty
+    currentStage = 1;
     lastGridUpdate = 0;
     lastTargetUpdate = 0;
     lastCombatUpdate = 0;
     init();
 }
 
+/**
+ * TRAVEL SYSTEM
+ * Initiates the 'Speeding Off' sequence between stages.
+ */
 function changeStage(newStage) {
     if (isTraveling) return;
     currentStage = newStage;
@@ -78,30 +119,38 @@ function arriveAtNewStage() {
     isTraveling = false;
     if (currentStage === 10) {
         bossMode = true;
-        // Logic for super big boss would go here:
-        // Set specific enemy stats for boss
     } else {
         bossMode = false;
     }
-    // Clear old enemies to make way for new stage scaling
+    // Reposition all enemies to start appearing around the new location
     for (let i = 0; i < spawnIndex; i++) {
         spawnEnemy(i, spawnList[i], true);
     }
 }
 
+/**
+ * SKILL ANIMATION UPDATER
+ */
 function updateSkills(dt, now) {
     const cfg = SKILLS.MulticolorXFlame;
+    const speed = cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+    const maxFrames = cfg.skillFrames;
     for (let i = activeSkills.length - 1; i >= 0; i--) {
         const s = activeSkills[i];
-        s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-        if (s.frame >= cfg.skillFrames) activeSkills.splice(i, 1);
+        s.frame += speed;
+        if (s.frame >= maxFrames) activeSkills.splice(i, 1);
     }
 }
 
+// Stats tracking for the HUD
 let last = 0, f = 0, t = 0;
 let physicsTimeSum = 0;
 let drawTimeSum = 0;
 
+/**
+ * MAIN GAME LOOP
+ * The heartbeat of the application. High-precision timing and multi-stepping logic.
+ */
 function loop(now) {
     const dt = now - last; last = now;
     if (spawnList.length === 0) {
@@ -110,37 +159,48 @@ function loop(now) {
     }
     t += dt; f++;
 
+    // SUB-STEPPING: If GAME_SPEED > 1, we run multiple simulation steps per frame
+    // to maintain physics accuracy while visually moving fast.
     const steps = Math.min(10, Math.ceil(PERFORMANCE.GAME_SPEED));
     const stepDt = dt * (PERFORMANCE.GAME_SPEED / steps);
 
     handleSpawning();
     updateDamageNumbers(dt);
 
+    // Physics Engine Tick
     const sUpdate = performance.now();
     for (let s = 0; s < steps; s++) {
-        update(stepDt, now + (s * stepDt));
+        update(stepDt, now + (s * stepDt), s === 0);
     }
     updateSkills(dt, now);
     physicsTimeSum += (performance.now() - sUpdate);
 
+    // Renderer Tick
     const sDraw = performance.now();
     draw();
     drawTimeSum += (performance.now() - sDraw);
 
+    // UI Tick (Throttled inside the function via cache checks)
     updateUI();
 
+    // FPS / Performance HUD updates every 1 second
     if (t > 1000) {
         const avgPhys = (physicsTimeSum / f).toFixed(2);
         const avgDraw = (drawTimeSum / f).toFixed(2);
-        document.getElementById('fps').innerText = `FPS: ${f} | Logic: ${avgPhys}ms | Draw: ${avgDraw}ms | Tasks: ${workerTasksCount}`;
+        const statsTxt = `FPS: ${f} | Logic: ${avgPhys}ms | Draw: ${avgDraw}ms | Tasks: ${workerTasksCount}`;
+        document.getElementById('fps').innerText = statsTxt;
+        console.log("[Performance]", statsTxt); // User can copy this
         f = 0; t = 0; physicsTimeSum = 0; drawTimeSum = 0;
     }
     requestAnimationFrame(loop);
 }
 
-// Global script starts
+// BROWSER LISTENERS
 window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-window.addEventListener('wheel', (e) => { targetZoom *= e.deltaY > 0 ? 0.9 : 1.1; targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom)); });
+window.addEventListener('wheel', (e) => {
+    targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
+    targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
+});
 
 const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
@@ -148,7 +208,10 @@ canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
 initUIListeners();
 
-// Load Assets
+/**
+ * ASSET BOOTSTRAP
+ * Kicks off massive parallel image loading.
+ */
 const loadSkillSheets = () => {
     skillAssets.buttonImg.onload = () => {
         onAssetLoad();
@@ -169,6 +232,7 @@ enemyKeys.forEach(k => {
     loadImg(Enemy[k].deathPath, enemyAssets[k].death);
     loadImg(Enemy[k].attackPath, enemyAssets[k].attack);
 });
+
 const floorImgLoader = new Image();
 floorImgLoader.onload = onAssetLoad;
 floorImgLoader.src = FLOOR_PATH;
@@ -179,4 +243,5 @@ shipLoader(SHIP_CONFIG.fullPath, shipAssets.fullImg);
 shipLoader(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
 shipLoader(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
 
+// Start the animation loop
 requestAnimationFrame(loop);

@@ -1,168 +1,181 @@
+/**
+ * USER INTERFACE SYSTEM (HUD & Buttons)
+ * This system bridges the game simulation and the DOM (HTML/CSS).
+ */
+
+// DOM Cache: We grab pointers to HTML elements once to avoid expensive document searches.
+let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvas, elFPS;
+let uiInitialized = false;
+
+function initUICache() {
+    elHPBar = document.getElementById('player-health-bar');
+    elShieldBar = document.getElementById('player-shield-bar');
+    elChargeBar = document.getElementById('shield-charge-bar');
+    elStageDisp = document.getElementById('stage-display');
+    elPrevArr = document.getElementById('nav-left');
+    elNextArr = document.getElementById('nav-right');
+    elChallengeBtn = document.getElementById('challenge-btn');
+    elBossCont = document.getElementById('boss-health-container');
+    elSkillCanvas = document.getElementById('skill-button-canvas');
+    elFPS = document.getElementById('fps');
+    uiInitialized = true;
+}
+
+// Dirty-Checking Cache: Prevents the UI from updating unless the values have actually changed.
+let lastHP = -1;
+let lastShield = -1;
+let lastCharge = -1;
+let lastStageTxt = "";
+let lastBossMode = null;
+
+/**
+ * MAIN UI REFRESH
+ * Optimized for minimum layout thrashing (avoids expensive DOM writes when possible).
+ */
 function updateUI() {
+    if (!uiInitialized) initUICache();
+
+    // 1. HEALTH BAR (Vertical)
     const hpPct = player.health / PLAYER_HEALTH_MAX;
-    const hpBar = document.getElementById('player-health-bar');
-    hpBar.style.height = (hpPct * 100) + '%';
+    if (hpPct !== lastHP) {
+        elHPBar.style.height = (hpPct * 100) + '%';
 
-    // Dynamic Color Interpolation (Redder Sooner)
-    let topR, topG, topB, botR, botG, botB;
-    if (hpPct > 0.7) {
-        // Transition: Blue -> Black (100% to 70%)
-        const f = (hpPct - 0.7) / 0.3; // 1.0 at 100%, 0.0 at 70%
-        topR = 65 * f; topG = 105 * f; topB = 225 * f;
-        botR = 0; botG = 0; botB = 139 * f;
-    } else {
-        // Transition: Black -> Blood Red (70% to 0%)
-        // Starts faster, becomes more intense sooner
-        const f = hpPct / 0.7; // 1.0 at 70%, 0.0 at 0%
-        const inv = Math.pow(1 - f, 0.8); // Slightly accelerated curve
-        topR = 200 * inv; topG = 0; topB = 0;
-        botR = 80 * inv; botG = 0; botB = 0;
-    }
-    hpBar.style.setProperty('--hp-top', `rgb(${topR},${topG},${topB})`);
-    hpBar.style.setProperty('--hp-bot', `rgb(${botR},${botG},${botB})`);
-
-    // Shield Bar (Vertical)
-    const shieldBar = document.getElementById('player-shield-bar');
-    if (player.shieldActive) {
-        shieldBar.style.height = (player.shieldHP / player.shieldMaxHP * 100) + '%';
-    } else {
-        shieldBar.style.height = '0%';
+        // DYNAMIC COLOR INTERPOLATION
+        // Smoothly blends colors based on health percentage. 
+        // 100% = Blue, 70% = Black, 0% = Ominous Blood Red.
+        let topR, topG, topB, botR, botG, botB;
+        if (hpPct > 0.7) {
+            const f = (hpPct - 0.7) / 0.3;
+            topR = 65 * f; topG = 105 * f; topB = 225 * f;
+            botR = 0; botG = 0; botB = 139 * f;
+        } else {
+            const f = hpPct / 0.7;
+            const inv = Math.pow(1 - f, 0.8);
+            topR = 200 * inv; topG = 0; topB = 0;
+            botR = 80 * inv; botG = 0; botB = 0;
+        }
+        elHPBar.style.setProperty('--hp-top', `rgb(${topR},${topG},${topB})`);
+        elHPBar.style.setProperty('--hp-bot', `rgb(${botR},${botG},${botB})`);
+        lastHP = hpPct;
     }
 
-    // Shield Charge Bar (Vertical)
-    const chargeBar = document.getElementById('shield-charge-bar');
-    if (player.shieldActive) {
-        chargeBar.style.height = '100%'; // Full while active
-    } else {
-        const pct = 1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown);
-        chargeBar.style.height = (pct * 100) + '%';
+    // 2. SHIELD BARS (Vertical)
+    const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
+    if (targetShieldHeight !== lastShield) {
+        elShieldBar.style.height = targetShieldHeight + '%';
+        lastShield = targetShieldHeight;
     }
 
+    const chargePct = player.shieldActive ? 1 : (1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown));
+    if (chargePct !== lastCharge) {
+        elChargeBar.style.height = (chargePct * 100) + '%';
+        lastCharge = chargePct;
+    }
+
+    // 3. STAGE TEXT & NAVIGATION
     const targetKills = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
-
-    // Stage Info
-    document.getElementById('stage-display').innerText = `Stage ${currentStage} - ${stageKillCount}/${targetKills}`;
-
-    // Navigation Arrows
-    const prevArrow = document.getElementById('nav-left');
-    const nextArrow = document.getElementById('nav-right');
-
-    if (currentStage > 1) {
-        prevArrow.classList.remove('disabled');
-    } else {
-        prevArrow.classList.add('disabled');
+    const stageTxt = `Stage ${currentStage} - ${stageKillCount}/${targetKills}`;
+    if (stageTxt !== lastStageTxt) {
+        elStageDisp.innerText = stageTxt;
+        elPrevArr.classList.toggle('disabled', currentStage <= 1);
+        elNextArr.classList.toggle('disabled', !(currentStage <= highestStageCleared && currentStage < 9));
+        elChallengeBtn.style.display = (currentStage > highestStageCleared && !isTraveling) ? 'block' : 'none';
+        lastStageTxt = stageTxt;
     }
 
-    if (currentStage <= highestStageCleared && currentStage < 9) {
-        nextArrow.classList.remove('disabled');
-    } else {
-        nextArrow.classList.add('disabled');
+    // 4. BOSS OVERLAY
+    if (bossMode !== lastBossMode) {
+        elBossCont.style.display = bossMode ? 'block' : 'none';
+        lastBossMode = bossMode;
     }
 
-    // Challenge Button
-    const challengeBtn = document.getElementById('challenge-btn');
-    if (currentStage > highestStageCleared && !isTraveling) {
-        challengeBtn.style.display = 'block';
-    } else {
-        challengeBtn.style.display = 'none';
-    }
-
-    // Boss Health
-    const bossContainer = document.getElementById('boss-health-container');
-    if (bossMode) {
-        bossContainer.style.display = 'block';
-    } else {
-        bossContainer.style.display = 'none';
-    }
-
-    // Skill Button Drawing
-    const skillBtnCanvas = document.getElementById('skill-button-canvas');
-    if (skillBtnCanvas && skillAssets.baked) {
-        const btnCtx = skillBtnCanvas.getContext('2d');
+    // 5. SKILL BUTTON CANVAS
+    // Draws the animated rainbow icon and the CD timer directly to a mini-canvas.
+    if (elSkillCanvas && skillAssets.baked) {
+        const btnCtx = elSkillCanvas.getContext('2d');
         const cfg = SKILLS.MulticolorXFlame;
 
-        // Use high-dpi logic for the button canvas
-        const dpr = window.devicePixelRatio || 1;
-        const rect = skillBtnCanvas.getBoundingClientRect();
-        if (skillBtnCanvas.width !== rect.width * dpr) {
-            skillBtnCanvas.width = rect.width * dpr;
-            skillBtnCanvas.height = rect.height * dpr;
+        // Auto-scaling for High-DPI (Retina) screens
+        if (!elSkillCanvas._w) {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = elSkillCanvas.getBoundingClientRect();
+            elSkillCanvas._w = rect.width * dpr;
+            elSkillCanvas._h = rect.height * dpr;
+            elSkillCanvas.width = elSkillCanvas._w;
+            elSkillCanvas.height = elSkillCanvas._h;
         }
 
-        btnCtx.clearRect(0, 0, skillBtnCanvas.width, skillBtnCanvas.height);
+        btnCtx.clearRect(0, 0, elSkillCanvas.width, elSkillCanvas.height);
 
-        // 1. Draw animated icon
+        // Draw animated icon frame from the cache
         const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
         const frameImg = skillAssets.buttonCache[bFrame];
-
         if (frameImg) {
-            btnCtx.drawImage(frameImg, 0, 0, skillBtnCanvas.width, skillBtnCanvas.height);
+            btnCtx.drawImage(frameImg, 0, 0, elSkillCanvas.width, elSkillCanvas.height);
         }
 
-        // 2. Draw Cooldown Overlay & Number
+        // Draw the dark cooldown overlay and the numeric timer
         if (skillCooldownRemaining > 0) {
-            // Darkened Circle
             btnCtx.save();
             btnCtx.beginPath();
-            btnCtx.arc(skillBtnCanvas.width / 2, skillBtnCanvas.height / 2, skillBtnCanvas.width / 2, 0, Math.PI * 2);
+            btnCtx.arc(elSkillCanvas.width / 2, elSkillCanvas.height / 2, elSkillCanvas.width / 2, 0, Math.PI * 2);
             btnCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
             btnCtx.fill();
 
-            // Centered Number
             const timerVal = Math.ceil(skillCooldownRemaining / 1000);
             btnCtx.fillStyle = '#fff';
-            // Use a slightly smaller font for better framing
-            btnCtx.font = `900 ${skillBtnCanvas.width * 0.55}px Outfit, Arial`;
+            btnCtx.font = `900 ${elSkillCanvas.width * 0.55}px Outfit, Arial`; // Dynamic font sizing
             btnCtx.textAlign = 'center';
             btnCtx.textBaseline = 'middle';
-
-            // Glow Effect
             btnCtx.shadowColor = '#ffcc00';
-            btnCtx.shadowBlur = 25 * dpr;
-            btnCtx.shadowOffsetX = 0;
-            btnCtx.shadowOffsetY = 0;
+            btnCtx.shadowBlur = 25 * (window.devicePixelRatio || 1);
 
-            // Micro-nudge for Optical Centering:
-            // Numbers (especially 2) can look heavy on the right. 
-            // Shifting -4% Left to counteract the visual drift.
-            const nudgeX = skillBtnCanvas.width * -0.04;
-            const nudgeY = skillBtnCanvas.height * 0.035;
-
-            btnCtx.fillText(timerVal, skillBtnCanvas.width / 2 + nudgeX, skillBtnCanvas.height / 2 + nudgeY);
+            // Optical centering adjustment
+            const nudgeX = elSkillCanvas.width * -0.04;
+            const nudgeY = elSkillCanvas.height * 0.035;
+            btnCtx.fillText(timerVal, elSkillCanvas.width / 2 + nudgeX, elSkillCanvas.height / 2 + nudgeY);
             btnCtx.restore();
         }
     }
 }
 
+/**
+ * INITIALIZE EVENT LISTENERS
+ * Connects the buttons and sliders to the game core.
+ */
 function initUIListeners() {
     const slider = document.getElementById('speed-slider');
     const speedVal = document.getElementById('speed-val');
+
+    // Game Speed Control
     slider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         PERFORMANCE.GAME_SPEED = val;
         speedVal.innerText = val.toFixed(1) + 'x';
     });
 
+    // Skill Activation click
     document.getElementById('skill-button-container').addEventListener('click', () => {
         const cfg = SKILLS.MulticolorXFlame;
         if (skillCooldownRemaining > 0) return;
         skillCooldownRemaining = cfg.cooldownTime;
+        // Spawn the particle data in the physics engine
         for (let i = 0; i < cfg.instanceCount; i++) {
             activeSkills.push({ angle: (i / cfg.instanceCount) * Math.PI * 2, frame: 0, done: false });
         }
     });
 
-    // Stage Nav
+    // NAVIGATION SYSTEM
     document.getElementById('nav-left').addEventListener('click', () => {
         if (currentStage > 1) changeStage(currentStage - 1);
     });
+
     document.getElementById('nav-right').addEventListener('click', () => {
         if (currentStage <= highestStageCleared && currentStage < 9) changeStage(currentStage + 1);
     });
 
+    // CHALLENGE (Auto-Nav to next level)
     document.getElementById('challenge-btn').addEventListener('click', () => {
-        // Redo current uncleared stage? or go to next?
-        // User said: "challenge button where if you press it, you'll speed off to the next section"
         if (currentStage < 9) changeStage(currentStage + 1);
     });
 }

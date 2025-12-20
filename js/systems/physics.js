@@ -1,28 +1,41 @@
+/**
+ * PHYSICS & SIMULATION ENGINE
+ * This is the 'Brain' of the game. It handles movement, collision avoidance, 
+ * combat, and stage progression.
+ */
+
 let lastGridUpdate = 0;
 let lastTargetUpdate = 0;
 let lastCombatUpdate = 0;
 
-function update(dt, now) {
+/**
+ * MAIN UPDATE TICK
+ * Called multiple times per frame if the game speed is high.
+ */
+function update(dt, now, isFirstStep) {
     if (player.health <= 0) return;
     const sc = SHIP_CONFIG;
 
-    // 2. STAGE PROGRESSION (Frame-based)
     if (!isTraveling && stageKillCount >= (STAGE_CONFIG.MAX_KILLS[currentStage] || 300) && currentStage < 10) {
         startTravelToNextStage();
     }
 
-    // 3. FREQUENCY THROTTLED GRID MANAGEMENT (Run once per frame approx)
-    if (now - lastGridUpdate > 16) {
-        lastGridUpdate = now;
-        const gridOffset = (GRID_DIM * GRID_CELL) / 2;
+    // 2. SPATIAL GRID REBUILD (Throttled to Once Per Frame)
+    if (isFirstStep) {
+        // We use an ABSOLUTE world grid now centered at GRID_WORLD_OFFSET. 
+        // This means we don't need to rebuild it every time the player moves.
         for (let i = 0; i < occupiedCount; i++) heads[occupiedCells[i]] = -1;
         occupiedCount = 0;
 
         for (let i = 0; i < spawnIndex; i++) {
             const idx = i * STRIDE;
-            if (data[idx + 8] <= 0 && data[idx + 9] <= 0) continue;
-            const gx = Math.floor((data[idx] - player.x + gridOffset) / GRID_CELL);
-            const gy = Math.floor((data[idx + 1] - player.y + gridOffset) / GRID_CELL);
+            const h = data[idx + 8], df = data[idx + 9];
+            if (h <= 0 && df <= 0) continue;
+
+            // GRID_WORLD_OFFSET shifts everything to positive integers
+            const gx = Math.floor((data[idx] + GRID_WORLD_OFFSET) / GRID_CELL);
+            const gy = Math.floor((data[idx + 1] + GRID_WORLD_OFFSET) / GRID_CELL);
+
             if (gx >= 0 && gx < GRID_DIM && gy >= 0 && gy < GRID_DIM) {
                 const cIdx = gy * GRID_DIM + gx;
                 if (heads[cIdx] === -1) occupiedCells[occupiedCount++] = cIdx;
@@ -32,13 +45,13 @@ function update(dt, now) {
         }
     }
 
-    // 4. FREQUENCY THROTTLED TARGETING (10Hz is enough)
+    // 3. TARGETING (10Hz)
     if (!isTraveling && (now - lastTargetUpdate > 100)) {
         lastTargetUpdate = now;
         findNearestEnemy();
     }
 
-    // 5. SUB-STEP LOGIC (Movement & Basic Ticks)
+    // 4. PLAYER SYSTEMS
     updatePlayerShield(dt, sc);
     if (skillCooldownRemaining > 0) {
         skillCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
@@ -51,16 +64,20 @@ function update(dt, now) {
     updatePlayerMovement(dt, sc);
     updateEnemies(dt, now);
 
-    // 6. STAGGERED COMBAT (Reduce intersection checks)
+    // 5. COMBAT TICK
     if (!isTraveling && now - lastCombatUpdate > DAMAGE_INTERVAL) {
         lastCombatUpdate = now;
         processAOEDamage();
     }
 }
 
+/**
+ * SHIELD LOGIC
+ */
 function updatePlayerShield(dt, sc) {
     if (player.shieldActive) {
         player.shieldDurationRemaining -= dt * PERFORMANCE.GAME_SPEED;
+
         if (player.shieldAnimState === 'TURNING_ON') {
             player.shieldFrame += 0.8 * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
             if (player.shieldFrame >= sc.shieldTurnOnFrames) {
@@ -82,18 +99,27 @@ function updatePlayerShield(dt, sc) {
     }
 }
 
+/**
+ * NEAREST ENEMY SEARCH
+ */
 function findNearestEnemy() {
     let closestDistSq = Infinity;
     let found = -1;
-    const gridOffset = (GRID_DIM * GRID_CELL) / 2;
+    // Localized search based on player's current grid cell
+    const pgx = Math.floor((player.x + GRID_WORLD_OFFSET) / GRID_CELL);
+    const pgy = Math.floor((player.y + GRID_WORLD_OFFSET) / GRID_CELL);
     const searchRadius = 2;
-    const pgx = Math.floor(gridOffset / GRID_CELL);
-    const pgy = Math.floor(gridOffset / GRID_CELL);
 
     for (let ox = -searchRadius; ox <= searchRadius; ox++) {
+        const row = (pgy + ox);
+        if (row < 0 || row >= GRID_DIM) continue;
+        const cellRow = row * GRID_DIM;
+
         for (let oy = -searchRadius; oy <= searchRadius; oy++) {
-            const cell = (pgy + oy) * GRID_DIM + (pgx + ox);
-            if (cell < 0 || cell >= heads.length) continue;
+            const col = (pgx + oy);
+            if (col < 0 || col >= GRID_DIM) continue;
+
+            const cell = cellRow + col;
             let ptr = heads[cell];
             while (ptr !== -1) {
                 const idx = ptr * STRIDE;
@@ -109,13 +135,18 @@ function findNearestEnemy() {
     player.targetIdx = found;
 }
 
+/**
+ * PLAYER MOVEMENT
+ */
 function updatePlayerMovement(dt, sc) {
     const gameSpd = PERFORMANCE.GAME_SPEED;
+
     if (isTraveling) {
         const speed = PLAYER_SPEED * 50;
         const dx = travelTargetX - player.x, dy = travelTargetY - player.y;
         const d = Math.sqrt(dx * dx + dy * dy);
         player.rotation = Math.atan2(dy, dx);
+
         if (d < 1000) arriveAtNewStage();
         else {
             player.x += (dx / d) * speed;
@@ -123,7 +154,8 @@ function updatePlayerMovement(dt, sc) {
         }
         player.shipState = 'FULL';
         player.shipFrame = (player.shipFrame + sc.animSpeed * (dt / 16.6) * gameSpd) % sc.fullFrames;
-    } else if (player.targetIdx !== -1) {
+    }
+    else if (player.targetIdx !== -1) {
         const tIdx = player.targetIdx * STRIDE;
         const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
         const dSq = dx * dx + dy * dy;
@@ -134,6 +166,7 @@ function updatePlayerMovement(dt, sc) {
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
         const turnStep = sc.turnSpeed * (dt / 1000) * gameSpd;
+
         if (Math.abs(diff) < turnStep) player.rotation = targetRot;
         else player.rotation += Math.sign(diff) * turnStep;
 
@@ -149,11 +182,12 @@ function updatePlayerMovement(dt, sc) {
     }
 }
 
+/**
+ * ENEMY AI & PHYSICS
+ */
 function updateEnemies(dt, now) {
-    if (isTraveling) return; // HUGE CPU SAVE
+    if (isTraveling) return;
 
-    const gridOffset = (GRID_DIM * GRID_CELL) / 2;
-    const stageScaling = currentStage >= 2 ? currentStage : 1;
     const sizeMult = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
     const dmgMult = currentStage >= 2 ? 2 : 1;
     const gameSpd = PERFORMANCE.GAME_SPEED;
@@ -161,8 +195,9 @@ function updateEnemies(dt, now) {
 
     for (let i = 0; i < spawnIndex; i++) {
         const idx = i * STRIDE;
-        const typeKey = enemyKeys[data[idx + 11] | 0];
-        const cfg = Enemy[typeKey];
+        const typeIdx = data[idx + 11] | 0;
+        const typeKey = enemyKeys[typeIdx];
+        const cfg = allConfigs[typeIdx];
 
         if (data[idx + 8] <= 0) {
             if (data[idx + 9] > 0) {
@@ -176,50 +211,57 @@ function updateEnemies(dt, now) {
         let dx = player.x - px, dy = player.y - py;
         const dSq = dx * dx + dy * dy;
         const d = Math.sqrt(dSq);
+        const invD = 1 / d;
 
         if (objectiveMet && currentStage < 10) {
+            if (dSq > 225000000) {
+                spawnEnemy(i, typeKey, true);
+                continue;
+            }
             dx = -dx; dy = -dy;
-            if (d > 15000) { spawnEnemy(i, typeKey, true); continue; }
         }
 
-        const look = Math.atan2(dy, dx);
-        const lookX = Math.cos(look), lookY = Math.sin(look);
-
+        const lookX = dx * invD, lookY = dy * invD;
         const targetRadius = cfg.closestDist;
         const pSpace = (cfg.size * sizeMult) + cfg.spacing;
         const pSpaceSq = pSpace * pSpace;
 
-        const distToTarget = Math.abs(d - (objectiveMet ? 20000 : targetRadius));
-        const pullDir = d > targetRadius ? 1 : -0.5;
-        let steerX = lookX * distToTarget * 0.5 * pullDir;
-        let steerY = lookY * distToTarget * 0.5 * pullDir;
+        const distDiff = d - (objectiveMet ? 20000 : targetRadius);
+        const pullFactor = (distDiff > 0 ? 0.5 : -0.25) * Math.abs(distDiff);
 
-        // BATCH STEERING: Distance-Based Sleep
-        if (d < 12000) {
-            const gx = Math.floor((px - player.x + gridOffset) / GRID_CELL);
-            const gy = Math.floor((py - player.y + gridOffset) / GRID_CELL);
-            const NEIGHBOR_CAP = 4; // Tightened further
+        let steerX = lookX * pullFactor;
+        let steerY = lookY * pullFactor;
+
+        // SEPARATION FORCE
+        if (dSq < 144000000) {
+            const gx = Math.floor((px + GRID_WORLD_OFFSET) / GRID_CELL);
+            const gy = Math.floor((py + GRID_WORLD_OFFSET) / GRID_CELL);
+            const NEIGHBOR_CAP = 4;
             let neighbors = 0;
 
             for (let ox = -1; ox <= 1; ox++) {
+                const row = (gy + ox);
+                if (row < 0 || row >= GRID_DIM) continue;
+                const cellRow = row * GRID_DIM;
                 for (let oy = -1; oy <= 1; oy++) {
-                    const cell = (gy + oy) * GRID_DIM + (gx + ox);
-                    if (cell >= 0 && cell < heads.length) {
-                        let nIdx = heads[cell];
-                        while (nIdx !== -1) {
-                            if (nIdx !== i) {
-                                const oIdx = nIdx * STRIDE;
-                                const vx = px - data[oIdx], vy = py - data[oIdx + 1];
-                                const ndSq = vx * vx + vy * vy;
-                                if (ndSq < pSpaceSq && ndSq > 0) {
-                                    const ndist = Math.sqrt(ndSq);
-                                    const force = ((pSpace - ndist) / pSpace) * 40;
-                                    steerX += (vx / ndist) * force; steerY += (vy / ndist) * force;
-                                    if (++neighbors > NEIGHBOR_CAP) break;
-                                }
+                    const col = (gx + oy);
+                    if (col < 0 || col >= GRID_DIM) continue;
+
+                    const cell = cellRow + col;
+                    let nIdx = heads[cell];
+                    while (nIdx !== -1) {
+                        if (nIdx !== i) {
+                            const oIdx = nIdx * STRIDE;
+                            const vx = px - data[oIdx], vy = py - data[oIdx + 1];
+                            const ndSq = vx * vx + vy * vy;
+                            if (ndSq < pSpaceSq && ndSq > 0) {
+                                const ndist = Math.sqrt(ndSq);
+                                const force = ((pSpace - ndist) / (pSpace * ndist)) * 40;
+                                steerX += vx * force; steerY += vy * force;
+                                if (++neighbors > NEIGHBOR_CAP) break;
                             }
-                            nIdx = next[nIdx];
                         }
+                        nIdx = next[nIdx];
                     }
                     if (neighbors > NEIGHBOR_CAP) break;
                 }
@@ -229,77 +271,128 @@ function updateEnemies(dt, now) {
         const magSq = steerX * steerX + steerY * steerY;
         if (magSq > 0.01) {
             const mag = Math.sqrt(magSq);
-            const speed = Math.min(data[idx + 6] * 2, mag * 20);
-            const moveAngle = Math.atan2(steerY, steerX);
-            data[idx] += Math.cos(moveAngle) * speed;
-            data[idx + 1] += Math.sin(moveAngle) * speed;
+            const speedCap = data[idx + 6] * 2;
+            const speed = Math.min(speedCap, mag * 20);
+            const moveFactor = speed / mag;
+
+            const moveX = steerX * moveFactor;
+            const moveY = steerY * moveFactor;
+
+            data[idx] += moveX;
+            data[idx + 1] += moveY;
+
+            const look = Math.atan2(dy, dx);
             data[idx + 7] = look;
             data[idx + 4] = look + cfg.baseRotation;
-            data[idx + 5] = (data[idx + 5] + speed * cfg.walkAnimSpeed) % cfg.walkFrames;
+
+            const moveDist = Math.sqrt(moveX * moveX + moveY * moveY);
+            data[idx + 5] = (data[idx + 5] + moveDist * cfg.walkAnimSpeed) % cfg.walkFrames;
         }
 
         if (!objectiveMet && d < cfg.attackRange) processEnemyAttack(idx, cfg, dmgMult, d);
     }
 }
 
+/**
+ * ATTACK LOGIC
+ */
 function processEnemyAttack(idx, cfg, dmgMult, d) {
     if (data[idx + 10] === 0) data[idx + 10] = 0.1;
     else {
         const prevF = Math.floor(data[idx + 10]);
         data[idx + 10] += cfg.attackAnimSpeed;
         const currF = Math.floor(data[idx + 10]);
+
         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
             applyDamageToPlayer((cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin)) * dmgMult);
         }
+
         if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
     }
 }
 
+/**
+ * AOE COMBAT ENGINE (Player Attack)
+ */
 function processAOEDamage() {
     const rSq = AOE_RADIUS * AOE_RADIUS;
-    const gridOffset = (GRID_DIM * GRID_CELL) / 2;
-    const pgx = Math.floor(gridOffset / GRID_CELL), pgy = Math.floor(gridOffset / GRID_CELL);
+    const pgx = Math.floor((player.x + GRID_WORLD_OFFSET) / GRID_CELL);
+    const pgy = Math.floor((player.y + GRID_WORLD_OFFSET) / GRID_CELL);
     const rCell = Math.ceil(AOE_RADIUS / GRID_CELL);
 
     for (let ox = -rCell; ox <= rCell; ox++) {
+        const row = (pgy + ox);
+        if (row < 0 || row >= GRID_DIM) continue;
+        const cellRow = row * GRID_DIM;
+
         for (let oy = -rCell; oy <= rCell; oy++) {
-            const cell = (pgy + oy) * GRID_DIM + (pgx + ox);
-            if (cell >= 0 && cell < heads.length) {
-                let ptr = heads[cell];
-                while (ptr !== -1) {
-                    const idx = ptr * STRIDE;
-                    if (data[idx + 8] > 0) {
-                        const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
-                        if (dx * dx + dy * dy < rSq) {
-                            data[idx + 8] -= DAMAGE_PER_POP;
-                            if (damageNumbers.length < 50) { // Pooled and capped
-                                damageNumbers.push({ x: data[idx], y: data[idx + 1] - 50, val: DAMAGE_PER_POP, life: 1.0, vx: (Math.random() - 0.5) * 2, vy: -2 - Math.random() * 2 });
+            const col = (pgx + oy);
+            if (col < 0 || col >= GRID_DIM) continue;
+
+            const cell = cellRow + col;
+            let ptr = heads[cell];
+            while (ptr !== -1) {
+                const idx = ptr * STRIDE;
+                if (data[idx + 8] > 0) {
+                    const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
+                    const dSq = dx * dx + dy * dy;
+                    if (dSq < rSq) {
+                        data[idx + 8] -= DAMAGE_PER_POP;
+
+                        for (let p = 0; p < DAMAGE_POOL_SIZE; p++) {
+                            if (!damageNumbers[p].active) {
+                                const dn = damageNumbers[p];
+                                dn.active = true;
+                                dn.x = data[idx];
+                                dn.y = data[idx + 1] - 50;
+                                dn.val = DAMAGE_PER_POP;
+                                dn.life = 1.0;
+                                dn.vx = (Math.random() - 0.5) * 2;
+                                dn.vy = -2 - Math.random() * 2;
+                                break;
                             }
-                            if (data[idx + 8] <= 0) { killCount++; stageKillCount++; data[idx + 8] = 0; data[idx + 9] = 0.001; }
+                        }
+
+                        if (data[idx + 8] <= 0) {
+                            killCount++;
+                            stageKillCount++;
+                            data[idx + 8] = 0;
+                            data[idx + 9] = 0.001;
                         }
                     }
-                    ptr = next[ptr];
                 }
+                ptr = next[ptr];
             }
         }
     }
 }
 
+/**
+ * PLAYER DAMAGE HANDLING
+ */
 function applyDamageToPlayer(dmg) {
     if (!player.shieldActive && player.shieldCooldownRemaining <= 0) {
         player.shieldActive = true; player.shieldAnimState = 'TURNING_ON';
         player.shieldFrame = 0; player.shieldHP = player.shieldMaxHP;
         player.shieldDurationRemaining = SHIP_CONFIG.shieldDuration;
     }
+
     if (player.shieldActive) {
         player.shieldHP -= dmg;
-        if (player.shieldHP <= 0) { player.shieldActive = false; player.shieldAnimState = 'OFF'; player.shieldCooldownRemaining = SHIP_CONFIG.shieldCooldown; }
+        if (player.shieldHP <= 0) {
+            player.shieldActive = false;
+            player.shieldAnimState = 'OFF';
+            player.shieldCooldownRemaining = SHIP_CONFIG.shieldCooldown;
+        }
     } else {
         player.health -= dmg;
         if (player.health <= 0) softReset();
     }
 }
 
+/**
+ * ENEMY SPAWNER
+ */
 function spawnEnemy(i, typeKey, far = false) {
     const cfg = Enemy[typeKey];
     const idx = i * STRIDE;
@@ -307,6 +400,7 @@ function spawnEnemy(i, typeKey, far = false) {
     const dist = (cfg.startDist + (Math.random() * cfg.startDist * 0.5)) * (far ? 1.5 : 1);
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     const centerX = (gx - 1) * STAGE_CONFIG.GRID_SIZE, centerY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
+
     data[idx] = centerX + Math.cos(angle) * dist; data[idx + 1] = centerY + Math.sin(angle) * dist;
     data[idx + 6] = cfg.moveSpeed * (0.8 + Math.random() * 0.4);
     data[idx + 8] = cfg.healthMax; data[idx + 9] = 0;

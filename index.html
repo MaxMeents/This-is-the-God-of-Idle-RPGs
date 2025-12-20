@@ -5,47 +5,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>God of Idle RPGs - Multi-Stage Combat</title>
+    <!-- Main styles for the HUD and Layout -->
     <link rel="stylesheet" href="css/main.css">
 </head>
 
 <body>
+    <!-- Splash screen while assets are baking in the background -->
     <div id="loading">Initializing Combat Engine...</div>
 
-    <!-- HUD -->
+    <!-- HUD Overlay -->
     <div id="ui">
         <div id="fps" class="stat">FPS: 0</div>
     </div>
 
-    <!-- Stage Navigation -->
+    <!-- STAGE NAVIGATION: Controls the switching between stages 1-9 -->
     <div id="stage-nav">
         <div id="nav-left" class="nav-arrow disabled">◀</div>
         <div id="stage-display">Stage 1 - 0/300</div>
         <div id="nav-right" class="nav-arrow disabled">▶</div>
     </div>
 
-    <!-- Challenge Button -->
+    <!-- CHALLENGE BUTTON: Appears when a stage is cleared but user hasn't moved on -->
     <button id="challenge-btn">CHALLENGE NEXT STAGE</button>
 
-    <!-- Boss Health -->
+    <!-- BOSS HUD: Reserved for Stage 10 encounters -->
     <div id="boss-health-container">
         <div id="boss-health-bar"></div>
     </div>
 
-    <!-- Left Corner HUD -->
+    <!-- MAIN PLAYER CORE HUD (BOTTOM LEFT) -->
     <div id="hud-left-corner">
-        <!-- Shield Charge (Small outside edge ticker) -->
+        <!-- Shield Cooldown Ticker: Small white bar showing when shield is ready -->
         <div id="shield-charge-container">
             <div id="shield-charge-bar"></div>
         </div>
 
-        <!-- Health / Shield HP (Main Bar) -->
+        <!-- Main Health Column: Large vertical bar with dynamic color -->
         <div id="player-health-container">
             <div id="player-health-bar"></div>
+            <!-- Shield HP Layer: Appears over the health when active -->
             <div id="player-shield-bar"></div>
         </div>
     </div>
 
-    <!-- Speed Controls -->
+    <!-- GAME SPEED INTERFACE: Allows user to multiply simulation speed (0.1x to 25x) -->
     <div id="speed-ctrl-container">
         <div class="speed-label">
             <span>GAME SPEED</span>
@@ -54,11 +57,21 @@
         <input type="range" id="speed-slider" min="0.1" max="25" step="0.1" value="1.0">
     </div>
 
+    <!-- SKILL ACTIVATION: The rainbow button with the cooldown timer -->
     <div id="skill-button-container">
         <canvas id="skill-button-canvas"></canvas>
     </div>
 
-    <!-- Scripts (Order is Critical) -->
+    <!-- GAME SCRIPTS 
+         The order is strict:
+         1&2. Core data structures
+         3. Low-level asset/image management
+         4. Background baking service
+         5. Simulation/Logic engine
+         6. Visual/Drawing engine
+         7. DOM interaction layer
+         8. Game loop and high-level logic initialization
+    -->
     <script src="js/core/constants.js"></script>
     <script src="js/core/state.js"></script>
     <script src="js/systems/assets.js"></script>
