@@ -645,10 +645,6 @@ function spawnEnemy(i, typeKey, far = false) {
     data[idx + 10] = 0;
     data[idx + 11] = enemyKeys.indexOf(typeKey);
     data[idx + 12] = isArch ? 1.0 : 0.0; // Arch flag
-
-    if (isArch) {
-        console.log(`[ARCH] Stage ${currentStage} - Spawned ARCH ${typeKey}! HP: ${data[idx + 8]}, Size: ${cfg.size * sizeMult}, Chance: ${(archChance * 100).toFixed(1)}%`);
-    }
 }
 /**
  * WEAPON SPAWNING (Dual Lasers)

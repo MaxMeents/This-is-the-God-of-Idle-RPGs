@@ -48,15 +48,10 @@ let floorPattern = null;
 
 /**
  * BAKE SHIP ANIMATIONS
- * Extracts individual frames from the ship's sprite sheets and stores them as 
- * small canvas objects. This is much faster than repeatedly slicing a 
- * giant image every frame using drawImage's multi-argument version.
  */
 function bakeShip() {
     if (shipAssets.baked) return;
     const sc = SHIP_CONFIG;
-
-    // Helper function to slice a sheet into a list of canvases
     const bake = (img, frames, cols, size, targetCache, targetSize) => {
         for (let i = 0; i < frames; i++) {
             const can = document.createElement('canvas');
@@ -67,25 +62,20 @@ function bakeShip() {
             targetCache.push(can);
         }
     };
-
-    // Process all ship states
     bake(shipAssets.onImg, sc.onFrames, sc.onCols, sc.onSize, shipAssets.onCache, 512);
     bake(shipAssets.fullImg, sc.fullFrames, sc.fullCols, sc.fullSize, shipAssets.fullCache, 512);
     bake(shipAssets.shieldOnImg, sc.shieldOnFrames, sc.shieldOnCols, sc.shieldOnSize, shipAssets.shieldOnCache, 768);
     bake(shipAssets.shieldTurnOnImg, sc.shieldTurnOnFrames, sc.shieldTurnOnCols, sc.shieldTurnOnSize, shipAssets.shieldTurnOnCache, 512);
 
-    // Convert to PIXI textures
     shipAssets.pixiOn = shipAssets.onCache.map(c => PIXI.Texture.from(c));
     shipAssets.pixiFull = shipAssets.fullCache.map(c => PIXI.Texture.from(c));
     shipAssets.pixiShieldOn = shipAssets.shieldOnCache.map(c => PIXI.Texture.from(c));
     shipAssets.pixiShieldTurnOn = shipAssets.shieldTurnOnCache.map(c => PIXI.Texture.from(c));
-
     shipAssets.baked = true;
 }
 
 /**
  * BAKE SKILL ANIMATIONS
- * Same logic as bakeShip, but for the skill icons and particles.
  */
 function bakeSkills() {
     if (skillAssets.baked) return;
@@ -102,85 +92,117 @@ function bakeSkills() {
         cctx.drawImage(skillAssets.skillImg, (i % cfg.skillCols) * cfg.skillSize, Math.floor(i / cfg.skillCols) * cfg.skillSize, cfg.skillSize, cfg.skillSize, 0, 0, 512, 512);
         skillAssets.skillCache.push(can);
     }
-
-    // Convert to PIXI textures
     skillAssets.pixiButton = skillAssets.buttonCache.map(c => PIXI.Texture.from(c));
     skillAssets.pixiSkill = skillAssets.skillCache.map(c => PIXI.Texture.from(c));
-
     skillAssets.baked = true;
 }
 
 /**
  * LOADING GATEKEEPER
- * Updates the progress bar and unlocks the play button only when everything is ready.
  */
 function onAssetLoad() {
     loadedCt++;
     updateLoadingProgress();
 }
 
+// Progressive Loading Strategy
+const TOTAL_BASIC_ASSETS = (enemyKeys.length * 3) + 1 + 4 + 2 + 1;
+const PRIORITY_TIERS = PERFORMANCE.LOD_TIERS.filter(t => t.priority).map(t => t.id);
+const BKGD_TIERS = PERFORMANCE.LOD_TIERS.filter(t => !t.priority).map(t => t.id);
+
+const PRIORITY_LOD_COUNT = (enemyKeys.length * PRIORITY_TIERS.length * 3);
+const BKGD_LOD_COUNT = (enemyKeys.length * BKGD_TIERS.length * 3);
+
+// Goal for "Ready to Play"
+const GRAND_TOTAL = TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT + BKGD_LOD_COUNT + (PRIORITY_LOD_COUNT + BKGD_LOD_COUNT) * 2; // images + conversion + prewarm
+const PRIORITY_GOAL = TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT * 3; // basic + priority images + priority conversion + priority prewarm
+
+let conversionCt = 0;
+let prewarmCt = 0;
+let isPriorityDone = false;
+
 function updateLoadingProgress() {
-    const totalToLoad = (enemyKeys.length * 3) + 1 + 4 + 2 + 1;
-    // We expect 3 animations * 4 tiers for each enemy initially
-    const expectedBakes = (enemyKeys.length * 3 * 4);
-    const total = totalToLoad + expectedBakes;
-
-    const currentProgress = loadedCt + bakesCt;
-    const progress = Math.min(100, (currentProgress / total) * 100);
-
     const bar = document.getElementById('progress-bar');
     const status = document.getElementById('loading-status');
     const startBtn = document.getElementById('start-game-btn');
 
+    const currentTotal = loadedCt + conversionCt + prewarmCt;
+
+    // Simplifed grand total to be more robust
+    const totalPriorityWork = TOTAL_BASIC_ASSETS + (PRIORITY_LOD_COUNT * 2);
+    const totalBkgdWork = BKGD_LOD_COUNT * 2;
+    const finalTotal = totalPriorityWork + totalBkgdWork;
+
+    const progress = Math.min(100, (currentTotal / finalTotal) * 100);
     if (bar) bar.style.width = progress + '%';
+
     if (status) {
-        if (progress < 40) status.innerText = `Synchronizing Combat Data... (${loadedCt}/${totalToLoad})`;
-        else if (progress < 99) status.innerText = `Baking GPU Textures... (${bakesCt}/${expectedBakes})`;
-        else status.innerText = "SYSTEMS ONLINE";
+        if (!isPriorityDone) {
+            const phase = loadedCt < (TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT) ? "Synchronizing" : (conversionCt < PRIORITY_LOD_COUNT ? "Building" : "Warming");
+            status.innerText = `${phase} Performance Tiers... (${currentTotal}/${totalPriorityWork})`;
+        } else {
+            const bkgdDone = (loadedCt - TOTAL_BASIC_ASSETS - PRIORITY_LOD_COUNT) + (conversionCt - PRIORITY_LOD_COUNT) + (prewarmCt - PRIORITY_LOD_COUNT);
+            if (bkgdDone < totalBkgdWork) {
+                status.innerText = "SYSTEMS ONLINE - Streaming Ultra Textures...";
+                status.style.color = '#00ffcc';
+            } else {
+                status.innerText = "ALL SYSTEMS OPTIMIZED (ULTRA QUALITY)";
+                status.style.color = '#ffcc00';
+            }
+        }
     }
 
-    // ONLY SHOW BUTTON IF ALL IMAGES ARE LOADED AND ALL BAKES ARE DONE
-    if (loadedCt >= totalToLoad && workerTasksCount === 0 && startBtn) {
-        if (bar) bar.style.width = '100%';
-        startBtn.style.display = 'inline-block';
+    // UNLOCK PLAY BUTTON EARLY
+    const priorityGoal = totalPriorityWork;
+    if (currentTotal >= priorityGoal && !isPriorityDone) {
+        isPriorityDone = true;
+        if (startBtn) {
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = "READY (START LOW RES)";
+        }
+        status.innerText = "SYSTEMS ONLINE - ENTRANCE READY";
         status.style.color = '#ffcc00';
-        status.innerText = "SYSTEMS ONLINE";
+
+        // Auto-start if preferred
+        checkAutoStart();
     }
 }
 
 // Global Startup Trigger
 document.getElementById('start-game-btn').addEventListener('click', () => {
     document.getElementById('loading-screen').style.opacity = '0';
-    gamePaused = false; // ACTIVATE SIMULATION
+    gamePaused = false;
+    localStorage.setItem('assetsLoaded', 'true');
     setTimeout(() => {
         document.getElementById('loading-screen').style.display = 'none';
-        // Reposition all enemies to start appearing around the new location
         for (let i = 0; i < spawnIndex; i++) {
             spawnEnemy(i, spawnList[i], true);
         }
     }, 800);
 });
 
+function checkAutoStart() {
+    if (localStorage.getItem('assetsLoaded') === 'true') {
+        setTimeout(() => {
+            const btn = document.getElementById('start-game-btn');
+            if (btn && btn.style.display !== 'none') btn.click();
+        }, 100);
+    }
+}
+
 function finalizeAssets() {
     document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
     floorPattern = true;
-
-    // Start background baking for enemies
-    enemyKeys.forEach(k => buildEnemyCache(k));
+    initEnemyLODAssets(); // This now handles progressive loading internally
     bakeShip();
-
-    // Finalize initialization
     init(true);
 }
 
-// We change onAssetLoad logic to check for the final batch
-const originalOnAssetLoad = onAssetLoad;
 onAssetLoad = function () {
     loadedCt++;
-    const totalToLoad = (enemyKeys.length * 3) + 1 + 4 + 2 + 1;
     updateLoadingProgress();
-
-    if (loadedCt >= totalToLoad) {
+    if (loadedCt >= TOTAL_BASIC_ASSETS && !finalizeAssets.triggered) {
+        finalizeAssets.triggered = true;
         finalizeAssets();
     }
 };

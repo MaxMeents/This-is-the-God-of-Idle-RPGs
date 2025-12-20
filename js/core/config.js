@@ -3,19 +3,28 @@
  */
 const PERFORMANCE = {
     LOD_TIERS: [
-        { id: 'Ultra', size: 1024, max: 10 },
-        { id: 'High', size: 1024, max: 30 },
-        { id: 'MidHigh', size: 768, max: 60 },
-        { id: 'Med', size: 512, max: 150 },
-        { id: 'MedLow', size: 256, max: 350 },
-        { id: 'Low', size: 128, max: 700 },
-        { id: 'VLow', size: 64, max: 1200 },
-        { id: 'Tiny', size: 32, max: 2000 },
-        { id: 'Micro', size: 16, max: 9999 }
+        { id: 'Ultra', size: 1024, max: 150, priority: false },
+        { id: 'High', size: 1024, max: 400, priority: false },
+        { id: 'MidHigh', size: 768, max: 800, priority: false },
+        { id: 'Med', size: 512, max: 1200, priority: false },
+        { id: 'MedLow', size: 256, max: 2000, priority: true },
+        { id: 'Low', size: 128, max: 2500, priority: true },
+        { id: 'VLow', size: 64, max: 7000, priority: true },
+        { id: 'Tiny', size: 32, max: 10000, priority: true },
+        { id: 'Micro', size: 16, max: 15000, priority: true }
     ],
     LOD_INIT_TIME_SLICE: 1,
     SPAWNS_PER_FRAME: 500,
-    GAME_SPEED: 1.0
+    GAME_SPEED: 1.0,
+
+    // THE THROTTLE: Adjust these values to control high-res loading 'power'
+    BACKGROUND_THROTTLE: {
+        msBetweenDownloads: 1000,   // Delay after a high-res file pipeline completes
+        msBetweenDecodes: 200,      // Delay between off-thread image decodes
+        msBetweenWarming: 1000,     // Delay between GPU texture uploads
+        framesPerWarmBatch: 30,     // How many frames to warm per 'breath' (much faster with bitmaps)
+        msBetweenSliceBatches: 16   // Wait between slicing next frames in worker
+    }
 };
 
 /**
@@ -70,11 +79,11 @@ const SKILLS = {
  */
 const WEAPON_CONFIG = {
     laserPath: 'img/Laser Sprites/01.png',
-    fireRate: 10,        // Shots per second
+    fireRate: 30,        // Shots per second
     damage: 10,
-    bulletSpeed: 1000,   // 10x faster - reaches distant enemies
+    bulletSpeed: 800,   // 10x faster - reaches distant enemies
     bulletLife: 75000,   // 25x longer - 75 seconds range
-    bulletSize: 180,     // Visual scale
+    bulletSize: 980,     // Visual scale
     offsetSide: 140,     // Left/Right shift from ship center
     offsetFront: 80      // Forward shift from center
 };

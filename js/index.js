@@ -251,9 +251,10 @@ function loop(now) {
     if (t > 1000) {
         const avgPhys = (physicsTimeSum / f).toFixed(2);
         const avgDraw = (drawTimeSum / f).toFixed(2);
-        const statsTxt = `FPS: ${f} | Logic: ${avgPhys}ms | Draw: ${avgDraw}ms | Tasks: ${workerTasksCount}`;
+        const tier = PERFORMANCE.LOD_TIERS[window.lastActiveTier || 0];
+        const statsTxt = `FPS: ${f} | Logic: ${avgPhys}ms | Draw: ${avgDraw}ms | LOD: ${tier.id} (${tier.size}px) | OnScreen: ${Math.floor(smoothedEnemies)}`;
         document.getElementById('fps').innerText = statsTxt;
-        console.log("[Performance]", statsTxt); // User can copy this
+        if (f < 50) console.warn("[Slow Frame]", statsTxt);
         f = 0; t = 0; physicsTimeSum = 0; drawTimeSum = 0;
     }
     requestAnimationFrame(loop);
@@ -268,7 +269,7 @@ let canvas; // Will point to app.canvas
     await app.init({
         resizeTo: window,
         backgroundColor: 0x000000,
-        antialias: false, // Better for pixel perfection if needed, also faster
+        antialias: false,
         preference: 'webgl'
     });
     canvas = app.canvas;

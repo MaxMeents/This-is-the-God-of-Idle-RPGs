@@ -6,6 +6,7 @@
 const Enemy = {
 
     GalaxyDragon: {
+        folderName: 'Galaxy Dragon',  // Actual folder name in file system
         size: 3200,
         healthMax: 50,
         moveSpeed: 18,
@@ -34,6 +35,7 @@ const Enemy = {
         archChargeDistanceMult: 2  // Arch enemies charge 2x farther
     },
     PhoenixSurrender: {
+        folderName: 'Phoenix Surrender',  // Actual folder name in file system
         size: 3000,
         healthMax: 85,
         moveSpeed: 16,
@@ -62,6 +64,7 @@ const Enemy = {
         archChargeDistanceMult: 2  // Arch enemies charge 2x farther
     },
     BlueDragon: {
+        folderName: 'Blue Dragon',  // Actual folder name in file system
         size: 3500,
         healthMax: 120,
         moveSpeed: 14,
