@@ -72,8 +72,8 @@ const WEAPON_CONFIG = {
     laserPath: 'img/Laser Sprites/01.png',
     fireRate: 10,        // Shots per second
     damage: 10,
-    bulletSpeed: 100,    // Very fast, but visible
-    bulletLife: 3000,    // Disappear after 3 seconds if no hit
+    bulletSpeed: 1000,   // 10x faster - reaches distant enemies
+    bulletLife: 75000,   // 25x longer - 75 seconds range
     bulletSize: 180,     // Visual scale
     offsetSide: 140,     // Left/Right shift from ship center
     offsetFront: 80      // Forward shift from center
@@ -88,16 +88,56 @@ const STAGE_CONFIG = {
         [1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [1, 2], [0, 2], [0, 1], [0, 0], [1, 1]
     ],
     STAGES: {
-        1: { kills: 3500, enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500 } },
-        2: { kills: 500, enemies: { PhoenixSurrender: 200, GalaxyDragon: 300 } },
-        3: { kills: 700, enemies: { GalaxyDragon: 500, BlueDragon: 100 } },
-        4: { kills: 900, enemies: { GalaxyDragon: 600, PhoenixSurrender: 200 } },
-        5: { kills: 1100, enemies: { BlueDragon: 400, PhoenixSurrender: 400 } },
-        6: { kills: 1300, enemies: { BlueDragon: 600, PhoenixSurrender: 400 } },
-        7: { kills: 1500, enemies: { GalaxyDragon: 800, PhoenixSurrender: 500 } },
-        8: { kills: 1700, enemies: { BlueDragon: 800, GalaxyDragon: 500 } },
-        9: { kills: 2000, enemies: { PhoenixSurrender: 800, BlueDragon: 1000 } },
-        10: { kills: 1, enemies: { PhoenixSurrender: 1500, BlueDragon: 1500 } }
+        1: {
+            kills: 3500,
+            enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500 },
+            archChance: { ArchBlueDragon: 0.02, ArchGalaxyDragon: 0.02, ArchPhoenixSurrender: 0.02 }
+        },
+        2: {
+            kills: 500,
+            enemies: { PhoenixSurrender: 200, GalaxyDragon: 300 },
+            archChance: { ArchPhoenixSurrender: 0.03, ArchGalaxyDragon: 0.03 }
+        },
+        3: {
+            kills: 700,
+            enemies: { GalaxyDragon: 500, BlueDragon: 100 },
+            archChance: { ArchGalaxyDragon: 0.04, ArchBlueDragon: 0.04 }
+        },
+        4: {
+            kills: 900,
+            enemies: { GalaxyDragon: 600, PhoenixSurrender: 200 },
+            archChance: { ArchGalaxyDragon: 0.05, ArchPhoenixSurrender: 0.05 }
+        },
+        5: {
+            kills: 1100,
+            enemies: { BlueDragon: 400, PhoenixSurrender: 400 },
+            archChance: { ArchBlueDragon: 0.06, ArchPhoenixSurrender: 0.06 }
+        },
+        6: {
+            kills: 1300,
+            enemies: { BlueDragon: 600, PhoenixSurrender: 400 },
+            archChance: { ArchBlueDragon: 0.07, ArchPhoenixSurrender: 0.07 }
+        },
+        7: {
+            kills: 1500,
+            enemies: { GalaxyDragon: 800, PhoenixSurrender: 500 },
+            archChance: { ArchGalaxyDragon: 0.08, ArchPhoenixSurrender: 0.08 }
+        },
+        8: {
+            kills: 1700,
+            enemies: { BlueDragon: 800, GalaxyDragon: 500 },
+            archChance: { ArchBlueDragon: 0.09, ArchGalaxyDragon: 0.09 }
+        },
+        9: {
+            kills: 2000,
+            enemies: { PhoenixSurrender: 800, BlueDragon: 1000 },
+            archChance: { ArchPhoenixSurrender: 0.10, ArchBlueDragon: 0.10 }
+        },
+        10: {
+            kills: 1,
+            enemies: { PhoenixSurrender: 1500, BlueDragon: 1500 },
+            archChance: { ArchPhoenixSurrender: 0.15, ArchBlueDragon: 0.15 }
+        }
     }
 };
 
@@ -120,7 +160,7 @@ const GRID_WORLD_OFFSET = (GRID_DIM * GRID_CELL) / 2;
 
 /**
  * DATA STRIDE
- * Each enemy uses 13 floats:
+ * Each enemy uses 17 floats:
  * 0-1: x, y position
  * 2-3: velocity x, y
  * 4: rotation
@@ -132,5 +172,7 @@ const GRID_WORLD_OFFSET = (GRID_DIM * GRID_CELL) / 2;
  * 10: attack frame
  * 11: enemy type index
  * 12: isArch flag (1.0 = Arch, 0.0 = normal)
+ * 13-14: charge direction x, y (stored when attack starts)
+ * 15-16: charge start position x, y (to calculate distance traveled)
  */
-const STRIDE = 13;
+const STRIDE = 17;

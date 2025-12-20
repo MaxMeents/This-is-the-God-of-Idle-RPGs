@@ -261,8 +261,13 @@ function updateEnemies(dt, now, isFirstStep) {
         const d = Math.sqrt(dSq);
         const invD = 1 / d;
 
+        // Check if enemy is charging
+        const isCharging = data[idx + 10] > 0;
+
         if (objectiveMet && currentStage < 10) {
-            if (dSq > 225000000) {
+            // CRITICAL: Don't respawn enemies that are charging!
+            // Increased distance from 15,000 to 1,000,000 to allow massive charge attacks
+            if (!isCharging && dSq > 1000000000000) {  // 1,000,000 units
                 spawnEnemy(i, typeKey, true);
                 continue;
             }
@@ -270,20 +275,64 @@ function updateEnemies(dt, now, isFirstStep) {
         }
 
         const lookX = dx * invD, lookY = dy * invD;
-        const targetRadius = cfg.closestDist;
+
+        // Use attackRange as stopping distance, archAttackRange for Arch enemies
+        const isArch = data[idx + 12] > 0.5;
+        const targetRadius = isArch ? cfg.archAttackRange : cfg.attackRange;
+
         const pSpace = (cfg.size * sizeMult) + cfg.spacing;
         const pSpaceSq = pSpace * pSpace;
 
-        const distDiff = d - (objectiveMet ? 20000 : targetRadius);
-        const pullFactor = (distDiff > 0 ? 0.5 : -0.25) * Math.abs(distDiff);
+        // Check if currently attacking (charge state)
+        // Only Dragon and Phoenix types have charge attacks
+        const hasChargeAttack = cfg.enemyType === 'Dragon' || cfg.enemyType === 'Phoenix';
+        // isCharging already declared above - reuse it
 
-        let steerX = lookX * pullFactor;
-        let steerY = lookY * pullFactor;
+        let distDiff, pullFactor;
+        if (isCharging) {
+            // During charge attack: aim for 4x stopping distance on OPPOSITE side
+            // This makes them fly THROUGH the ship and far past it
+            const chargeTargetDist = -(targetRadius * cfg.chargeDistanceMult);
+            distDiff = d - chargeTargetDist;
+            pullFactor = cfg.chargeSpeed;
+
+            if (Math.random() < 0.01) {
+                console.log(`[CHARGE] Charging! d=${d.toFixed(0)}, target=${chargeTargetDist.toFixed(0)}, diff=${distDiff.toFixed(0)}, speed=${cfg.chargeSpeed}`);
+            }
+        } else {
+            // Normal movement: maintain stopping distance
+            distDiff = d - (objectiveMet ? 20000 : targetRadius);
+            pullFactor = (distDiff > 0 ? 0.5 : -0.25) * Math.abs(distDiff);
+        }
+
+        // CRITICAL FIX: When charging, use STORED direction instead of player-relative
+        let steerX, steerY;
+        if (isCharging) {
+            // Use the stored charge direction (set when attack started)
+            const chargeDirX = data[idx + 13];
+            const chargeDirY = data[idx + 14];
+
+            // Use Arch charge speed if Arch enemy
+            const chargeSpd = isArch ? cfg.archChargeSpeed : cfg.chargeSpeed;
+
+            // Move in the stored direction at charge speed
+            steerX = chargeDirX * chargeSpd;
+            steerY = chargeDirY * chargeSpd;
+
+            if (Math.random() < 0.01) {
+                console.log(`[CHARGE] Using stored dir: (${chargeDirX.toFixed(2)}, ${chargeDirY.toFixed(2)}), speed=${chargeSpd}, isArch=${isArch}`);
+            }
+        } else {
+            // Normal movement: use player-relative direction
+            steerX = lookX * pullFactor;
+            steerY = lookY * pullFactor;
+        }
 
         // SEPARATION FORCE (Localized Avoidance)
+        // Skip during charge attacks - enemies should fly straight through
         // Optimized: Only run separation on half of the sub-steps to save CPU at extreme speeds.
         // Also added a HARD_SCAN_CAP to prevent O(N^2) freezes in crowded cells.
-        if (dSq < 144000000 && (isFirstStep || i % 2 === 0)) {
+        if (!isCharging && dSq < 144000000 && (isFirstStep || i % 2 === 0)) {
             const gx = Math.floor((px + GRID_WORLD_OFFSET) / GRID_CELL);
             const gy = Math.floor((py + GRID_WORLD_OFFSET) / GRID_CELL);
             const NEIGHBOR_CAP = 4;
@@ -324,7 +373,8 @@ function updateEnemies(dt, now, isFirstStep) {
         const magSq = steerX * steerX + steerY * steerY;
         if (magSq > 0.01) {
             const mag = Math.sqrt(magSq);
-            const speedCap = data[idx + 6] * 2;
+            // Use charge speed cap when attacking, normal speed otherwise
+            const speedCap = isCharging ? cfg.chargeSpeed : data[idx + 6] * 2;
             const speed = Math.min(speedCap, mag * 20);
             const moveFactor = speed / mag;
 
@@ -334,9 +384,18 @@ function updateEnemies(dt, now, isFirstStep) {
             data[idx] += moveX;
             data[idx + 1] += moveY;
 
-            const look = Math.atan2(dy, dx);
-            data[idx + 7] = look;
-            data[idx + 4] = look + cfg.baseRotation;
+            // During charge, face the charge direction; otherwise face the player
+            if (isCharging) {
+                const chargeDirX = data[idx + 13];
+                const chargeDirY = data[idx + 14];
+                const look = Math.atan2(chargeDirY, chargeDirX);
+                data[idx + 7] = look;
+                data[idx + 4] = look + cfg.baseRotation;
+            } else {
+                const look = Math.atan2(dy, dx);
+                data[idx + 7] = look;
+                data[idx + 4] = look + cfg.baseRotation;
+            }
 
             const moveDist = Math.sqrt(moveX * moveX + moveY * moveY);
             // Apply randomized skip: stride * jitter factor
@@ -344,27 +403,86 @@ function updateEnemies(dt, now, isFirstStep) {
             data[idx + 5] = (data[idx + 5] + moveDist * cfg.walkAnimSpeed * animStride * jitter) % cfg.walkFrames;
         }
 
-        if (!objectiveMet && d < cfg.attackRange) processEnemyAttack(idx, cfg, dmgMult, d, animStride);
+        // Progress attack animation for Dragon/Phoenix types
+        // Start new attack when at stopping distance, OR continue existing attack
+        if (!objectiveMet && hasChargeAttack && (isCharging || d <= targetRadius * 1.2)) {
+            processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadius);
+        }
     }
 }
 
 /**
- * ATTACK LOGIC (With Animation Skipping)
+ * ATTACK LOGIC (Charge Attack)
+ * Enemies charge through the ship when attacking
  */
-function processEnemyAttack(idx, cfg, dmgMult, d, animStride) {
-    if (data[idx + 10] === 0) data[idx + 10] = 0.1;
-    else {
+function processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadius) {
+    // Start attack if not already attacking
+    if (data[idx + 10] === 0) {
+        data[idx + 10] = 0.1;
+
+        // CRITICAL: Store the charge direction AND starting position
+        const px = data[idx], py = data[idx + 1];
+        const dx = player.x - px;
+        const dy = player.y - py;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Store normalized direction vector
+        data[idx + 13] = dx / dist; // chargeDirX
+        data[idx + 14] = dy / dist; // chargeDirY
+
+        // Store starting position to calculate distance traveled
+        data[idx + 15] = px; // chargeStartX
+        data[idx + 16] = py; // chargeStartY
+
+        if (Math.random() < 0.05) {
+            console.log(`[CHARGE] Attack started! Start pos: (${px.toFixed(0)}, ${py.toFixed(0)})`);
+        }
+    } else {
         const prevF = Math.floor(data[idx + 10]);
+
+        // Use faster attack speed for Arch enemies
+        const attackSpeed = isArch ? cfg.archAttackAnimSpeed : cfg.attackAnimSpeed;
+
         // Apply stride + jitter to attack progress
         const jitter = 0.8 + Math.random() * 0.4;
-        data[idx + 10] += cfg.attackAnimSpeed * animStride * jitter;
+        data[idx + 10] += attackSpeed * animStride * jitter;
+
+        // Loop animation if it completes before charge finishes
+        if (data[idx + 10] >= cfg.attackFrames) {
+            data[idx + 10] = data[idx + 10] % cfg.attackFrames;
+        }
+
         const currF = Math.floor(data[idx + 10]);
 
+        // Deal damage at mid-point of charge
         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
             applyDamageToPlayer((cfg.damageMin + Math.random() * (cfg.damageMax - cfg.damageMin)) * dmgMult);
         }
 
-        if (data[idx + 10] >= cfg.attackFrames) data[idx + 10] = 0.1;
+        // Calculate distance TRAVELED (not distance from player)
+        const currentX = data[idx], currentY = data[idx + 1];
+        const startX = data[idx + 15], startY = data[idx + 16];
+        const traveledDx = currentX - startX;
+        const traveledDy = currentY - startY;
+        const distanceTraveled = Math.sqrt(traveledDx * traveledDx + traveledDy * traveledDy);
+
+        // Calculate how far enemy should charge (Arch enemies charge farther)
+        const chargeMult = isArch ? cfg.archChargeDistanceMult : cfg.chargeDistanceMult;
+        const chargeTargetDist = targetRadius * chargeMult;
+
+        // Reset attack ONLY when traveled far enough (not when animation completes)
+        // Animation will loop if needed
+        if (distanceTraveled >= chargeTargetDist) {
+            data[idx + 10] = 0; // Reset to allow next attack
+            data[idx + 13] = 0; // Clear charge direction
+            data[idx + 14] = 0;
+            data[idx + 15] = 0; // Clear start position
+            data[idx + 16] = 0;
+
+            if (Math.random() < 0.05) {
+                console.log(`[CHARGE] Attack ended! Traveled: ${distanceTraveled.toFixed(0)}, Target: ${chargeTargetDist.toFixed(0)}, isArch: ${isArch}`);
+            }
+        }
     }
 }
 
@@ -508,8 +626,13 @@ function spawnEnemy(i, typeKey, far = false) {
     const [gx, gy] = stageCoords;
     const centerX = (gx - 1) * STAGE_CONFIG.GRID_SIZE, centerY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
 
-    // Arch enemy logic: 1/50 chance for 30x HP and 5x size
-    const isArch = Math.random() < cfg.archChance;
+
+    // Arch enemy logic: Use stage-specific chance if available, otherwise use enemy default
+    const stageCfg = STAGE_CONFIG.STAGES[currentStage];
+    const archKey = `Arch${typeKey}`;
+    const archChance = stageCfg?.archChance?.[archKey] ?? cfg.archChance;
+
+    const isArch = Math.random() < archChance;
     const healthMult = isArch ? 30 : 1;
     const sizeMult = isArch ? 5 : 1;
 
@@ -524,7 +647,7 @@ function spawnEnemy(i, typeKey, far = false) {
     data[idx + 12] = isArch ? 1.0 : 0.0; // Arch flag
 
     if (isArch) {
-        console.log(`[ARCH] Spawned ARCH ${typeKey}! HP: ${data[idx + 8]}, Size: ${cfg.size * sizeMult}`);
+        console.log(`[ARCH] Stage ${currentStage} - Spawned ARCH ${typeKey}! HP: ${data[idx + 8]}, Size: ${cfg.size * sizeMult}, Chance: ${(archChance * 100).toFixed(1)}%`);
     }
 }
 /**
