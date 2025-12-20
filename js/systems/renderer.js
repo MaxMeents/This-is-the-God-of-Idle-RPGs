@@ -65,11 +65,11 @@ function draw() {
 
     // 3. GRID-BASED RENDERING
     // We only iterate over the spatial grid cells that are currently on camera.
-    const gridOffset = (GRID_DIM * GRID_CELL) / 2;
-    const gxMin = Math.max(0, Math.floor((left - player.x + gridOffset) / GRID_CELL));
-    const gxMax = Math.min(GRID_DIM - 1, Math.floor((right - player.x + gridOffset) / GRID_CELL));
-    const gyMin = Math.max(0, Math.floor((top - player.y + gridOffset) / GRID_CELL));
-    const gyMax = Math.min(GRID_DIM - 1, Math.floor((bottom - player.y + gridOffset) / GRID_CELL));
+    // Fixed to use the same WORLD_OFFSET as the physics engine.
+    const gxMin = Math.max(0, Math.floor((left + GRID_WORLD_OFFSET) / GRID_CELL));
+    const gxMax = Math.min(GRID_DIM - 1, Math.floor((right + GRID_WORLD_OFFSET) / GRID_CELL));
+    const gyMin = Math.max(0, Math.floor((top + GRID_WORLD_OFFSET) / GRID_CELL));
+    const gyMax = Math.min(GRID_DIM - 1, Math.floor((bottom + GRID_WORLD_OFFSET) / GRID_CELL));
 
     const visibleCellCount = (gxMax - gxMin + 1) * (gyMax - gyMin + 1);
     // If the camera is zoomed out too far, we switch to a simple linear loop for speed.
