@@ -1,7 +1,6 @@
 /**
- * RENDERING ENGINE (World & Entity Drawing)
- * This system converts the abstract simulation data into pixels on your screen.
- * It uses several advanced techniques to maintain 60FPS with 2,000+ entities.
+ * HARDWARE-ACCELERATED RENDERING ENGINE (PixiJS v8)
+ * This system utilizes WebGL/WebGPU to handle thousands of entities at 60FPS.
  */
 
 "use strict";
@@ -9,50 +8,109 @@
 let cachedReadyMap = null;
 let lastReadyMapRebuild = 0;
 
+// Sprite Pools
+const enemySpritePool = [];
+const bulletSpritePool = [];
+const damageTextPool = [];
+let playerSprite, shieldSprite, floorTile;
+
+/**
+ * INITIALIZE SPRITE POOLS
+ */
+function initRendererPools() {
+    // 1. Floor (Tiling Background)
+    // Re-use the already loaded and CLEAN (CORS) floorImg
+    const floorTexture = PIXI.Texture.from(floorImg);
+    floorTile = new PIXI.TilingSprite({
+        texture: floorTexture,
+        width: 100000,
+        height: 100000
+    });
+    floorTile.anchor.set(0.5);
+    worldContainer.addChildAt(floorTile, 0); // MUST BE AT THE BOTTOM
+
+    // 2. Enemies
+    for (let i = 0; i < totalEnemies; i++) {
+        const s = new PIXI.Sprite();
+        s.anchor.set(0.5);
+        s.visible = false;
+        enemyContainer.addChild(s);
+        enemySpritePool.push(s);
+    }
+
+    // 3. Bullets
+    const laserTexture = PIXI.Texture.from(laserImg);
+    for (let i = 0; i < totalBullets; i++) {
+        const s = new PIXI.Sprite(laserTexture);
+        s.anchor.set(0.5);
+        s.visible = false;
+        bulletContainer.addChild(s);
+        bulletSpritePool.push(s);
+    }
+
+    // 4. Player & Shield
+    playerSprite = new PIXI.Sprite();
+    playerSprite.anchor.set(0.5);
+    playerContainer.addChild(playerSprite);
+
+    shieldSprite = new PIXI.Sprite();
+    shieldSprite.anchor.set(0.5);
+    playerContainer.addChild(shieldSprite);
+
+    // 5. Damage Numbers (Text Pool)
+    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
+        const t = new PIXI.Text({ text: '', style: { fill: 0xff0000, fontWeight: 'bold', fontSize: 24 } });
+        t.anchor.set(0.5);
+        t.visible = false;
+        uiContainer.addChild(t);
+        damageTextPool.push(t);
+    }
+}
+
 function draw() {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!app) return;
+    if (enemySpritePool.length === 0) initRendererPools();
 
-    const cx = canvas.width / 2, cy = canvas.height / 2;
+    const cx = app.screen.width / 2, cy = app.screen.height / 2;
 
-    // 1. WORLD SPACE TRANSFORM
-    // Everything drawn here is relative to the player's position.
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(zoom, zoom);
-    ctx.translate(-player.x, -player.y);
+    // 1. CAMERA SYSTEM
+    worldContainer.scale.set(zoom);
+    worldContainer.position.set(cx - player.x * zoom, cy - player.y * zoom);
 
-    // OCCLUSION CULLING: Calculate the camera's boundaries in world units.
-    // We only spend CPU cycles drawing enemies that are actually VISIBLE.
+    // Sync Floor Tiling (Ensure it covers the entire visible area at any zoom)
+    const targetTileSize = 16000;
+    const sourceWidth = floorTile.texture.width || 1024;
+    const tScale = targetTileSize / sourceWidth;
+
+    // Expand the tile surface to cover the current screen view in world units
+    floorTile.width = (app.screen.width / zoom) + 100;
+    floorTile.height = (app.screen.height / zoom) + 100;
+
+    floorTile.tileScale.set(tScale);
+    floorTile.tilePosition.x = -player.x / tScale;
+    floorTile.tilePosition.y = -player.y / tScale;
+    floorTile.position.set(player.x, player.y);
+
+    // View boundaries
     const margin = 100 + (3200 * 2);
     const left = player.x - (cx / zoom) - margin;
     const right = player.x + (cx / zoom) + margin;
     const top = player.y - (cy / zoom) - margin;
     const bottom = player.y + (cy / zoom) + margin;
 
-    // 2. LEVEL OF DETAIL (LOD) SELECTION
-    // We calculate how many enemies are on screen and pick a 'Tier'.
-    // High numbers of enemies = Smaller, lower-res sprites.
+    // 2. LOD & CACHE REBUILD (Same logic, slightly adapted)
     smoothedEnemies += (onScreenCount - smoothedEnemies) * 0.15;
     let activeTierIdx = PERFORMANCE.LOD_TIERS.length - 1;
     for (let i = 0; i < PERFORMANCE.LOD_TIERS.length; i++) {
-        if (smoothedEnemies <= PERFORMANCE.LOD_TIERS[i].max) {
-            activeTierIdx = i;
-            break;
-        }
+        if (smoothedEnemies <= PERFORMANCE.LOD_TIERS[i].max) { activeTierIdx = i; break; }
     }
 
-    // Update the readyMap (LOD shortcuts) if anything changed
-    // Debounced to once every 500ms to prevent "Cache Thrashing" lag spikes.
     const now = performance.now();
     if (!cachedReadyMap || (readyMapDirty && (now - lastReadyMapRebuild > 500))) {
-        lastReadyMapRebuild = now;
-        readyMapDirty = false;
+        lastReadyMapRebuild = now; readyMapDirty = false;
         if (!cachedReadyMap) {
             cachedReadyMap = {};
-            for (const type of enemyKeys) {
-                cachedReadyMap[type] = { walk: [], death: [], attack: [] };
-            }
+            for (const type of enemyKeys) cachedReadyMap[type] = { walk: [], death: [], attack: [] };
         }
         for (const type of enemyKeys) {
             const cache = enemyAssets[type].caches;
@@ -65,173 +123,135 @@ function draw() {
                 }
             });
         }
-        readyMapDirty = false;
     }
 
-    // 3. GRID-BASED RENDERING
-    // We only iterate over the spatial grid cells that are currently on camera.
-    // Fixed to use the same WORLD_OFFSET as the physics engine.
-    const gxMin = Math.max(0, Math.floor((left + GRID_WORLD_OFFSET) / GRID_CELL));
-    const gxMax = Math.min(GRID_DIM - 1, Math.floor((right + GRID_WORLD_OFFSET) / GRID_CELL));
-    const gyMin = Math.max(0, Math.floor((top + GRID_WORLD_OFFSET) / GRID_CELL));
-    const gyMax = Math.min(GRID_DIM - 1, Math.floor((bottom + GRID_WORLD_OFFSET) / GRID_CELL));
-
-    const visibleCellCount = (gxMax - gxMin + 1) * (gyMax - gyMin + 1);
-    // If the camera is zoomed out too far, we switch to a simple linear loop for speed.
-    const useGrid = visibleCellCount < spawnIndex * 0.5;
-
+    // 3. RENDER ENEMIES
     onScreenCount = 0;
-    const stageGrowthFactor = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
+    const growth = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
 
-    /**
-     * INDIVIDUAL ENTITY DRAWING
-     * Optimized to avoid ctx.save()/ctx.restore() which is very slow in loops.
-     */
-    const drawEntity = (ptr) => {
-        const idx = ptr * STRIDE;
+    // Update individual sprites
+    for (let i = 0; i < totalEnemies; i++) {
+        const s = enemySpritePool[i];
+        if (i >= spawnIndex) { s.visible = false; continue; }
+
+        const idx = i * STRIDE;
         const x = data[idx], y = data[idx + 1];
+        const h = data[idx + 8], currentDeathF = data[idx + 9];
 
-        // Final visibility check
-        if (x > left && x < right && y > top && y < bottom) {
-            const h = data[idx + 8], currentDeathF = data[idx + 9], af = Math.floor(data[idx + 10]);
-
-            // Only draw if enemy is alive OR playing its death animation
-            if (h > 0 || (currentDeathF > 0 && currentDeathF < 145)) {
+        if (h > 0 || (currentDeathF > 0 && currentDeathF < 145)) {
+            // Visibility Check
+            if (x > left && x < right && y > top && y < bottom) {
                 onScreenCount++;
                 const typeIdx = data[idx + 11] | 0;
                 const typeKey = enemyKeys[typeIdx];
                 const cfg = allConfigs[typeIdx];
-                const assets = enemyAssets[typeKey];
-
+                const af = Math.floor(data[idx + 10]);
                 const animType = (h <= 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
                 const frameIdx = (h <= 0) ? Math.floor(currentDeathF) : (af > 0 ? af : Math.floor(data[idx + 5]));
+                const tier = cachedReadyMap[typeKey][animType][activeTierIdx];
 
-                // Get the pre-baked frame for the current LOD tier
-                const tiers = cachedReadyMap[typeKey][animType];
-                const frameToDraw = (tiers[activeTierIdx].frames && tiers[activeTierIdx].frames[frameIdx]) ? tiers[activeTierIdx].frames[frameIdx] : null;
+                s.visible = true;
+                s.position.set(x, y);
+                s.rotation = data[idx + 4];
 
-                const rot = data[idx + 4], look = data[idx + 7];
-
-                // --- FAST TRANSFORMATION START ---
-                ctx.translate(x, y);
-                ctx.rotate(rot);
-
-                // SPRITE FLIP: Only for sideways monsters (like the Tiyger)
-                let isFlipped = false;
-                if (cfg.isSideways && Math.abs(look) < 1.57) {
-                    ctx.scale(1, -1);
-                    isFlipped = true;
-                }
-
-                // FADE OUT: Smoothly transparency for dying enemies
-                if (h <= 0) {
-                    ctx.globalAlpha = Math.max(0, Math.min(1, 1 - (currentDeathF / cfg.deathFrames - 0.7) * 3.3));
-                }
-
-                const drawSize = cfg.size * stageGrowthFactor;
-                // MAIN DRAW CALL: Uses the pre-baked frame if it exists, otherwise falls back to the sheet.
-                if (frameToDraw) {
-                    ctx.drawImage(frameToDraw, -drawSize * 0.5, -drawSize * 0.5, drawSize, drawSize);
+                // Texture Selection with Fallback to raw sheet
+                if (tier.frames && tier.frames[frameIdx]) {
+                    s.texture = tier.frames[frameIdx];
                 } else {
-                    const sheet = assets[animType];
-                    const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
-                    ctx.drawImage(sheet, (frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize, -drawSize * 0.5, -drawSize * 0.5, drawSize, drawSize);
+                    // FALLBACK: Use the raw sheet if not baked yet
+                    const sheet = enemyAssets[typeKey][animType];
+                    if (sheet.complete) {
+                        const sCols = cfg[animType + 'Cols'], sSize = cfg[animType + 'Size'];
+                        const rect = new PIXI.Rectangle((frameIdx % sCols) * sSize, Math.floor(frameIdx / sCols) * sSize, sSize, sSize);
+                        s.texture = new PIXI.Texture({ source: PIXI.Texture.from(sheet), frame: rect });
+                    }
                 }
 
-                // --- FAST TRANSFORMATION CLEANUP ---
-                // We manually undo our changes instead of using ctx.restore()—it's ~4x faster in loops.
-                if (h <= 0) ctx.globalAlpha = 1.0;
-                if (isFlipped) ctx.scale(1, -1);
-                ctx.rotate(-rot);
-                ctx.translate(-x, -y);
-            }
-        }
-    };
+                // Absolute scale to prevent cumulative growth/flipping issues
+                const baseSize = cfg.size * growth;
+                s.width = baseSize;
+                s.height = baseSize;
 
-    // Execute the drawing loop using the spatial check
-    if (useGrid) {
-        for (let gy = gyMin; gy <= gyMax; gy++) {
-            const row = gy * GRID_DIM;
-            for (let gx = gxMin; gx <= gxMax; gx++) {
-                let ptr = heads[row + gx];
-                while (ptr !== -1) {
-                    drawEntity(ptr);
-                    ptr = next[ptr];
-                }
+                s.alpha = (h <= 0) ? Math.max(0, Math.min(1, 1 - (currentDeathF / cfg.deathFrames - 0.7) * 3.3)) : 1.0;
+
+                // Flip Logic (Absolute set)
+                const look = data[idx + 7];
+                const isFlipped = cfg.isSideways && Math.abs(look) < 1.57;
+                if (isFlipped) s.scale.y = -Math.abs(s.scale.y);
+                else s.scale.y = Math.abs(s.scale.y);
+
+            } else {
+                s.visible = false;
             }
-        }
-    } else {
-        for (let i = 0; i < spawnIndex; i++) {
-            drawEntity(i);
+        } else {
+            s.visible = false;
         }
     }
 
-    // DRAW SKILL PARTICLES
-    if (skillAssets.baked) {
-        const sCfg = SKILLS.MulticolorXFlame;
-        for (let i = 0; i < activeSkills.length; i++) {
-            const s = activeSkills[i];
-            const f = Math.floor(s.frame) % sCfg.skillFrames;
-            const sx = player.x + Math.cos(s.angle) * sCfg.orbitRadius;
-            const sy = player.y + Math.sin(s.angle) * sCfg.orbitRadius;
-            const frameImg = skillAssets.skillCache[f];
-            if (frameImg) ctx.drawImage(frameImg, sx - sCfg.visualSize / 2, sy - sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
-        }
+    // 4. RENDER BULLETS
+    for (let i = 0; i < totalBullets; i++) {
+        bulletSpritePool[i].visible = false;
     }
-    // 3.5. DRAW WEAPON PROJECTILES (Optimized)
     const bSize = WEAPON_CONFIG.bulletSize;
-    const viewMargin = bSize;
     for (let i = 0; i < activeBulletCount; i++) {
-        const bIdx = activeBulletIndices[i] * BULLET_STRIDE;
+        const poolIdx = activeBulletIndices[i];
+        const bIdx = poolIdx * BULLET_STRIDE;
+        const s = bulletSpritePool[poolIdx];
         const bx = bulletData[bIdx], by = bulletData[bIdx + 1];
 
-        // OFF-SCREEN CULLING: Don't rotate/draw if out of view
-        if (bx < left - viewMargin || bx > right + viewMargin || by < top - viewMargin || by > bottom + viewMargin) continue;
-
-        const bRot = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
-        ctx.save();
-        ctx.translate(bx, by);
-        ctx.rotate(bRot);
-        ctx.drawImage(laserImg, -bSize / 2, -bSize / 2, bSize, bSize);
-        ctx.restore();
+        if (bx > left && bx < right && by > top && by < bottom) {
+            s.visible = true;
+            s.position.set(bx, by);
+            s.rotation = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
+            // Bullets should be visible even at low zoom - we add a small floor
+            s.width = s.height = Math.max(bSize, 5 / zoom);
+        }
     }
 
-    ctx.restore();
-
-    // 4. PLAYER & OVERLAY DRAWING
-    // The ship is drawn at a fixed size regardless of camera zoom to keep it clear.
-    ctx.save();
-    ctx.setTransform(zoom, 0, 0, zoom, cx, cy);
-    ctx.rotate(player.rotation);
+    // 5. RENDER PLAYER
     const sc = SHIP_CONFIG;
     const sf = Math.floor(player.shipFrame);
     const isFull = player.shipState === 'FULL' || player.shipState === 'THRUST';
-    const sCache = isFull ? shipAssets.fullCache : shipAssets.onCache;
+    const sTexs = isFull ? shipAssets.pixiFull : shipAssets.pixiOn;
     const curFrame = sf % (isFull ? sc.fullFrames : sc.onFrames);
 
-    if (shipAssets.baked && sCache[curFrame]) {
-        ctx.drawImage(sCache[curFrame], -sc.visualSize / 2, -sc.visualSize / 2, sc.visualSize, sc.visualSize);
+    playerSprite.position.set(cx, cy);
+    playerSprite.rotation = player.rotation;
+    playerSprite.width = playerSprite.height = sc.visualSize * zoom;
+    if (shipAssets.baked && sTexs && sTexs[curFrame]) {
+        playerSprite.texture = sTexs[curFrame];
     }
 
-    // Render Shield Overlay
+    // Shield rendering
     if (player.shieldActive && player.shieldAnimState !== 'OFF') {
-        const isIsOn = player.shieldAnimState === 'ON';
-        const shCache = isIsOn ? shipAssets.shieldOnCache : shipAssets.shieldTurnOnCache;
-        const shf = Math.floor(player.shieldFrame) % (isIsOn ? sc.shieldOnFrames : sc.shieldTurnOnFrames);
-        if (shipAssets.baked && shCache[shf]) {
-            ctx.drawImage(shCache[shf], -sc.shieldVisualSize / 2, -sc.shieldVisualSize / 2, sc.shieldVisualSize, sc.shieldVisualSize);
-        }
+        const isOn = player.shieldAnimState === 'ON';
+        const shTexs = isOn ? shipAssets.pixiShieldOn : shipAssets.pixiShieldTurnOn;
+        const shf = Math.floor(player.shieldFrame) % (isOn ? sc.shieldOnFrames : sc.shieldTurnOnFrames);
+        shieldSprite.visible = true;
+        shieldSprite.position.set(cx, cy);
+        shieldSprite.rotation = player.rotation;
+        shieldSprite.width = shieldSprite.height = sc.shieldVisualSize * zoom;
+        if (shipAssets.baked && shTexs && shTexs[shf]) shieldSprite.texture = shTexs[shf];
+    } else {
+        shieldSprite.visible = false;
     }
-    ctx.restore();
 
-    // 5. UI ELEMENTS (DAMAGE NUMBERS)
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.font = "bold 24px Arial";
+    // 6. DAMAGE NUMBERS
+    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
     for (let i = 0; i < activeDamageCount; i++) {
-        const dn = damageNumbers[activeDamageIndices[i]];
-        const sx = (dn.x - player.x) * zoom + cx;
-        const sy = (dn.y - player.y) * zoom + cy;
-        ctx.fillStyle = `rgba(255, 0, 0, ${dn.life})`;
-        ctx.fillText(dn.val, sx, sy);
+        const poolIdx = activeDamageIndices[i];
+        const t = damageTextPool[poolIdx];
+        const dn = damageNumbers[poolIdx];
+        t.visible = true;
+        t.text = dn.val;
+        t.alpha = dn.life;
+        t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy);
+        t.scale.set(zoom * 2); // Scale text with zoom but keep it readable
     }
+
+    // 7. EFFECTS (Particles)
+    drawFX();
+    // For now, we manually draw these to the worldContainer's graphics or just sprites
+    // (Existing drawFX should be updated to use Pixi)
+    // For this turn, I'll update drawFX in effects.js to use worldContainer.graphics
 }

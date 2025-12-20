@@ -10,6 +10,7 @@ let isTraveling = false;       // When true, movement and combat are paused/redi
 let travelTargetX = 0;         // Target world coordinates for stage transition
 let travelTargetY = 0;
 let bossMode = false;          // True if the current stage is a boss stage
+let gamePaused = true;         // Simulation state controller
 
 /**
  * ENTITY DATA (HIGH PERFORMANCE)
@@ -21,7 +22,7 @@ const enemyKeys = Object.keys(Enemy);
 const allConfigs = enemyKeys.map(k => Enemy[k]); // Cache configs for direct indexing
 
 // totalEnemies: The fixed capacity of the physics engine
-const totalEnemies = 5000;
+const totalEnemies = 15000;
 
 /**
  * DATA BUFFER
@@ -73,6 +74,13 @@ const damageNumbers = Array.from({ length: DAMAGE_POOL_SIZE }, () => ({ x: 0, y:
 const activeDamageIndices = new Int32Array(DAMAGE_POOL_SIZE);
 let activeDamageCount = 0;
 
+// Effects Pool (High Performance Particles)
+const FX_STRIDE = 8; // [x, y, vx, vy, life, type, frame, size]
+const MAX_FX = 2000;
+const fxData = new Float32Array(MAX_FX * FX_STRIDE);
+const activeFxIndices = new Int32Array(MAX_FX);
+let activeFxCount = 0;
+
 /**
  * SPATIAL GRID STATE (Linked-List Grid)
  * This is the 'Secret Sauce' for 60FPS with thousands of enemies.
@@ -85,8 +93,10 @@ const occupiedCells = new Int32Array(GRID_DIM * GRID_DIM); // Optimized cleanup 
 let occupiedCount = 0;
 
 /**
- * RENDERING STATE
+ * RENDERING STATE (PixiJS)
  */
+let app;
+let worldContainer, enemyContainer, bulletContainer, fxContainer, playerContainer, uiContainer;
 let zoom = 0.05;
 let targetZoom = 0.05;
 let smoothedEnemies = 0;  // Lag-capping value to smoothly transition LOD levels
@@ -98,3 +108,4 @@ let readyMapDirty = true; // Flag for rebuilding the sprite caches if assets cha
  */
 let workerTasksCount = 0; // Tracks active background image-baking tasks
 let loadedCt = 0;         // Tracks file loading progress for the splash screen
+let bakesCt = 0;          // Tracks how many image-bakes have been completed

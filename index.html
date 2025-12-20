@@ -5,13 +5,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>God of Idle RPGs - Multi-Stage Combat</title>
+    <script src="https://cdn.jsdelivr.net/npm/pixi.js@8.14.2/dist/pixi.min.js"></script>
     <!-- Main styles for the HUD and Layout -->
     <link rel="stylesheet" href="css/main.css">
 </head>
 
 <body>
     <!-- Splash screen while assets are baking in the background -->
-    <div id="loading">Initializing Combat Engine...</div>
+    <div id="loading-screen">
+        <div id="loading-content">
+            <h1 id="game-title">GOD OF IDLE RPGs</h1>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="loading-status">Synchronizing Combat Data...</div>
+            <button id="start-game-btn" style="display: none;">BEGIN COMBAT</button>
+        </div>
+    </div>
 
     <!-- HUD Overlay -->
     <div id="ui">
@@ -77,6 +87,7 @@
     <script src="js/core/state.js"></script>
     <script src="js/systems/assets.js"></script>
     <script src="js/systems/baker.js"></script>
+    <script src="js/systems/effects.js"></script>
     <script src="js/systems/physics.js"></script>
     <script src="js/systems/renderer.js"></script>
     <script src="js/systems/ui.js"></script>

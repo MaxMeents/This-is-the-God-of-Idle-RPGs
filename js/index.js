@@ -137,6 +137,15 @@ function changeStage(newStage) {
     activeBulletIndices.fill(0);
     activeDamageIndices.fill(0);
 
+    // Clear effects
+    fxData.fill(0);
+    activeFxCount = 0;
+    activeFxIndices.fill(0);
+
+    // CRITICAL: Wipe the spatial grid heads as well to prevent "Ghost" links from old stages
+    heads.fill(-1);
+    occupiedCount = 0;
+
     // Reset combat timers to prevent immediate triggers at high speeds
     lastFireTime = 0;
     lastCombatUpdate = performance.now();
@@ -209,13 +218,16 @@ function loop(now) {
     handleSpawning();
     updateDamageNumbers(dt);
 
-    // Physics Engine Tick
-    const sUpdate = performance.now();
-    for (let s = 0; s < steps; s++) {
-        update(stepDt, now + (s * stepDt), s === 0, s);
+    if (!gamePaused) {
+        // Physics Engine Tick
+        const sUpdate = performance.now();
+        for (let s = 0; s < steps; s++) {
+            update(stepDt, now + (s * stepDt), s === 0, s);
+        }
+        updateSkills(dt, now);
+        updateFX(dt);
+        physicsTimeSum += (performance.now() - sUpdate);
     }
-    updateSkills(dt, now);
-    physicsTimeSum += (performance.now() - sUpdate);
 
     // Renderer Tick
     const sDraw = performance.now();
@@ -237,56 +249,83 @@ function loop(now) {
     requestAnimationFrame(loop);
 }
 
-// BROWSER LISTENERS
-window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
-window.addEventListener('wheel', (e) => {
-    targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
-    targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
-});
+// Initial Camera Setup
+let canvas; // Will point to app.canvas
 
-const canvas = document.createElement('canvas');
-document.body.appendChild(canvas);
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+(async () => {
+    // 1. INITIALIZE PIXIJS (WebGL/WebGPU)
+    app = new PIXI.Application();
+    await app.init({
+        resizeTo: window,
+        backgroundColor: 0x000000,
+        antialias: false, // Better for pixel perfection if needed, also faster
+        preference: 'webgl'
+    });
+    canvas = app.canvas;
+    document.body.appendChild(app.canvas);
 
-initUIListeners();
+    // 2. SETUP LAYERS (Containers)
+    worldContainer = new PIXI.Container();
+    enemyContainer = new PIXI.Container();
+    bulletContainer = new PIXI.Container();
+    fxContainer = new PIXI.Container();
+    playerContainer = new PIXI.Container();
+    uiContainer = new PIXI.Container();
 
-/**
- * ASSET BOOTSTRAP
- * Kicks off massive parallel image loading.
- */
-const loadSkillSheets = () => {
-    skillAssets.buttonImg.onload = () => {
-        onAssetLoad();
-        if (skillAssets.skillImg.complete) { skillAssets.ready = true; bakeSkills(); }
+    app.stage.addChild(worldContainer);
+    worldContainer.addChild(enemyContainer);
+    worldContainer.addChild(bulletContainer);
+    worldContainer.addChild(fxContainer);
+    app.stage.addChild(playerContainer);
+    app.stage.addChild(uiContainer);
+
+    // BROWSER LISTENERS
+    window.addEventListener('resize', () => {
+        // Pixi handles its own resize with resizeTo: window
+    });
+    window.addEventListener('wheel', (e) => {
+        targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
+        targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
+    });
+
+    initUIListeners();
+
+    /**
+     * ASSET BOOTSTRAP
+     */
+    const loadSkillSheets = () => {
+        skillAssets.buttonImg.onload = () => {
+            onAssetLoad();
+            if (skillAssets.skillImg.complete) { skillAssets.ready = true; bakeSkills(); }
+        };
+        skillAssets.skillImg.onload = () => {
+            onAssetLoad();
+            if (skillAssets.buttonImg.complete) { skillAssets.ready = true; bakeSkills(); }
+        };
+        skillAssets.buttonImg.src = SKILLS.MulticolorXFlame.buttonSheet;
+        skillAssets.skillImg.src = SKILLS.MulticolorXFlame.skillSheet;
     };
-    skillAssets.skillImg.onload = () => {
-        onAssetLoad();
-        if (skillAssets.buttonImg.complete) { skillAssets.ready = true; bakeSkills(); }
-    };
-    skillAssets.buttonImg.src = SKILLS.MulticolorXFlame.buttonSheet;
-    skillAssets.skillImg.src = SKILLS.MulticolorXFlame.skillSheet;
-};
-loadSkillSheets();
+    loadSkillSheets();
 
-enemyKeys.forEach(k => {
-    const loadImg = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-    loadImg(Enemy[k].walkPath, enemyAssets[k].walk);
-    loadImg(Enemy[k].deathPath, enemyAssets[k].death);
-    loadImg(Enemy[k].attackPath, enemyAssets[k].attack);
-});
+    enemyKeys.forEach(k => {
+        const loadImg = (p, img) => { img.onload = onAssetLoad; img.src = p; };
+        loadImg(Enemy[k].walkPath, enemyAssets[k].walk);
+        loadImg(Enemy[k].deathPath, enemyAssets[k].death);
+        loadImg(Enemy[k].attackPath, enemyAssets[k].attack);
+    });
 
-const floorImgLoader = new Image();
-floorImgLoader.onload = onAssetLoad;
-floorImgLoader.src = FLOOR_PATH;
+    floorImg.onload = onAssetLoad;
+    floorImg.src = FLOOR_PATH;
 
-const shipLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-shipLoader(SHIP_CONFIG.onPath, shipAssets.onImg);
-shipLoader(SHIP_CONFIG.fullPath, shipAssets.fullImg);
-shipLoader(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
-shipLoader(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
+    const shipLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
+    shipLoader(SHIP_CONFIG.onPath, shipAssets.onImg);
+    shipLoader(SHIP_CONFIG.fullPath, shipAssets.fullImg);
+    shipLoader(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
+    shipLoader(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
 
-const laserLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-laserLoader(WEAPON_CONFIG.laserPath, laserImg);
+    const laserLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
+    laserLoader(WEAPON_CONFIG.laserPath, laserImg);
 
-// Start the animation loop
-requestAnimationFrame(loop);
+    // Start the animation loop
+    requestAnimationFrame(loop);
+})();

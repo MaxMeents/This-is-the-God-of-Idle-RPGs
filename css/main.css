@@ -6,12 +6,110 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: #050505;
+    background: #000;
     color: #fff;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
     background-image: none;
     background-repeat: repeat;
     background-attachment: fixed;
+}
+
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, #111 0%, #000 100%);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+#loading-content {
+    width: 80%;
+    max-width: 600px;
+    text-align: center;
+}
+
+#game-title {
+    font-size: 4rem;
+    font-weight: 900;
+    letter-spacing: 0.5rem;
+    margin-bottom: 3rem;
+    background: linear-gradient(to bottom, #fff 0%, #ffcc00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(255, 204, 0, 0.3));
+}
+
+#progress-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    margin-bottom: 1.5rem;
+}
+
+#progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ffcc00, #fff);
+    box-shadow: 0 0 15px #ffcc00;
+    transition: width 0.3s ease;
+}
+
+#loading-status {
+    font-family: monospace;
+    font-size: 14px;
+    color: #999;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+}
+
+#start-game-btn {
+    background: linear-gradient(135deg, #ffcc00 0%, #b8860b 100%);
+    color: #000;
+    border: none;
+    padding: 18px 60px;
+    font-size: 1.25rem;
+    font-weight: 900;
+    letter-spacing: 2px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(255, 204, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: btnPulse 2s infinite ease-in-out;
+}
+
+#start-game-btn:hover {
+    transform: scale(1.1) translateY(-5px);
+    box-shadow: 0 0 50px rgba(255, 204, 0, 0.5);
+    filter: brightness(1.2);
+}
+
+@keyframes btnPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(255, 204, 0, 0.5);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+    }
 }
 
 canvas {

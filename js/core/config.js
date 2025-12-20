@@ -15,7 +15,7 @@ const PERFORMANCE = {
     ],
     LOD_INIT_TIME_SLICE: 1,
     SPAWNS_PER_FRAME: 20,
-    GAME_SPEED: 1.0
+    GAME_SPEED: 100.0
 };
 
 /**
@@ -87,7 +87,7 @@ const STAGE_CONFIG = {
         [1, 1], [1, 0], [2, 0], [2, 1], [2, 2], [1, 2], [0, 2], [0, 1], [0, 0], [1, 1]
     ],
     STAGES: {
-        1: { kills: 35, enemies: { BlueDragon: 10, GalaxyDragon: 10, PhoenixSurrender: 15 } },
+        1: { kills: 3500, enemies: { BlueDragon: 10000, GalaxyDragon: 10, PhoenixSurrender: 15 } },
         2: { kills: 500, enemies: { PhoenixSurrender: 200, GalaxyDragon: 300 } },
         3: { kills: 700, enemies: { GalaxyDragon: 500, BlueDragon: 100 } },
         4: { kills: 900, enemies: { GalaxyDragon: 600, PhoenixSurrender: 200 } },

@@ -386,6 +386,8 @@ function processAOEDamage() {
                             stageKillCount++;
                             data[idx + 8] = 0;
                             data[idx + 9] = 0.001;
+                            spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+                            for (let k = 0; k < 5; k++) spawnFX(data[idx], data[idx + 1], (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
                         }
                     }
                 }
@@ -506,7 +508,12 @@ function updateBullets(dt) {
                         if (dSq < r * r) {
                             data[eIdx + 8] -= dmg;
                             spawnDamageNumber(bx, by - 50, dmg);
-                            if (data[eIdx + 8] <= 0) { killCount++; stageKillCount++; data[eIdx + 8] = 0; data[eIdx + 9] = 0.001; }
+                            if (data[eIdx + 8] <= 0) {
+                                killCount++; stageKillCount++;
+                                data[eIdx + 8] = 0; data[eIdx + 9] = 0.001;
+                                spawnFX(bx, by, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+                                for (let k = 0; k < 5; k++) spawnFX(bx, by, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
+                            }
                             bulletDead = true; break;
                         }
                     }

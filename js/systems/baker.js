@@ -35,8 +35,11 @@ const bakerWorker = (() => {
 if (bakerWorker) {
     bakerWorker.onmessage = (e) => {
         const { typeKey, animType, tierID, results } = e.data;
-        enemyAssets[typeKey].caches[animType][tierID] = results;
+        // Convert to PIXI textures for WebGL rendering
+        enemyAssets[typeKey].caches[animType][tierID] = results.map(r => PIXI.Texture.from(r));
         workerTasksCount--;
+        bakesCt++;
+        updateLoadingProgress();
     };
 }
 
@@ -82,7 +85,7 @@ function runFallbackBaker() {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(assets[task.animType], (i % task.cols) * task.sourceSize, Math.floor(i / task.cols) * task.sourceSize, task.sourceSize, task.sourceSize, 0, 0, task.tier.size, task.tier.size);
 
-        assets.caches[task.animType][task.tier.id][i] = canvas;
+        assets.caches[task.animType][task.tier.id][i] = PIXI.Texture.from(canvas);
         task.currentFrame++;
 
         // Check if finished with this tier
@@ -93,6 +96,8 @@ function runFallbackBaker() {
             inQueue.delete(`${task.typeKey}:${task.animType}:${task.tier.id}`);
             fallbackQueue.shift();
             workerTasksCount--;
+            bakesCt++;
+            updateLoadingProgress();
             readyMapDirty = true; // Tell renderer to refresh its shortcuts
         }
     }
@@ -100,26 +105,45 @@ function runFallbackBaker() {
     else isFallbackRunning = false;
 }
 
-/**
- * START ENEMY BAKE
- * Called when an enemy type first appears or during initial loading.
- */
-function buildEnemyCache(typeKey, fullBake = false) {
+async function buildEnemyCache(typeKey, fullBake = false) {
     const cfg = Enemy[typeKey];
-    // By default, only bake low-res versions to save memory. 
-    // High-res versions are requested only when needed (Zoomed in).
     const tiersToQueue = fullBake ? PERFORMANCE.LOD_TIERS : PERFORMANCE.LOD_TIERS.filter(t => t.size <= 128);
     for (let tier of tiersToQueue) {
-        ['walk', 'death', 'attack'].forEach(anim => {
+        for (const anim of ['walk', 'death', 'attack']) {
             const key = `${typeKey}:${anim}:${tier.id}`;
-            if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) return;
-            workerTasksCount++;
-            inQueue.add(key);
-            fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
-        });
+            if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) continue;
+
+            if (bakerWorker) {
+                inQueue.add(key);
+                workerTasksCount++;
+
+                // FIX: HTMLImageElement cannot be sent directly to workers. 
+                // We convert it to an ImageBitmap (Transferable/Cloneable) first.
+                const sheetImg = enemyAssets[typeKey][anim];
+                let bitmap = sheetImg._bitmap;
+                if (!bitmap) {
+                    bitmap = await createImageBitmap(sheetImg);
+                    sheetImg._bitmap = bitmap;
+                }
+
+                bakerWorker.postMessage({
+                    typeKey, animType: anim, tier,
+                    frameCount: cfg[anim + 'Frames'],
+                    cols: cfg[anim + 'Cols'],
+                    sourceSize: cfg[anim + 'Size'],
+                    sheet: bitmap
+                });
+            } else {
+                workerTasksCount++;
+                inQueue.add(key);
+                fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
+            }
+        }
     }
-    needsSort = true;
-    if (!isFallbackRunning) runFallbackBaker();
+    if (!bakerWorker) {
+        needsSort = true;
+        if (!isFallbackRunning) runFallbackBaker();
+    }
 }
 
 /**
@@ -127,20 +151,45 @@ function buildEnemyCache(typeKey, fullBake = false) {
  * If the camera zooms in and we don't have High-Res frames yet,
  * this function bumps them to the front of the line.
  */
-function ensureTierBaking(typeKey, tierID) {
+async function ensureTierBaking(typeKey, tierID) {
     if (lastRequestedType === typeKey && lastRequestedTier === tierID) return;
     const tier = PERFORMANCE.LOD_TIERS.find(t => t.id === tierID);
     if (!tier) return;
     lastRequestedType = typeKey;
     lastRequestedTier = tierID;
-    needsSort = true;
+
     const cfg = Enemy[typeKey];
-    ['walk', 'death', 'attack'].forEach(anim => {
+    for (const anim of ['walk', 'death', 'attack']) {
         const key = `${typeKey}:${anim}:${tier.id}`;
-        if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) return;
-        workerTasksCount++;
-        inQueue.add(key);
-        fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
-    });
-    if (!isFallbackRunning) runFallbackBaker();
+        if (bakedStatus[typeKey]?.[anim]?.[tier.id] || inQueue.has(key)) continue;
+
+        if (bakerWorker) {
+            inQueue.add(key);
+            workerTasksCount++;
+
+            const sheetImg = enemyAssets[typeKey][anim];
+            let bitmap = sheetImg._bitmap;
+            if (!bitmap) {
+                bitmap = await createImageBitmap(sheetImg);
+                sheetImg._bitmap = bitmap;
+            }
+
+            bakerWorker.postMessage({
+                typeKey, animType: anim, tier,
+                frameCount: cfg[anim + 'Frames'],
+                cols: cfg[anim + 'Cols'],
+                sourceSize: cfg[anim + 'Size'],
+                sheet: bitmap
+            });
+        } else {
+            workerTasksCount++;
+            inQueue.add(key);
+            fallbackQueue.push({ typeKey, animType: anim, tier, frameCount: cfg[anim + 'Frames'], cols: cfg[anim + 'Cols'], sourceSize: cfg[anim + 'Size'], currentFrame: 0 });
+        }
+    }
+
+    if (!bakerWorker) {
+        needsSort = true;
+        if (!isFallbackRunning) runFallbackBaker();
+    }
 }
