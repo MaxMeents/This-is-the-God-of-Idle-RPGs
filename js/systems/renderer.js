@@ -6,7 +6,8 @@
 
 "use strict";
 
-let cachedReadyMap = null; // High-speed lookup table for the baked animation tiers
+let cachedReadyMap = null;
+let lastReadyMapRebuild = 0;
 
 function draw() {
     const ctx = canvas.getContext('2d');
@@ -42,7 +43,11 @@ function draw() {
     }
 
     // Update the readyMap (LOD shortcuts) if anything changed
-    if (!cachedReadyMap || readyMapDirty) {
+    // Debounced to once every 500ms to prevent "Cache Thrashing" lag spikes.
+    const now = performance.now();
+    if (!cachedReadyMap || (readyMapDirty && (now - lastReadyMapRebuild > 500))) {
+        lastReadyMapRebuild = now;
+        readyMapDirty = false;
         if (!cachedReadyMap) {
             cachedReadyMap = {};
             for (const type of enemyKeys) {

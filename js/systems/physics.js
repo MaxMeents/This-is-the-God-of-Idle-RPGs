@@ -39,7 +39,7 @@ function update(dt, now, isFirstStep) {
             const gy = Math.floor((data[idx + 1] + GRID_WORLD_OFFSET) / GRID_CELL);
 
             if (gx >= 0 && gx < GRID_DIM && gy >= 0 && gy < GRID_DIM) {
-                const cIdx = gy * GRID_DIM + gx;
+                const cIdx = (gy * GRID_DIM + gx) | 0;
                 if (heads[cIdx] === -1) occupiedCells[occupiedCount++] = cIdx;
                 next[i] = heads[cIdx];
                 heads[cIdx] = i;

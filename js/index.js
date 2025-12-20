@@ -175,10 +175,9 @@ function loop(now) {
     }
     t += dt; f++;
 
-    // SUB-STEPPING: If GAME_SPEED > 1, we run multiple simulation steps per frame
-    // to maintain physics accuracy while visually moving fast.
-    const steps = Math.min(10, Math.ceil(PERFORMANCE.GAME_SPEED));
-    const stepDt = dt * (PERFORMANCE.GAME_SPEED / steps);
+    // SUB-STEPPING: We cap steps higher to support 25x+ speed smoothly.
+    const steps = Math.min(50, Math.ceil(PERFORMANCE.GAME_SPEED));
+    const stepDt = (dt / steps) * PERFORMANCE.GAME_SPEED;
 
     handleSpawning();
     updateDamageNumbers(dt);
