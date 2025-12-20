@@ -28,7 +28,7 @@ const skillAssets = {
 
 /**
  * ENEMY ASSET HUB
- * Dynamically builds storage for every enemy type defined in constants.js.
+ * Dynamically builds storage for every enemy type defined in enemies.js.
  * This structure tracks the raw sheets and multiple performance 'tiers' of baked frames.
  */
 const enemyAssets = {};

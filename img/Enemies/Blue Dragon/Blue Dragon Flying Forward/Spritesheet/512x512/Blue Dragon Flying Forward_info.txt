@@ -1,0 +1,15 @@
+PROJECT: Maxymax MP4 To Spritesheet/PNG
+TARGET: Blue Dragon Flying Forward
+FORMAT: Sprite Sheet
+SIZE: 512x512 (512x512px)
+----------------------------------------
+Total Frames: 32
+Grid Layout: 6 columns x 6 rows
+----------------------------------------
+PLAYBACK INFO:
+Original Capture FPS: 24
+Playback Speed Multiplier: 3x
+Target Playback FPS: 72.00
+----------------------------------------
+USER COMMENTS:
+No comments.

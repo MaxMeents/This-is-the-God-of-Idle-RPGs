@@ -16,7 +16,9 @@ function update(dt, now, isFirstStep) {
     if (player.health <= 0) return;
     const sc = SHIP_CONFIG;
 
-    if (!isTraveling && stageKillCount >= (STAGE_CONFIG.MAX_KILLS[currentStage] || 300) && currentStage < 10) {
+    // 1. STAGE PROGRESSION CHECK
+    const currentStageCfg = STAGE_CONFIG?.STAGES?.[currentStage];
+    if (!isTraveling && currentStageCfg && stageKillCount >= (currentStageCfg.kills || 300) && currentStage < 10) {
         startTravelToNextStage();
     }
 
@@ -191,7 +193,7 @@ function updateEnemies(dt, now) {
     const sizeMult = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
     const dmgMult = currentStage >= 2 ? 2 : 1;
     const gameSpd = PERFORMANCE.GAME_SPEED;
-    const objectiveMet = stageKillCount >= (STAGE_CONFIG.MAX_KILLS[currentStage] || 300);
+    const objectiveMet = stageKillCount >= (STAGE_CONFIG.STAGES[currentStage]?.kills || 300);
 
     for (let i = 0; i < spawnIndex; i++) {
         const idx = i * STRIDE;
@@ -398,7 +400,10 @@ function spawnEnemy(i, typeKey, far = false) {
     const idx = i * STRIDE;
     const angle = Math.random() * Math.PI * 2;
     const dist = (cfg.startDist + (Math.random() * cfg.startDist * 0.5)) * (far ? 1.5 : 1);
-    const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
+    const stageCoords = STAGE_CONFIG?.CLOCKWISE_GRID?.[currentStage - 1];
+    if (!stageCoords) return; // Guard against initialization race conditions
+
+    const [gx, gy] = stageCoords;
     const centerX = (gx - 1) * STAGE_CONFIG.GRID_SIZE, centerY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
 
     data[idx] = centerX + Math.cos(angle) * dist; data[idx + 1] = centerY + Math.sin(angle) * dist;

@@ -73,7 +73,7 @@ function updateUI() {
     }
 
     // 3. STAGE TEXT & NAVIGATION
-    const targetKills = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
+    const targetKills = STAGE_CONFIG.STAGES[currentStage]?.kills || 300;
     const stageTxt = `Stage ${currentStage} - ${stageKillCount}/${targetKills}`;
     if (stageTxt !== lastStageTxt) {
         elStageDisp.innerText = stageTxt;

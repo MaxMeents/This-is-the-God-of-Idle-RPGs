@@ -9,24 +9,6 @@
  * Sets up (or resets) all global variables for a new session.
  */
 function init(firstLoad = false) {
-    if (firstLoad) {
-        // Multi-type mixing: fill spawnList respecting count ratios
-        // e.g., 1800 Galaxy Dragons mixed with 200 Phoenixes.
-        enemyKeys.forEach(k => {
-            const c = Enemy[k].count;
-            for (let i = 0; i < c; i++) {
-                spawnList.push(k);
-            }
-        });
-
-        // Robust Fisher-Yates Shuffle
-        // Ensures that Galaxy Dragons and Phoenixes are evenly distributed across all stages.
-        for (let i = spawnList.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [spawnList[i], spawnList[j]] = [spawnList[j], spawnList[i]];
-        }
-    }
-
     // Combat State Reset
     spawnIndex = 0;
     killCount = 0;
@@ -48,11 +30,36 @@ function init(firstLoad = false) {
         targetZoom = 0.05;
     }
 
-    // Position player at the center of the current stage on the massive world coordinate grid
+    // Prepare the spawn list for the current stage
+    prepareStagePool(currentStage);
+
+    // Position player
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     player.x = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     player.y = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
-    data.fill(0); // Clear physical presence of all enemies
+    data.fill(0);
+}
+
+/**
+ * STAGE POOL GENERATOR
+ * Builds a randomized list of enemies based on the STAGES config.
+ */
+function prepareStagePool(stageId) {
+    spawnList.length = 0;
+    const cfg = STAGE_CONFIG.STAGES[stageId];
+    if (!cfg) return;
+
+    for (const [type, count] of Object.entries(cfg.enemies)) {
+        for (let i = 0; i < count; i++) {
+            spawnList.push(type);
+        }
+    }
+
+    // Shuffle only the current stage's pool
+    for (let i = spawnList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [spawnList[i], spawnList[j]] = [spawnList[j], spawnList[i]];
+    }
 }
 
 /**
@@ -78,8 +85,12 @@ function updateDamageNumbers(dt) {
  * spawn 20 enemies per frame until the requirement is met.
  */
 function handleSpawning() {
-    const targetCap = STAGE_CONFIG.MAX_KILLS[currentStage] || 300;
-    for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < targetCap; i++) {
+    const cfg = STAGE_CONFIG.STAGES[currentStage];
+    if (!cfg) return;
+
+    // total entities in this stage
+    const population = spawnList.length;
+    for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < population; i++) {
         spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
         spawnIndex++;
     }
@@ -103,6 +114,11 @@ function softReset() {
 function changeStage(newStage) {
     if (isTraveling) return;
     currentStage = newStage;
+
+    // Regenerate spawn list for the new stage immediately
+    prepareStagePool(currentStage);
+    spawnIndex = 0;
+
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     travelTargetY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;

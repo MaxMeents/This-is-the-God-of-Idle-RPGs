@@ -20,8 +20,8 @@ let bossMode = false;          // True if the current stage is a boss stage
 const enemyKeys = Object.keys(Enemy);
 const allConfigs = enemyKeys.map(k => Enemy[k]); // Cache configs for direct indexing
 
-// totalEnemies: The capacity of the physics engine
-const totalEnemies = enemyKeys.reduce((sum, key) => sum + Enemy[key].count, 0);
+// totalEnemies: The fixed capacity of the physics engine
+const totalEnemies = 5000;
 
 /**
  * DATA BUFFER
