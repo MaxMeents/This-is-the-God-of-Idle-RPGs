@@ -175,15 +175,18 @@ function updatePlayerMovement(dt, sc) {
     else if (gameSpd >= 5) animStride = 1.25;
 
     if (isTraveling) {
-        const speed = PLAYER_SPEED * 50;
         const dx = travelTargetX - player.x, dy = travelTargetY - player.y;
         const d = Math.sqrt(dx * dx + dy * dy);
         player.rotation = Math.atan2(dy, dx);
 
-        if (d < 1000) arriveAtNewStage();
-        else {
-            player.x += (dx / d) * speed;
-            player.y += (dy / d) * speed;
+        if (d < 1000) {
+            arriveAtNewStage();
+        } else {
+            const speed = PLAYER_SPEED * 50;
+            const travelStep = speed * (dt / 16.6) * gameSpd;
+            const moveDist = Math.min(d, travelStep);
+            player.x += (dx / d) * moveDist;
+            player.y += (dy / d) * moveDist;
         }
         player.shipState = 'FULL';
         const jitter = 0.8 + Math.random() * 0.4;
