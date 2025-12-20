@@ -14,6 +14,7 @@ const bulletSpritePool = [];
 const skillSpritePool = [];
 const damageTextPool = [];
 let playerSprite, shieldSprite;
+let leftBulletTex, rightBulletTex, laserTex;
 
 // Fallback Texture Cache (Used for immediate display while LOD builds)
 const fallbackTextures = {};
@@ -59,9 +60,11 @@ function initRendererPools() {
     }
 
     // 4. Bullets
-    const laserTexture = PIXI.Texture.from(laserImg);
+    leftBulletTex = PIXI.Texture.from(weaponAssets.leftBulletImg);
+    rightBulletTex = PIXI.Texture.from(weaponAssets.rightBulletImg);
+    laserTex = PIXI.Texture.from(weaponAssets.laserImg);
     for (let i = 0; i < totalBullets; i++) {
-        const s = new PIXI.Sprite(laserTexture);
+        const s = new PIXI.Sprite(leftBulletTex);
         s.anchor.set(0.5);
         s.visible = false;
         bulletContainer.addChild(s);
@@ -207,7 +210,6 @@ function draw() {
     }
 
     // 4. RENDER BULLETS
-    const bSize = WEAPON_CONFIG.bulletSize;
     for (let i = 0; i < totalBullets; i++) bulletSpritePool[i].visible = false;
     for (let i = 0; i < activeBulletCount; i++) {
         const poolIdx = activeBulletIndices[i];
@@ -219,7 +221,18 @@ function draw() {
             s.visible = true;
             s.position.set(bx, by);
             s.rotation = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
-            s.width = s.height = Math.max(bSize, 5 / zoom);
+            // Set texture and size based on type
+            const bType = bulletData[bIdx + 6];
+            let wcfg;
+            if (bType === 0) { s.texture = leftBulletTex; wcfg = WEAPON_CONFIG.bullet_left_side; }
+            else if (bType === 1) { s.texture = rightBulletTex; wcfg = WEAPON_CONFIG.bullet_right_side; }
+            else { s.texture = laserTex; wcfg = WEAPON_CONFIG.laser; }
+
+            const size = wcfg.size || 980;
+            const stretch = wcfg.visualStretch || 1.0;
+            s.height = Math.max(size, 5 / zoom);
+            s.width = s.height * stretch;
+            s.tint = wcfg.tint || 0xffffff;
         }
     }
 
@@ -282,7 +295,15 @@ function draw() {
     for (let i = 0; i < activeSkills.length; i++) {
         if (i >= skillSpritePool.length) break;
         const sData = activeSkills[i], spr = skillSpritePool[i];
-        const skCfg = SKILLS['Tier' + (sData.tier || 3)] || SKILLS.Tier3;
+
+        let skCfg, texs;
+        if (sData.type === 'SwordOfLight') {
+            skCfg = SKILLS.SwordOfLight;
+            texs = skillAssets.pixiSwordOfLight;
+        } else {
+            skCfg = SKILLS['Tier' + (sData.tier || 3)] || SKILLS.Tier3;
+            texs = skillAssets.pixiSkill;
+        }
 
         const offX = Math.cos(sData.angle) * sData.radius, offY = Math.sin(sData.angle) * sData.radius;
         spr.visible = true;
@@ -292,7 +313,7 @@ function draw() {
         spr.rotation = sData.angle + Math.PI / 2;
 
         const fIdx = Math.floor(sData.frame) % (skCfg.skillFrames || 1);
-        if (skillAssets.pixiSkill && skillAssets.pixiSkill[fIdx]) spr.texture = skillAssets.pixiSkill[fIdx];
+        if (texs && texs[fIdx]) spr.texture = texs[fIdx];
     }
 
     // 8. EFFECTS

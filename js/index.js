@@ -21,7 +21,9 @@ function init(firstLoad = false) {
 
     // Bullet Reset
     bulletData.fill(0);
-    lastFireTime = 0;
+    Object.keys(weaponTimers).forEach(k => weaponTimers[k] = 0);
+    Object.keys(weaponAmmo).forEach(k => weaponAmmo[k] = WEAPON_CONFIG[k].maxAmmo);
+    Object.keys(weaponRechargeMode).forEach(k => weaponRechargeMode[k] = false);
     activeSkills.length = 0;
     damageNumbers.forEach(d => d.active = false);
 
@@ -89,15 +91,12 @@ function updateDamageNumbers(dt) {
 
 /**
  * PROGRESSIVE SPAWNING
- * To prevent the game from lagging at the start of a stage, we only 
- * spawn 20 enemies per frame until the requirement is met.
  */
 function handleSpawning() {
-    if (isTraveling) return; // FIX: Don't spawn NEW enemies while we are speeding off to the next stage
+    if (isTraveling) return;
     const cfg = STAGE_CONFIG.STAGES[currentStage];
     if (!cfg) return;
 
-    // total entities in this stage
     const population = spawnList.length;
     for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < population; i++) {
         spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
@@ -118,18 +117,15 @@ function softReset() {
 
 /**
  * TRAVEL SYSTEM
- * Initiates the 'Speeding Off' sequence between stages.
  */
 function changeStage(newStage) {
     if (isTraveling) return;
     currentStage = newStage;
 
-    // Regenerate spawn list for the new stage immediately
     prepareStagePool(currentStage);
     spawnIndex = 0;
-    data.fill(0); // Clean up old enemies to prevent ghost collisions
+    data.fill(0);
 
-    // NEW: Wipe existing projectiles and damage numbers to ensure a clean transition
     bulletData.fill(0);
     activeBulletCount = 0;
     activeDamageCount = 0;
@@ -137,17 +133,17 @@ function changeStage(newStage) {
     activeBulletIndices.fill(0);
     activeDamageIndices.fill(0);
 
-    // Clear effects
     fxData.fill(0);
     activeFxCount = 0;
     activeFxIndices.fill(0);
 
-    // CRITICAL: Wipe the spatial grid heads as well to prevent "Ghost" links from old stages
     heads.fill(-1);
     occupiedCount = 0;
 
     // Reset combat timers to prevent immediate triggers at high speeds
-    lastFireTime = 0;
+    Object.keys(weaponTimers).forEach(k => weaponTimers[k] = 0);
+    Object.keys(weaponAmmo).forEach(k => weaponAmmo[k] = WEAPON_CONFIG[k].maxAmmo);
+    Object.keys(weaponRechargeMode).forEach(k => weaponRechargeMode[k] = false);
     lastCombatUpdate = performance.now();
     lastTargetUpdate = performance.now();
 
@@ -165,32 +161,24 @@ function startTravelToNextStage() {
 
 function arriveAtNewStage() {
     isTraveling = false;
-    if (currentStage === 10) {
-        bossMode = true;
-    } else {
-        bossMode = false;
-    }
-    // Reposition all enemies to start appearing around the new location
+    if (currentStage === 10) bossMode = true;
+    else bossMode = false;
     for (let i = 0; i < spawnIndex; i++) {
         spawnEnemy(i, spawnList[i], true);
     }
 }
 
-
-// Stats tracking for the HUD
+// Stats tracking
 let last = 0, f = 0, t = 0;
 let physicsTimeSum = 0;
 let drawTimeSum = 0;
 
 /**
  * MAIN GAME LOOP
- * The heartbeat of the application. High-precision timing and multi-stepping logic.
  */
 function loop(now) {
     let dt = now - last;
     last = now;
-    // Safety Clamp: If a frame takes > 100ms, don't try to simulate the "gap" at 25x.
-    // This prevents the "Spiral of Death" where one lag spike causes a teleport which causes more lag.
     if (dt > 100) dt = 16.6;
     if (spawnList.length === 0) {
         requestAnimationFrame(loop);
@@ -198,7 +186,6 @@ function loop(now) {
     }
     t += dt; f++;
 
-    // SUB-STEPPING: We cap steps higher to support 25x+ speed smoothly.
     const steps = Math.min(50, Math.ceil(PERFORMANCE.GAME_SPEED));
     const stepDt = (dt / steps) * PERFORMANCE.GAME_SPEED;
 
@@ -206,7 +193,6 @@ function loop(now) {
     updateDamageNumbers(dt);
 
     if (!gamePaused) {
-        // Physics Engine Tick
         const sUpdate = performance.now();
         for (let s = 0; s < steps; s++) {
             update(stepDt, now + (s * stepDt), s === 0, s);
@@ -215,32 +201,26 @@ function loop(now) {
         physicsTimeSum += (performance.now() - sUpdate);
     }
 
-    // Renderer Tick
     const sDraw = performance.now();
     draw();
     drawTimeSum += (performance.now() - sDraw);
 
-    // UI Tick (Throttled inside the function via cache checks)
     updateUI();
 
-    // FPS / Performance HUD updates every 1 second
     if (t > 1000) {
         const avgPhys = (physicsTimeSum / f).toFixed(2);
         const avgDraw = (drawTimeSum / f).toFixed(2);
         const tier = PERFORMANCE.LOD_TIERS[window.lastActiveTier || 0];
         const statsTxt = `FPS: ${f} | Logic: ${avgPhys}ms | Draw: ${avgDraw}ms | LOD: ${tier.id} (${tier.size}px) | OnScreen: ${Math.floor(smoothedEnemies)}`;
         document.getElementById('fps').innerText = statsTxt;
-        if (f < 50) console.warn("[Slow Frame]", statsTxt);
         f = 0; t = 0; physicsTimeSum = 0; drawTimeSum = 0;
     }
     requestAnimationFrame(loop);
 }
 
-// Initial Camera Setup
-let canvas; // Will point to app.canvas
+let canvas;
 
 (async () => {
-    // 1. INITIALIZE PIXIJS (WebGL/WebGPU)
     app = new PIXI.Application();
     await app.init({
         resizeTo: window,
@@ -251,7 +231,6 @@ let canvas; // Will point to app.canvas
     canvas = app.canvas;
     document.body.appendChild(app.canvas);
 
-    // 2. SETUP LAYERS (Containers)
     worldContainer = new PIXI.Container();
     enemyContainer = new PIXI.Container();
     bulletContainer = new PIXI.Container();
@@ -266,10 +245,6 @@ let canvas; // Will point to app.canvas
     app.stage.addChild(playerContainer);
     app.stage.addChild(uiContainer);
 
-    // BROWSER LISTENERS
-    window.addEventListener('resize', () => {
-        // Pixi handles its own resize with resizeTo: window
-    });
     window.addEventListener('wheel', (e) => {
         targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
         targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
@@ -277,23 +252,22 @@ let canvas; // Will point to app.canvas
 
     initUIListeners();
 
-    /**
-     * ASSET BOOTSTRAP
-     */
     const loadSkillSheets = () => {
         let loaded = 0;
         const check = () => {
             loaded++;
             onAssetLoad();
-            if (loaded >= 2) {
+            if (loaded >= 3) {
                 skillAssets.ready = true;
                 bakeSkills();
             }
         };
         skillAssets.buttonImg.onload = check;
         skillAssets.skillImg.onload = check;
+        skillAssets.swordOfLightImg.onload = check;
         skillAssets.buttonImg.src = SKILLS.Tier3.buttonSheet;
         skillAssets.skillImg.src = SKILLS.Tier3.skillSheet;
+        skillAssets.swordOfLightImg.src = SKILLS.SwordOfLight.skillSheet;
     };
     loadSkillSheets();
 
@@ -304,18 +278,5 @@ let canvas; // Will point to app.canvas
         loadImg(Enemy[k].attackPath, enemyAssets[k].attack);
     });
 
-    floorImg.onload = onAssetLoad;
-    floorImg.src = FLOOR_PATH;
-
-    const shipLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-    shipLoader(SHIP_CONFIG.onPath, shipAssets.onImg);
-    shipLoader(SHIP_CONFIG.fullPath, shipAssets.fullImg);
-    shipLoader(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
-    shipLoader(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
-
-    const laserLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-    laserLoader(WEAPON_CONFIG.laserPath, laserImg);
-
-    // Start the animation loop
     requestAnimationFrame(loop);
 })();

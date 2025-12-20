@@ -105,6 +105,19 @@ const SKILLS = {
         aoeMult: 1.25,
         skillRange: 10000,
         rings: 3
+    },
+    SwordOfLight: {
+        // We use the same sheet for both button and skill
+        skillSheet: 'img/Skills/Sword of Light/Spritesheet/1024x1024/Sword of Light_1024x1024_sheet.png',
+        skillFrames: 16, skillCols: 4, skillSize: 1024,
+        visualSize: 7000,   // "Enormous"
+        orbitRadius: 5000,   // "Fair distance from the ship"
+        animSpeedSkill: 1.2,
+        cooldownTime: 5000, // 5 seconds
+        duration: 2000,     // 2 seconds
+        damageMult: 500.0,  // "Massive damage"
+        aoeMult: 5.0,
+        skillRange: 9000    // Area around the sword
     }
 };
 
@@ -112,14 +125,54 @@ const SKILLS = {
  * WEAPON CONFIGURATION
  */
 const WEAPON_CONFIG = {
-    laserPath: 'img/Laser Sprites/01.png',
-    fireRate: 40,        // Shots per second
-    damage: 10,
-    bulletSpeed: 500,   // 10x faster - reaches distant enemies
-    bulletLife: 75000,   // 25x longer - 75 seconds range
-    bulletSize: 980,     // Visual scale
-    offsetSide: 140,     // Left/Right shift from ship center
-    offsetFront: 80      // Forward shift from center
+    bullet_left_side: {
+        path: 'img/Laser Sprites/01.png',
+        fireRate: 10,
+        damage: 10,
+        speed: 500,
+        life: 2000,
+        size: 980,
+        offsetSide: -140,
+        offsetFront: 80,
+        penetration: 5,
+        visualStretch: 1.0,
+        maxAmmo: 50,
+        recoveryRate: 5,     // Lowered so it actually goes down
+        tint: 0x00ffff,
+        minAmmoToFire: 10    // Must recover to 200 before firing again after depletion
+    },
+    bullet_right_side: {
+        path: 'img/Laser Sprites/01.png',
+        fireRate: 10,
+        damage: 10,
+        speed: 500,
+        life: 2000,
+        size: 980,
+        offsetSide: 140,
+        offsetFront: 80,
+        penetration: 5,
+        visualStretch: 1.0,
+        maxAmmo: 50,
+        recoveryRate: 5,
+        tint: 0x00ffff,
+        minAmmoToFire: 10
+    },
+    laser: {
+        path: 'img/Laser Sprites/02.png',
+        fireRate: 95,
+        damage: 10,
+        speed: 500,
+        life: 4000,
+        size: 380,
+        visualStretch: 5.0,
+        offsetSide: 0,
+        offsetFront: 80,
+        penetration: 25,
+        maxAmmo: 200,
+        recoveryRate: 1,    // Lowered so it actually goes down
+        tint: 0xff00ff,
+        minAmmoToFire: 50     // Must recover to 50 before firing again
+    }
 };
 
 /**

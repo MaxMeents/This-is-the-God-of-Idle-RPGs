@@ -21,8 +21,10 @@ const shipAssets = {
 const skillAssets = {
     buttonImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" }),
     skillImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" }),
+    swordOfLightImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" }),
     buttonCache: [],
     skillCache: [],
+    swordOfLightCache: [],
     baked: false,
     ready: false
 };
@@ -43,7 +45,11 @@ enemyKeys.forEach(k => {
 });
 
 const floorImg = Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" });
-const laserImg = Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" });
+const weaponAssets = {
+    leftBulletImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" }),
+    rightBulletImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" }),
+    laserImg: Object.assign(new Image(), isLocalFile ? {} : { crossOrigin: "anonymous" })
+};
 let floorPattern = null;
 
 /**
@@ -94,6 +100,17 @@ function bakeSkills() {
     }
     skillAssets.pixiButton = skillAssets.buttonCache.map(c => PIXI.Texture.from(c));
     skillAssets.pixiSkill = skillAssets.skillCache.map(c => PIXI.Texture.from(c));
+
+    // Bake Sword of Light
+    const socfg = SKILLS.SwordOfLight;
+    for (let i = 0; i < socfg.skillFrames; i++) {
+        const can = document.createElement('canvas'); can.width = 512; can.height = 512; // Downscale for cache/button
+        const cctx = can.getContext('2d');
+        cctx.drawImage(skillAssets.swordOfLightImg, (i % socfg.skillCols) * socfg.skillSize, Math.floor(i / socfg.skillCols) * socfg.skillSize, socfg.skillSize, socfg.skillSize, 0, 0, 512, 512);
+        skillAssets.swordOfLightCache.push(can);
+    }
+    skillAssets.pixiSwordOfLight = skillAssets.swordOfLightCache.map(c => PIXI.Texture.from(c));
+
     skillAssets.baked = true;
 }
 
@@ -106,7 +123,7 @@ function onAssetLoad() {
 }
 
 // Progressive Loading Strategy
-const TOTAL_BASIC_ASSETS = (enemyKeys.length * 3) + 1 + 4 + 2 + 1;
+const TOTAL_BASIC_ASSETS = (enemyKeys.length * 3) + 1 + 4 + 3 + 3; // +3 for skills (btn, skill, sword)
 const PRIORITY_TIERS = PERFORMANCE.LOD_TIERS.filter(t => t.priority).map(t => t.id);
 const BKGD_TIERS = PERFORMANCE.LOD_TIERS.filter(t => !t.priority).map(t => t.id);
 
@@ -190,8 +207,8 @@ function checkAutoStart() {
 function finalizeAssets() {
     document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
     floorPattern = true;
-    initEnemyLODAssets(); // This now handles progressive loading internally
     bakeShip();
+    bakeSkills(); // Bake buttons/skills now that images are loaded
     init(true);
 }
 
@@ -203,3 +220,27 @@ onAssetLoad = function () {
         finalizeAssets();
     }
 };
+
+// Start Loading Process When Scripts Are Ready
+window.addEventListener('DOMContentLoaded', () => {
+    initEnemyLODAssets();
+
+    shipAssets.onImg.src = SHIP_CONFIG.onPath;
+    shipAssets.onImg.onload = onAssetLoad;
+    shipAssets.fullImg.src = SHIP_CONFIG.fullPath;
+    shipAssets.fullImg.onload = onAssetLoad;
+    shipAssets.shieldOnImg.src = SHIP_CONFIG.shieldOnPath;
+    shipAssets.shieldOnImg.onload = onAssetLoad;
+    shipAssets.shieldTurnOnImg.src = SHIP_CONFIG.shieldTurnOnPath;
+    shipAssets.shieldTurnOnImg.onload = onAssetLoad;
+
+    floorImg.src = FLOOR_PATH;
+    floorImg.onload = onAssetLoad;
+    weaponAssets.leftBulletImg.src = WEAPON_CONFIG.bullet_left_side.path;
+    weaponAssets.leftBulletImg.onload = onAssetLoad;
+    weaponAssets.rightBulletImg.src = WEAPON_CONFIG.bullet_right_side.path;
+    weaponAssets.rightBulletImg.onload = onAssetLoad;
+    weaponAssets.laserImg.src = WEAPON_CONFIG.laser.path;
+    weaponAssets.laserImg.onload = onAssetLoad;
+});
+

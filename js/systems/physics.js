@@ -48,6 +48,34 @@ function activateSupernova(tier = 1) {
 }
 
 /**
+ * SKILL ACTIVATION (Sword of Light)
+ * Spawns 8 massive swords around the ship.
+ */
+function activateSwordOfLight() {
+    if (skillCooldowns[3] > 0) return;
+    const cfg = SKILLS.SwordOfLight;
+    skillCooldowns[3] = cfg.cooldownTime;
+
+    console.log(`[SKILL] Sword of Light activated!`);
+
+    const dirs = [-Math.PI / 2, -Math.PI / 4, 0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -3 * Math.PI / 4];
+
+    dirs.forEach(angle => {
+        activeSkills.push({
+            type: 'SwordOfLight',
+            angle: angle, // Fixed angle relative to ship
+            frame: 0,
+            radius: cfg.orbitRadius,
+            size: cfg.visualSize,
+            orbitSpd: 0,
+            tier: 4,
+            duration: cfg.duration,
+            maxFrames: cfg.skillFrames
+        });
+    });
+}
+
+/**
  * MAIN UPDATE TICK
  * Called multiple times per frame if the game speed is high.
  */
@@ -93,7 +121,22 @@ function update(dt, now, isFirstStep, s) {
 
     // 4. PLAYER SYSTEMS
     updatePlayerShield(dt, sc);
-    for (let i = 0; i < 3; i++) {
+
+    // Weapon Ammo Recovery
+    Object.keys(WEAPON_CONFIG).forEach(key => {
+        const wcfg = WEAPON_CONFIG[key];
+        if (weaponAmmo[key] < wcfg.maxAmmo) {
+            weaponAmmo[key] += (wcfg.recoveryRate || 50) * (dt / 1000);
+            if (weaponAmmo[key] > wcfg.maxAmmo) weaponAmmo[key] = wcfg.maxAmmo;
+
+            // Exit recharge mode if threshold reached
+            if (weaponRechargeMode[key] && weaponAmmo[key] >= (wcfg.minAmmoToFire || 0)) {
+                weaponRechargeMode[key] = false;
+            }
+        }
+    });
+
+    for (let i = 0; i < 4; i++) {
         if (skillCooldowns[i] > 0) {
             skillCooldowns[i] -= dt * PERFORMANCE.GAME_SPEED;
             if (skillCooldowns[i] < 0) skillCooldowns[i] = 0;
@@ -109,17 +152,35 @@ function update(dt, now, isFirstStep, s) {
         if (skillCooldowns[0] <= 0 && distSq < (SKILLS.Tier1.skillRange * SKILLS.Tier1.skillRange)) activateSupernova(1);
         if (skillCooldowns[1] <= 0 && distSq < (SKILLS.Tier2.skillRange * SKILLS.Tier2.skillRange)) activateSupernova(2);
         if (skillCooldowns[2] <= 0 && distSq < (SKILLS.Tier3.skillRange * SKILLS.Tier3.skillRange)) activateSupernova(3);
+        if (skillCooldowns[3] <= 0 && distSq < (SKILLS.SwordOfLight.skillRange * SKILLS.SwordOfLight.skillRange)) activateSwordOfLight();
     }
 
     // 5. SKILL INSTANCE UPDATES (Animation & Lifespan)
     for (let i = activeSkills.length - 1; i >= 0; i--) {
         const s = activeSkills[i];
-        const cfg = SKILLS['Tier' + (s.tier || 3)] || SKILLS.Tier3;
-        s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-        s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
 
-        if (s.frame >= cfg.skillFrames) {
-            activeSkills.splice(i, 1);
+        if (s.type === 'SwordOfLight') {
+            const cfg = SKILLS.SwordOfLight;
+            s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+            s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+
+            // Loop animation
+            if (s.frame >= cfg.skillFrames) s.frame = s.frame % cfg.skillFrames;
+
+            // Check duration
+            s.elapsed = (s.elapsed || 0) + dt * PERFORMANCE.GAME_SPEED;
+            if (s.elapsed >= cfg.duration) {
+                activeSkills.splice(i, 1);
+            }
+        } else {
+            // Standard Supernova
+            const cfg = SKILLS['Tier' + (s.tier || 3)] || SKILLS.Tier3;
+            s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+            s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+
+            if (s.frame >= cfg.skillFrames) {
+                activeSkills.splice(i, 1);
+            }
         }
     }
 
@@ -138,14 +199,51 @@ function update(dt, now, isFirstStep, s) {
 
     // 6. WEAPON SYSTEMS
     if (!isTraveling && player.targetIdx !== -1) {
-        if (now - lastFireTime > (1000 / WEAPON_CONFIG.fireRate)) {
-            spawnLasers();
-            lastFireTime = now;
-        }
+        Object.keys(WEAPON_CONFIG).forEach(key => {
+            const wcfg = WEAPON_CONFIG[key];
+            // Scale interval by game speed so weapons fire faster at higher speeds
+            const interval = (1000 / (wcfg.fireRate || 10)) / PERFORMANCE.GAME_SPEED;
+
+            if (weaponTimers[key] === 0 || now - weaponTimers[key] > 1000) {
+                weaponTimers[key] = now - interval;
+            }
+
+            let safety = 0;
+            while (now - weaponTimers[key] >= interval && safety < 10) {
+                // CRITICAL: Check recharge mode FIRST, before any ammo checks
+                if (weaponRechargeMode[key]) {
+                    // Weapon is locked in recharge - do not fire
+                    weaponTimers[key] = now;
+                    break;
+                }
+
+                // Only proceed if we have enough ammo
+                if (weaponAmmo[key] >= 1.0) {
+                    const type = (key === 'bullet_left_side') ? 0 : (key === 'bullet_right_side' ? 1 : 2);
+                    fireWeapon(key, type);
+                    weaponAmmo[key] -= 1.0;
+                    weaponTimers[key] += interval;
+
+                    // Check if we just depleted - enter recharge mode immediately
+                    if (weaponAmmo[key] < 1.0) {
+                        weaponAmmo[key] = 0;
+                        weaponRechargeMode[key] = true;
+                        break;
+                    }
+                } else {
+                    // Not enough ammo - enter recharge mode
+                    weaponAmmo[key] = 0;
+                    weaponRechargeMode[key] = true;
+                    weaponTimers[key] = now;
+                    break;
+                }
+                safety++;
+            }
+        });
     }
-    // Sub-step Throttle for Bullets: At high speed (25x), update every 2nd step to save CPU.
-    // Use the sub-step index 's' to ensure balanced load across the frame.
-    if (!isTraveling && (PERFORMANCE.GAME_SPEED < 10 || isFirstStep || s % 2 === 0)) {
+
+    // Always update bullets every step to keep them synced with game speed
+    if (!isTraveling) {
         updateBullets(dt);
     }
 }
@@ -154,6 +252,12 @@ function update(dt, now, isFirstStep, s) {
  * SHIELD LOGIC
  */
 function updatePlayerShield(dt, sc) {
+    // Always tick down cooldown if it's active
+    if (player.shieldCooldownRemaining > 0) {
+        player.shieldCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
+        if (player.shieldCooldownRemaining < 0) player.shieldCooldownRemaining = 0;
+    }
+
     if (player.shieldActive) {
         player.shieldDurationRemaining -= dt * PERFORMANCE.GAME_SPEED;
 
@@ -170,11 +274,8 @@ function updatePlayerShield(dt, sc) {
         if (player.shieldDurationRemaining <= 0 || player.shieldHP <= 0) {
             player.shieldActive = false;
             player.shieldAnimState = 'OFF';
-            player.shieldCooldownRemaining = sc.shieldCooldown;
+            // Don't reset cooldown here - it was already set when shield activated
         }
-    } else if (player.shieldCooldownRemaining > 0) {
-        player.shieldCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
-        if (player.shieldCooldownRemaining < 0) player.shieldCooldownRemaining = 0;
     }
 }
 
@@ -266,7 +367,15 @@ function updatePlayerMovement(dt, sc) {
             console.log(`[MOVEMENT] Target found! Distance: ${d.toFixed(0)}, TargetIdx: ${player.targetIdx}`);
         }
 
-        const targetRot = Math.atan2(dy, dx);
+        // Check if ALL weapons are in recharge mode
+        const allWeaponsRecharging = weaponRechargeMode.bullet_left_side &&
+            weaponRechargeMode.bullet_right_side &&
+            weaponRechargeMode.laser;
+
+        // Target rotation: face enemy normally, or face away during retreat
+        const baseTargetRot = Math.atan2(dy, dx);
+        const targetRot = allWeaponsRecharging ? baseTargetRot + Math.PI : baseTargetRot;
+
         let diff = targetRot - player.rotation;
         while (diff < -Math.PI) diff += Math.PI * 2;
         while (diff > Math.PI) diff -= Math.PI * 2;
@@ -276,8 +385,10 @@ function updatePlayerMovement(dt, sc) {
         else player.rotation += Math.sign(diff) * turnStep;
 
         if (d > 10) {
-            player.x += (dx / d) * PLAYER_SPEED;
-            player.y += (dy / d) * PLAYER_SPEED;
+            // TACTICAL RETREAT: Move away from enemy when all weapons recharging
+            const moveDirection = allWeaponsRecharging ? -1 : 1;
+            player.x += (dx / d) * PLAYER_SPEED * moveDirection;
+            player.y += (dy / d) * PLAYER_SPEED * moveDirection;
         }
 
         const animSpd = sc.animSpeed * (dt / 16.6) * gameSpd;
@@ -605,7 +716,10 @@ function processSkillDamage() {
 
     // We iterate through each active flame instance
     for (const skill of activeSkills) {
-        const tierCfg = SKILLS['Tier' + (skill.tier || 3)];
+        let tierCfg;
+        if (skill.type === 'SwordOfLight') tierCfg = SKILLS.SwordOfLight;
+        else tierCfg = SKILLS['Tier' + (skill.tier || 3)];
+
         if (!tierCfg) continue;
         const dmg = tierCfg.damageMult * (typeof DAMAGE_PER_POP !== 'undefined' ? DAMAGE_PER_POP : 1);
         // Calculate world position of this flame
@@ -665,6 +779,8 @@ function applyDamageToPlayer(dmg) {
         player.shieldActive = true; player.shieldAnimState = 'TURNING_ON';
         player.shieldFrame = 0; player.shieldHP = player.shieldMaxHP;
         player.shieldDurationRemaining = SHIP_CONFIG.shieldDuration;
+        // Start cooldown immediately when shield activates
+        player.shieldCooldownRemaining = SHIP_CONFIG.shieldCooldown;
     }
 
     if (player.shieldActive) {
@@ -672,7 +788,7 @@ function applyDamageToPlayer(dmg) {
         if (player.shieldHP <= 0) {
             player.shieldActive = false;
             player.shieldAnimState = 'OFF';
-            player.shieldCooldownRemaining = SHIP_CONFIG.shieldCooldown;
+            // Cooldown already started when shield activated
         }
     } else {
         player.health -= dmg;
@@ -715,21 +831,29 @@ function spawnEnemy(i, typeKey, far = false) {
     data[idx + 12] = isArch ? 1.0 : 0.0; // Arch flag
 }
 /**
- * WEAPON SPAWNING (Dual Lasers)
+ * WEAPON SPAWNING (Single Shot)
  */
-function spawnLasers() {
-    const cfg = WEAPON_CONFIG;
+function fireWeapon(weaponKey, type) {
+    const wcfg = WEAPON_CONFIG[weaponKey];
     const rot = player.rotation;
     const cos = Math.cos(rot), sin = Math.sin(rot);
-    const sideX = -sin * cfg.offsetSide, sideY = cos * cfg.offsetSide;
-    const frontX = cos * cfg.offsetFront, frontY = sin * cfg.offsetFront;
 
-    // Spawn Left and Right
-    createBullet(player.x + frontX + sideX, player.y + frontY + sideY, cos * cfg.bulletSpeed, sin * cfg.bulletSpeed);
-    createBullet(player.x + frontX - sideX, player.y + frontY - sideY, cos * cfg.bulletSpeed, sin * cfg.bulletSpeed);
+    const sideX = -sin * wcfg.offsetSide, sideY = cos * wcfg.offsetSide;
+    const frontX = cos * wcfg.offsetFront, frontY = sin * wcfg.offsetFront;
+
+    createBullet(
+        player.x + frontX + sideX,
+        player.y + frontY + sideY,
+        cos * wcfg.speed,
+        sin * wcfg.speed,
+        type,
+        wcfg.damage || 10,
+        wcfg.life || 75000,
+        wcfg.penetration || 1
+    );
 }
 
-function createBullet(x, y, vx, vy) {
+function createBullet(x, y, vx, vy, type = 0, damage = 10, life = 75000, penetration = 1) {
     if (activeBulletCount >= totalBullets) return;
 
     // Find first inactive slot
@@ -738,8 +862,13 @@ function createBullet(x, y, vx, vy) {
         if (bulletData[idx + 5] === 0) {
             bulletData[idx] = x; bulletData[idx + 1] = y;
             bulletData[idx + 2] = vx; bulletData[idx + 3] = vy;
-            bulletData[idx + 4] = WEAPON_CONFIG.bulletLife;
+            bulletData[idx + 4] = life;
             bulletData[idx + 5] = 1;
+            bulletData[idx + 6] = type;
+            bulletData[idx + 7] = penetration;
+            // We'll store damage in a separate array if needed, but for now we can 
+            // use a simple global mult or store it in the data if we expand stride.
+            // ACTUALLY, let's just use the config during update based on type for damage.
             activeBulletIndices[activeBulletCount++] = i;
             return;
         }
@@ -751,11 +880,19 @@ function createBullet(x, y, vx, vy) {
  */
 function updateBullets(dt) {
     const spd = PERFORMANCE.GAME_SPEED;
-    const dmg = WEAPON_CONFIG.damage;
 
     for (let i = activeBulletCount - 1; i >= 0; i--) {
         const bulletIdx = activeBulletIndices[i];
         const idx = bulletIdx * BULLET_STRIDE;
+        const bType = bulletData[idx + 6];
+
+        // Get config based on type
+        let wcfg;
+        if (bType === 0) wcfg = WEAPON_CONFIG.bullet_left_side;
+        else if (bType === 1) wcfg = WEAPON_CONFIG.bullet_right_side;
+        else wcfg = WEAPON_CONFIG.laser;
+
+        const dmg = wcfg.damage || 10;
 
         // Move
         bulletData[idx] += bulletData[idx + 2] * (dt / 16.6) * spd;
@@ -788,7 +925,13 @@ function updateBullets(dt) {
                                 spawnFX(bx, by, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
                                 for (let k = 0; k < 5; k++) spawnFX(bx, by, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
                             }
-                            bulletDead = true; break;
+
+                            // Penetration Logic
+                            bulletData[idx + 7]--;
+                            if (bulletData[idx + 7] <= 0) {
+                                bulletDead = true;
+                                break;
+                            }
                         }
                     }
                     ptr = next[ptr];

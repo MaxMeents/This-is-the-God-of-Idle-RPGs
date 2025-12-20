@@ -5,6 +5,7 @@
 
 // DOM Cache: We grab pointers to HTML elements once to avoid expensive document searches.
 let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvases = [], elFPS;
+let elLaserBar, elBulletBar;
 let uiInitialized = false;
 
 function initUICache() {
@@ -21,8 +22,12 @@ function initUICache() {
     elSkillCanvases = [
         document.getElementById('skill-button-canvas-1'),
         document.getElementById('skill-button-canvas-2'),
-        document.getElementById('skill-button-canvas-3')
+        document.getElementById('skill-button-canvas-3'),
+        document.getElementById('skill-button-canvas-4')
     ];
+
+    elLaserBar = document.getElementById('laser-ammo-bar');
+    elBulletBar = document.getElementById('bullet-ammo-bar');
 
     uiInitialized = true;
 }
@@ -31,6 +36,11 @@ function initUICache() {
 let lastHP = -1;
 let lastShield = -1;
 let lastCharge = -1;
+let lastShieldRecharge = null;
+let lastLaserAmmo = -1;
+let lastBulletAmmo = -1;
+let lastLaserRecharge = null;
+let lastBulletRecharge = null;
 let lastStageTxt = "";
 let lastBossMode = null;
 
@@ -66,11 +76,46 @@ function updateUI() {
         elShieldBar.style.height = targetShieldHeight + '%';
         lastShield = targetShieldHeight;
     }
+    // 3. SHIELD CHARGE (Ticker)
+    const isRecharging = player.shieldCooldownRemaining > 0;
+    // During recharge: 0% at start, 100% when ready
+    const chgPct = isRecharging ? (1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown)) : 1.0;
 
-    const chargePct = player.shieldActive ? 1 : (1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown));
-    if (chargePct !== lastCharge) {
-        elChargeBar.style.height = (chargePct * 100) + '%';
-        lastCharge = chargePct;
+    if (chgPct !== lastCharge) {
+        elChargeBar.style.height = (Math.max(0, Math.min(1, chgPct)) * 100) + '%';
+        lastCharge = chgPct;
+    }
+
+    if (isRecharging !== lastShieldRecharge) {
+        if (isRecharging) elChargeBar.classList.add('recharging');
+        else elChargeBar.classList.remove('recharging');
+        lastShieldRecharge = isRecharging;
+    }
+
+    // 4. WEAPON AMMO (Skinny Bars)
+    const laserPct = weaponAmmo.laser / WEAPON_CONFIG.laser.maxAmmo;
+    if (laserPct !== lastLaserAmmo) {
+        elLaserBar.style.height = (laserPct * 100) + '%';
+        lastLaserAmmo = laserPct;
+    }
+
+    const bullPct = weaponAmmo.bullet_left_side / WEAPON_CONFIG.bullet_left_side.maxAmmo;
+    if (bullPct !== lastBulletAmmo) {
+        elBulletBar.style.height = (bullPct * 100) + '%';
+        lastBulletAmmo = bullPct;
+    }
+
+    // 5. RECHARGE STATUS (Green Color)
+    if (weaponRechargeMode.laser !== lastLaserRecharge) {
+        if (weaponRechargeMode.laser) elLaserBar.classList.add('recharging');
+        else elLaserBar.classList.remove('recharging');
+        lastLaserRecharge = weaponRechargeMode.laser;
+    }
+
+    if (weaponRechargeMode.bullet_left_side !== lastBulletRecharge) {
+        if (weaponRechargeMode.bullet_left_side) elBulletBar.classList.add('recharging');
+        else elBulletBar.classList.remove('recharging');
+        lastBulletRecharge = weaponRechargeMode.bullet_left_side;
     }
 
     // 3. STAGE TEXT & NAVIGATION
@@ -92,12 +137,23 @@ function updateUI() {
 
     // 5. SKILL BUTTON CANVASES
     if (skillAssets.baked) {
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 4; i++) {
             const canv = elSkillCanvases[i];
             if (!canv) continue;
             const btnCtx = canv.getContext('2d');
-            const tierKey = 'Tier' + (i + 1);
-            const cfg = SKILLS[tierKey];
+
+            let cfg, frameImg;
+            if (i === 3) {
+                // Sword of Light
+                cfg = SKILLS.SwordOfLight;
+                const bFrame = Math.floor((performance.now() * cfg.animSpeedSkill / 16.6) % cfg.skillFrames);
+                frameImg = skillAssets.swordOfLightCache[bFrame];
+            } else {
+                const tierKey = 'Tier' + (i + 1);
+                cfg = SKILLS[tierKey];
+                const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
+                frameImg = skillAssets.buttonCache[bFrame];
+            }
 
             if (!canv._w) {
                 const dpr = window.devicePixelRatio || 1;
@@ -110,10 +166,12 @@ function updateUI() {
 
             btnCtx.clearRect(0, 0, canv.width, canv.height);
 
-            const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
-            const frameImg = skillAssets.buttonCache[bFrame];
             if (frameImg) {
-                btnCtx.drawImage(frameImg, 0, -15 * (canv.height / 140), canv.width, canv.height);
+                if (i === 3) {
+                    btnCtx.drawImage(frameImg, 0, 0, canv.width, canv.height);
+                } else {
+                    btnCtx.drawImage(frameImg, 0, -15 * (canv.height / 140), canv.width, canv.height);
+                }
             }
 
             const cd = skillCooldowns[i];
@@ -160,6 +218,12 @@ function initUIListeners() {
         if (btn) {
             btn.addEventListener('click', () => activateSupernova(i));
         }
+    }
+
+    // Sword of Light Click
+    const btnSword = document.getElementById('skill-button-container-4');
+    if (btnSword) {
+        btnSword.addEventListener('click', () => activateSwordOfLight());
     }
 
     // Auto Toggle

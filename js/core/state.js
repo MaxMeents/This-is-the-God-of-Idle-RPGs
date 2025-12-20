@@ -58,16 +58,26 @@ const player = {
 
 // Ability State
 const activeSkills = []; // Tracks live particle systems
-let skillCooldowns = [0, 0, 0]; // Cooldowns for Tier 1, 2, 3
+let skillCooldowns = [0, 0, 0, 0]; // Cooldowns for Tier 1, 2, 3, 4
 let autoSkills = true;  // If true, skills fire automatically when ready
 
 // Bullet State (High Performance)
-const BULLET_STRIDE = 6; // [x, y, vx, vy, life, active]
-const totalBullets = 500;
+const BULLET_STRIDE = 8; // [x, y, vx, vy, life, active, type, penetration]
+const totalBullets = 2000;
 const bulletData = new Float32Array(totalBullets * BULLET_STRIDE);
 const activeBulletIndices = new Int32Array(totalBullets);
 let activeBulletCount = 0;
-let lastFireTime = 0;
+let weaponTimers = { bullet_left_side: 0, bullet_right_side: 0, laser: 0 };
+let weaponAmmo = {
+    bullet_left_side: WEAPON_CONFIG.bullet_left_side.maxAmmo,
+    bullet_right_side: WEAPON_CONFIG.bullet_right_side.maxAmmo,
+    laser: WEAPON_CONFIG.laser.maxAmmo
+};
+let weaponRechargeMode = {
+    bullet_left_side: false,
+    bullet_right_side: false,
+    laser: false
+};
 
 // Damage Numbers Pool (Prevents Garbage Collection lag)
 const DAMAGE_POOL_SIZE = 100;
