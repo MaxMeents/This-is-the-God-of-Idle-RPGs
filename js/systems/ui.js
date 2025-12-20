@@ -111,14 +111,14 @@ function updateUI() {
         const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
         const frameImg = skillAssets.buttonCache[bFrame];
         if (frameImg) {
-            btnCtx.drawImage(frameImg, 0, 0, elSkillCanvas.width, elSkillCanvas.height);
+            btnCtx.drawImage(frameImg, 0, -30, elSkillCanvas.width, elSkillCanvas.height);
         }
 
         // Draw the dark cooldown overlay and the numeric timer
         if (skillCooldownRemaining > 0) {
             btnCtx.save();
             btnCtx.beginPath();
-            btnCtx.arc(elSkillCanvas.width / 2, elSkillCanvas.height / 2, elSkillCanvas.width / 2, 0, Math.PI * 2);
+            btnCtx.arc(elSkillCanvas.width / 2.5, elSkillCanvas.height / 2.5, elSkillCanvas.width / 2.5, 0, Math.PI * 2);
             btnCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
             btnCtx.fill();
 
@@ -132,12 +132,13 @@ function updateUI() {
 
             // Optical centering adjustment
             const nudgeX = elSkillCanvas.width * -0.04;
-            const nudgeY = elSkillCanvas.height * 0.035;
+            const nudgeY = elSkillCanvas.height * -0.02;
             btnCtx.fillText(timerVal, elSkillCanvas.width / 2 + nudgeX, elSkillCanvas.height / 2 + nudgeY);
             btnCtx.restore();
         }
     }
 }
+
 
 /**
  * INITIALIZE EVENT LISTENERS
@@ -156,33 +157,14 @@ function initUIListeners() {
 
     // Skill Activation click
     document.getElementById('skill-button-container').addEventListener('click', () => {
-        const cfg = SKILLS.MulticolorXFlame;
-        if (skillCooldownRemaining > 0) return;
-        skillCooldownRemaining = cfg.cooldownTime;
+        activateSupernova();
+    });
 
-        console.log('[SKILL] Triple Ring Supernova activated!');
-
-        // Function to spawn a ring
-        const spawnRing = (count, radius, size, delay) => {
-            setTimeout(() => {
-                console.log(`[SKILL] Spawning ring: ${count} flames at radius ${radius}, size ${size}`);
-                for (let i = 0; i < count; i++) {
-                    activeSkills.push({
-                        angle: (i / count) * Math.PI * 2,
-                        frame: 0,
-                        radius: radius,
-                        size: size,
-                        orbitSpd: 0.02 + (Math.random() * 0.02)
-                    });
-                }
-                console.log(`[SKILL] Total active skills: ${activeSkills.length}`);
-            }, delay);
-        };
-
-        // Triple Ring Supernova
-        spawnRing(15, 1200, 1400, 0);      // Inner Small Ring
-        spawnRing(20, 2500, 2200, 150);    // Mid Medium Ring
-        spawnRing(30, 4500, 3500, 300);    // Outer Massive Ring
+    // Auto Toggle click
+    const autoBtn = document.getElementById('auto-btn');
+    autoBtn.addEventListener('click', () => {
+        autoSkills = !autoSkills;
+        autoBtn.classList.toggle('active', autoSkills);
     });
 
     // NAVIGATION SYSTEM

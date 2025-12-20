@@ -9,6 +9,36 @@ let lastTargetUpdate = 0;
 let lastCombatUpdate = 0;
 
 /**
+ * SKILL ACTIVATION (Supernova)
+ * Triggers the massive triple-ring solar flare effect.
+ */
+function activateSupernova() {
+    const cfg = SKILLS.MulticolorXFlame;
+    if (skillCooldownRemaining > 0) return;
+    skillCooldownRemaining = cfg.cooldownTime;
+
+    console.log('[SKILL] Triple Ring Supernova activated!');
+
+    const spawnRing = (count, radius, size, delay) => {
+        setTimeout(() => {
+            for (let i = 0; i < count; i++) {
+                activeSkills.push({
+                    angle: (i / count) * Math.PI * 2,
+                    frame: 0,
+                    radius: radius,
+                    size: size,
+                    orbitSpd: 0.02 + (Math.random() * 0.02)
+                });
+            }
+        }, delay);
+    };
+
+    spawnRing(15, 1200, 1400, 0);      // Inner
+    spawnRing(20, 2500, 2200, 150);    // Mid
+    spawnRing(30, 4500, 3500, 300);    // Outer
+}
+
+/**
  * MAIN UPDATE TICK
  * Called multiple times per frame if the game speed is high.
  */
@@ -57,6 +87,19 @@ function update(dt, now, isFirstStep, s) {
     if (skillCooldownRemaining > 0) {
         skillCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
         if (skillCooldownRemaining < 0) skillCooldownRemaining = 0;
+    }
+
+    // AUTO SKILL TRIGGER
+    if (autoSkills && skillCooldownRemaining <= 0) {
+        if (player.targetIdx !== -1) {
+            const tIdx = player.targetIdx * STRIDE;
+            const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
+            const distSq = dx * dx + dy * dy;
+            const range = SKILLS.MulticolorXFlame.skillRange;
+            if (distSq < (range * range)) {
+                activateSupernova();
+            }
+        }
     }
 
     // Camera Smoothing

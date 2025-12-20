@@ -59,6 +59,7 @@ const player = {
 // Ability State
 const activeSkills = []; // Tracks live particle systems
 let skillCooldownRemaining = 0;
+let autoSkills = true;  // If true, skills fire automatically when ready
 
 // Bullet State (High Performance)
 const BULLET_STRIDE = 6; // [x, y, vx, vy, life, active]

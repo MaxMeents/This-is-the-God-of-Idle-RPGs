@@ -67,10 +67,11 @@ const SKILLS = {
         orbitRadius: 10000,
         animSpeedButton: 0.9,
         animSpeedSkill: 2,
-        cooldownTime: 2000,
-        instanceCount: 12,
+        cooldownTime: 8000,
+        instanceCount: 22,
         damageMult: 30.0,
         aoeMult: 1.25,
+        skillRange: 10000,
     }
 };
 
