@@ -114,8 +114,8 @@ const PRIORITY_LOD_COUNT = (enemyKeys.length * PRIORITY_TIERS.length * 3);
 const BKGD_LOD_COUNT = (enemyKeys.length * BKGD_TIERS.length * 3);
 
 // Goal for "Ready to Play"
-const GRAND_TOTAL = TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT + BKGD_LOD_COUNT + (PRIORITY_LOD_COUNT + BKGD_LOD_COUNT) * 2; // images + conversion + prewarm
-const PRIORITY_GOAL = TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT * 3; // basic + priority images + priority conversion + priority prewarm
+const GRAND_TOTAL = TOTAL_BASIC_ASSETS + (PRIORITY_LOD_COUNT + BKGD_LOD_COUNT) * 3;
+const MINIMUM_GOAL = TOTAL_BASIC_ASSETS + (enemyKeys.length * 3 * 3); // Basic + Micro Images + Micro Conv + Micro Warm
 
 let conversionCt = 0;
 let prewarmCt = 0;
@@ -152,18 +152,15 @@ function updateLoadingProgress() {
         }
     }
 
-    // UNLOCK PLAY BUTTON EARLY
-    const priorityGoal = totalPriorityWork;
-    if (currentTotal >= priorityGoal && !isPriorityDone) {
+    // UNLOCK PLAY BUTTON EARLY (Once Micro is ready)
+    if (currentTotal >= MINIMUM_GOAL && !isPriorityDone) {
         isPriorityDone = true;
         if (startBtn) {
             startBtn.style.display = 'inline-block';
-            startBtn.innerText = "READY (START LOW RES)";
+            startBtn.innerText = "READY (FAST START)";
         }
-        status.innerText = "SYSTEMS ONLINE - ENTRANCE READY";
+        status.innerText = "SYSTEMS ONLINE - MINIMUM ENGAGEMENT READY";
         status.style.color = '#ffcc00';
-
-        // Auto-start if preferred
         checkAutoStart();
     }
 }

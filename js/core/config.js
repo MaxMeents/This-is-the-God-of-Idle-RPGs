@@ -79,9 +79,9 @@ const SKILLS = {
  */
 const WEAPON_CONFIG = {
     laserPath: 'img/Laser Sprites/01.png',
-    fireRate: 30,        // Shots per second
+    fireRate: 40,        // Shots per second
     damage: 10,
-    bulletSpeed: 800,   // 10x faster - reaches distant enemies
+    bulletSpeed: 500,   // 10x faster - reaches distant enemies
     bulletLife: 75000,   // 25x longer - 75 seconds range
     bulletSize: 980,     // Visual scale
     offsetSide: 140,     // Left/Right shift from ship center

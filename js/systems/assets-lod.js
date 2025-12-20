@@ -1,26 +1,40 @@
 /**
- * LOD ASSET LOADING SYSTEM - "CORE-ISOLATED" VERSION (STABLE LOD)
+ * LOD ASSET LOADING SYSTEM - "STUTTER-FREE" VERSION
+ * 
+ * Philosophy: Start with the absolute minimum (16px Micro) to get the game running.
+ * Then, use a secondary CPU core (Web Worker) to chew through the massive 20MB+ 
+ * sprite sheets. Finally, "drip-feed" the finished pieces to the GPU over several 
+ * minutes to ensure the player never feels a single frame drop.
  */
 
 "use strict";
 
+// --- THE WORKER (Secondary CPU Core) ---
 const LOD_WORKER_CODE = `
     self.onmessage = async (e) => {
         const { id, path, frameCount, cols, size, throttleDelay } = e.data;
         try {
             const response = await fetch(path);
-            if (!response.ok) throw new Error("Network response was not ok");
+            if (!response.ok) throw new Error("Fetch failed");
             const blob = await response.blob();
+            
+            // Heavy decompression happens here, away from the game loop
             const fullBitmap = await createImageBitmap(blob);
             const bitmaps = [];
+            
             for (let i = 0; i < frameCount; i++) {
                 const x = (i % cols) * size;
                 const y = Math.floor(i / cols) * size;
+                // Slicing also happens off-thread
                 const frameBitmap = await createImageBitmap(fullBitmap, x, y, size, size);
                 bitmaps.push(frameBitmap);
-                if (throttleDelay > 0 && i % 15 === 0) await new Promise(r => setTimeout(r, throttleDelay));
+                
+                // Keep the worker core cool
+                if (throttleDelay > 0 && i % 20 === 0) await new Promise(r => setTimeout(r, throttleDelay));
             }
+            
             fullBitmap.close();
+            // Ownership transfer (Zero copy)
             self.postMessage({ id, success: true, bitmaps }, bitmaps);
         } catch (err) {
             self.postMessage({ id, success: false, error: err.message });
@@ -32,9 +46,11 @@ const lodWorkerBlob = new Blob([LOD_WORKER_CODE], { type: 'application/javascrip
 const lodWorkerURL = URL.createObjectURL(lodWorkerBlob);
 const lodWorker = new Worker(lodWorkerURL);
 
+// --- MAIN SYSTEM ---
+
 const LOD_SIZE_TO_FOLDER = {
     16: '16x16', 32: '32x32', 64: '64x64', 128: '128x128', 256: '256x256',
-    512: '512x512', 768: '768x768', 1024: '1024x1024', 2048: '2048x2048'
+    512: '512x512', 768: '768x768', 1024: '1024x1024'
 };
 
 function getSheetPath(enemyName, animationType, size) {
@@ -57,32 +73,38 @@ let lodPriorityLoadedCount = 0;
 let isPriorityLODStarted = false;
 let backgroundLoadQueue = [];
 
+/**
+ * PHASE 1: BOOTSTRAP
+ * Load only the absolute minimum required to unlock the "Begin Combat" button.
+ */
 function initEnemyLODAssets() {
-    console.log("[LOD] Initializing Multi-Res Assets...");
+    console.log("[LOD] Initializing Stutter-Free Pipeline...");
     enemyKeys.forEach(typeKey => {
         enemyLODAssets[typeKey] = { walk: {}, death: {}, attack: {} };
     });
 
-    const priorityTiers = PERFORMANCE.LOD_TIERS.filter(t => t.priority);
-    const bkgdTiers = PERFORMANCE.LOD_TIERS.filter(t => !t.priority);
+    // In this version, we treat ONLY the lowest tier as mandatory to start
+    const lowestTier = PERFORMANCE.LOD_TIERS[PERFORMANCE.LOD_TIERS.length - 1];
+    const otherTiers = PERFORMANCE.LOD_TIERS.slice(0, -1);
 
-    priorityTiers.forEach(tier => {
-        enemyKeys.forEach(typeKey => {
-            ['walk', 'death', 'attack'].forEach(animType => {
-                const path = getSheetPath(typeKey, animType, tier.size);
-                if (path) {
-                    const img = Object.assign(new Image(), { crossOrigin: "anonymous" });
-                    img.src = path;
-                    enemyLODAssets[typeKey][animType][tier.id] = { img, tierID: tier.id };
-                    lodPriorityLoadCount++;
-                    img.onload = () => handlePriorityLoad();
-                    img.onerror = () => handlePriorityLoad();
-                }
-            });
+    // Mandatory (Micro 16px)
+    enemyKeys.forEach(typeKey => {
+        ['walk', 'death', 'attack'].forEach(animType => {
+            const path = getSheetPath(typeKey, animType, lowestTier.size);
+            if (path) {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.src = path;
+                enemyLODAssets[typeKey][animType][lowestTier.id] = { img, tierID: lowestTier.id };
+                lodPriorityLoadCount++;
+                img.onload = () => handlePriorityLoad();
+                img.onerror = () => handlePriorityLoad();
+            }
         });
     });
 
-    bkgdTiers.forEach(tier => {
+    // Everything else goes to the background worker
+    otherTiers.forEach(tier => {
         enemyKeys.forEach(typeKey => {
             ['walk', 'death', 'attack'].forEach(animType => {
                 backgroundLoadQueue.push({ typeKey, tier, animType });
@@ -100,13 +122,21 @@ function handlePriorityLoad() {
 
     if (lodPriorityLoadedCount >= lodPriorityLoadCount && !isPriorityLODStarted) {
         isPriorityLODStarted = true;
-        const priorityTiers = PERFORMANCE.LOD_TIERS.filter(t => t.priority);
-        startAsyncLODPipeline(priorityTiers, true, () => {
+
+        // Build the 16px cache immediately (it's tiny, no lag)
+        const lowestTier = [PERFORMANCE.LOD_TIERS[PERFORMANCE.LOD_TIERS.length - 1]];
+        startAsyncLODPipeline(lowestTier, true, () => {
+            console.log("[LOD] Minimum resolution ready. Streaming high-res in background...");
+            // Now unlock the background stream
             setTimeout(processNextBackgroundLoad, 1000);
         });
     }
 }
 
+/**
+ * PHASE 2: BACKGROUND STREAMING
+ * Uses the Web Worker to decode and slice while the game is running.
+ */
 let isWorkerBusy = false;
 
 function processNextBackgroundLoad() {
@@ -123,43 +153,77 @@ function processNextBackgroundLoad() {
     lodWorker.onmessage = (e) => {
         if (e.data.id !== taskID) return;
         isWorkerBusy = false;
+
         if (e.data.success) {
-            const frames = e.data.bitmaps.map(bm => new PIXI.Texture({ source: PIXI.Texture.from(bm) }));
+            // Bitmaps are ready. Convert to PIXI textures (main thread, but light)
+            const frames = e.data.bitmaps.map(bm => {
+                const tex = new PIXI.Texture({ source: PIXI.Texture.from(bm) });
+                return tex;
+            });
+
             enemyAssets[task.typeKey].caches[task.animType][task.tier.id] = frames;
             if (typeof conversionCt !== 'undefined') conversionCt++;
             readyMapDirty = true;
             if (typeof updateLoadingProgress === 'function') updateLoadingProgress();
-            warmSplitTextures(frames, task.typeKey, task.tier.id, () => { });
-            setTimeout(processNextBackgroundLoad, PERFORMANCE.BACKGROUND_THROTTLE.msBetweenDownloads);
+
+            // DRIP-FEED to GPU
+            warmDripFeed(frames, () => {
+                setTimeout(processNextBackgroundLoad, PERFORMANCE.BACKGROUND_THROTTLE.msBetweenDownloads);
+            });
         } else {
-            console.error("[LOD] Worker failed", taskID, e.data.error);
+            isWorkerBusy = false;
             setTimeout(processNextBackgroundLoad, 1000);
         }
     };
-    lodWorker.postMessage({ id: taskID, path: fullPath, frameCount: cfg[task.animType + 'Frames'], cols: cfg[task.animType + 'Cols'], size: task.tier.size, throttleDelay: PERFORMANCE.BACKGROUND_THROTTLE.msBetweenSliceBatches });
+
+    lodWorker.postMessage({
+        id: taskID,
+        path: fullPath,
+        frameCount: cfg[task.animType + 'Frames'],
+        cols: cfg[task.animType + 'Cols'],
+        size: task.tier.size,
+        throttleDelay: 16
+    });
 }
 
-function warmSplitTextures(frames, enemyType, tierID, onDone) {
-    if (!frames || frames.length === 0) { if (typeof prewarmCt !== 'undefined') prewarmCt++; onDone(); return; }
+/**
+ * DRIP-FEED GPU WARMING
+ * Uploads very small batches to the GPU to ensure consistent 60FPS.
+ */
+function warmDripFeed(frames, onDone) {
+    if (!frames || frames.length === 0) {
+        if (typeof prewarmCt !== 'undefined') prewarmCt++;
+        onDone(); return;
+    }
+
     let idx = 0;
-    const throttle = PERFORMANCE.BACKGROUND_THROTTLE;
-    function nextBatch() {
-        if (!app || !app.renderer) { setTimeout(nextBatch, 500); return; }
+    // Ultra conservative: 5 textures per 500ms
+    const BATCH_SIZE = 5;
+    const DELAY = 500;
+
+    function drip() {
+        if (!app || !app.renderer) { setTimeout(drip, 1000); return; }
+
         if (idx >= frames.length) {
             if (typeof prewarmCt !== 'undefined') prewarmCt++;
             if (typeof updateLoadingProgress === 'function') updateLoadingProgress();
             onDone(); return;
         }
-        for (let i = 0; i < (throttle.framesPerWarmBatch || 30) && idx < frames.length; i++) {
+
+        for (let i = 0; i < BATCH_SIZE && idx < frames.length; i++) {
             try { app.renderer.texture.initSource(frames[idx].source); } catch (e) { }
             idx++;
         }
+
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress();
-        setTimeout(nextBatch, throttle.msBetweenWarming);
+        setTimeout(drip, DELAY);
     }
-    nextBatch();
+    drip();
 }
 
+/**
+ * SYNC PIPELINE (Only for initial Micro assets)
+ */
 function startAsyncLODPipeline(tiers, aggressive, onComplete) {
     const taskQueue = [];
     enemyKeys.forEach(typeKey => {
@@ -181,11 +245,10 @@ function startAsyncLODPipeline(tiers, aggressive, onComplete) {
         const data = enemyLODAssets[typeKey][animType][tier.id];
         const cfg = Enemy[typeKey];
 
-        if (data && data.img && (data.img.complete || data.img.naturalWidth > 0)) {
+        if (data && data.img && data.img.naturalWidth > 0) {
             const frames = [];
             const size = tier.size;
             const cols = cfg[animType + 'Cols'];
-            // Create a SHARED BaseTexture for the sheet to avoid duplication
             const baseTexture = PIXI.Texture.from(data.img);
             for (let i = 0; i < cfg[animType + 'Frames']; i++) {
                 frames.push(new PIXI.Texture({

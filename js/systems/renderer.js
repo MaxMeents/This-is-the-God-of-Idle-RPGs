@@ -1,5 +1,6 @@
 /**
  * HARDWARE-ACCELERATED RENDERING ENGINE (PixiJS v8)
+ * This system utilizes WebGL/WebGPU to handle thousands of entities at 60FPS.
  */
 
 "use strict";
@@ -14,16 +15,26 @@ const skillSpritePool = [];
 const damageTextPool = [];
 let playerSprite, shieldSprite, floorTile;
 
-// Fallback Texture Cache
+// Fallback Texture Cache (Used for immediate display while LOD builds)
 const fallbackTextures = {};
 
+/**
+ * INITIALIZE SPRITE POOLS
+ */
 function initRendererPools() {
     console.log("[RENDER] Initializing Sprite Pools...");
+
+    // 1. Floor (Tiling Background)
     const floorTexture = PIXI.Texture.from(floorImg);
-    floorTile = new PIXI.TilingSprite({ texture: floorTexture, width: 100000, height: 100000 });
+    floorTile = new PIXI.TilingSprite({
+        texture: floorTexture,
+        width: 100000,
+        height: 100000
+    });
     floorTile.anchor.set(0.5);
     worldContainer.addChildAt(floorTile, 0);
 
+    // 2. Pre-cache Fallback Textures (from raw 512px sheets)
     enemyKeys.forEach(typeKey => {
         fallbackTextures[typeKey] = { walk: [], death: [], attack: [] };
         const cfg = Enemy[typeKey];
@@ -31,10 +42,11 @@ function initRendererPools() {
             const sheet = enemyAssets[typeKey][anim];
             if (sheet && (sheet.complete || sheet.naturalWidth > 0)) {
                 const cols = cfg[anim + 'Cols'], size = cfg[anim + 'Size'], count = cfg[anim + 'Frames'];
+                const baseTexture = PIXI.Texture.from(sheet);
                 for (let i = 0; i < count; i++) {
                     const rect = new PIXI.Rectangle((i % cols) * size, Math.floor(i / cols) * size, size, size);
                     fallbackTextures[typeKey][anim].push(new PIXI.Texture({
-                        source: PIXI.Texture.from(sheet),
+                        source: baseTexture.source,
                         frame: rect
                     }));
                 }
@@ -42,21 +54,26 @@ function initRendererPools() {
         });
     });
 
+    // 3. Enemies
     for (let i = 0; i < totalEnemies; i++) {
         const s = new PIXI.Sprite();
-        s.anchor.set(0.5); s.visible = false;
+        s.anchor.set(0.5);
+        s.visible = false;
         enemyContainer.addChild(s);
         enemySpritePool.push(s);
     }
 
+    // 4. Bullets
     const laserTexture = PIXI.Texture.from(laserImg);
     for (let i = 0; i < totalBullets; i++) {
         const s = new PIXI.Sprite(laserTexture);
-        s.anchor.set(0.5); s.visible = false;
+        s.anchor.set(0.5);
+        s.visible = false;
         bulletContainer.addChild(s);
         bulletSpritePool.push(s);
     }
 
+    // 5. Player & Shield
     playerSprite = new PIXI.Sprite();
     playerSprite.anchor.set(0.5);
     playerContainer.addChild(playerSprite);
@@ -65,16 +82,20 @@ function initRendererPools() {
     shieldSprite.anchor.set(0.5);
     playerContainer.addChild(shieldSprite);
 
+    // 6. Skills
     for (let i = 0; i < 200; i++) {
         const s = new PIXI.Sprite();
-        s.anchor.set(0.5); s.visible = false;
+        s.anchor.set(0.5);
+        s.visible = false;
         worldContainer.addChildAt(s, 1 + i);
         skillSpritePool.push(s);
     }
 
+    // 7. Damage Numbers
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         const t = new PIXI.Text({ text: '', style: { fill: 0xff0000, fontWeight: 'bold', fontSize: 24 } });
-        t.anchor.set(0.5); t.visible = false;
+        t.anchor.set(0.5);
+        t.visible = false;
         uiContainer.addChild(t);
         damageTextPool.push(t);
     }
@@ -86,13 +107,14 @@ function draw() {
 
     const cx = app.screen.width / 2, cy = app.screen.height / 2;
 
-    // 1. CAMERA
+    // 1. CAMERA SYSTEM
     worldContainer.scale.set(zoom);
     worldContainer.position.set(cx - player.x * zoom, cy - player.y * zoom);
 
-    // Floor
+    // Sync Floor Tiling
     const targetTileSize = 16000;
-    const tScale = targetTileSize / (floorTile.texture.width || 1024);
+    const sourceWidth = (floorTile.texture && floorTile.texture.width) || 1024;
+    const tScale = targetTileSize / sourceWidth;
     floorTile.width = (app.screen.width / zoom) + 100;
     floorTile.height = (app.screen.height / zoom) + 100;
     floorTile.tileScale.set(tScale);
@@ -100,13 +122,14 @@ function draw() {
     floorTile.tilePosition.y = -player.y / tScale;
     floorTile.position.set(player.x, player.y);
 
+    // View boundaries
     const margin = 100 + (3200 * 2);
     const left = player.x - (cx / zoom) - margin;
     const right = player.x + (cx / zoom) + margin;
     const top = player.y - (cy / zoom) - margin;
     const bottom = player.y + (cy / zoom) + margin;
 
-    // 2. LOD CALC
+    // 2. LOD & CACHE REBUILD
     smoothedEnemies += (onScreenCount - smoothedEnemies) * 0.15;
     let activeTierIdx = PERFORMANCE.LOD_TIERS.length - 1;
     for (let i = 0; i < PERFORMANCE.LOD_TIERS.length; i++) {
@@ -120,9 +143,7 @@ function draw() {
     }
 
     const now = performance.now();
-    // MORE AGGRESSIVE REBUILD during the first 60 seconds of gameplay
-    const isEarlyGame = now < 60000;
-    const rebuildInterval = isEarlyGame ? 200 : 2000;
+    const rebuildInterval = now < 60000 ? 500 : 2000;
 
     if (!cachedReadyMap || readyMapDirty || (now - lastReadyMapRebuild > rebuildInterval)) {
         lastReadyMapRebuild = now; readyMapDirty = false;
@@ -143,7 +164,7 @@ function draw() {
         }
     }
 
-    // 3. RENDER
+    // 3. RENDER ENEMIES
     onScreenCount = 0;
     const growth = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
 
@@ -152,9 +173,10 @@ function draw() {
         if (i >= spawnIndex) { s.visible = false; continue; }
 
         const idx = i * STRIDE;
-        const x = data[idx], y = data[idx + 1], h = data[idx + 8], df = data[idx + 9];
+        const x = data[idx], y = data[idx + 1];
+        const h = data[idx + 8], currentDeathF = data[idx + 9];
 
-        if (h > 0 || (df > 0 && df < 145)) {
+        if (h > 0 || (currentDeathF > 0 && currentDeathF < 145)) {
             if (x > left && x < right && y > top && y < bottom) {
                 onScreenCount++;
                 const typeIdx = data[idx + 11] | 0;
@@ -162,7 +184,7 @@ function draw() {
                 const cfg = allConfigs[typeIdx];
                 const af = Math.floor(data[idx + 10]);
                 const animType = (h <= 0) ? 'death' : (af > 0 ? 'attack' : 'walk');
-                const frameIdx = (h <= 0) ? Math.floor(df) : (af > 0 ? af : Math.floor(data[idx + 5]));
+                const frameIdx = (h <= 0) ? Math.floor(currentDeathF) : (af > 0 ? af : Math.floor(data[idx + 5]));
                 const tier = cachedReadyMap[typeKey][animType][activeTierIdx];
 
                 s.visible = true;
@@ -176,53 +198,85 @@ function draw() {
                     if (fallback && fallback[frameIdx]) s.texture = fallback[frameIdx];
                 }
 
-                const archMult = data[idx + 12] > 0.5 ? 5 : 1;
+                const isArch = data[idx + 12] > 0.5;
+                const archMult = isArch ? 5 : 1;
                 const baseSize = cfg.size * growth * archMult;
                 s.width = s.height = baseSize;
-                s.alpha = (h <= 0) ? Math.max(0, Math.min(1, 1 - (df / 145 - 0.7) * 3.3)) : 1.0;
+                s.alpha = (h <= 0) ? Math.max(0, Math.min(1, 1 - (currentDeathF / 145 - 0.7) * 3.3)) : 1.0;
 
-                const isFlipped = cfg.isSideways && Math.abs(data[idx + 7]) < 1.57;
-                if (isFlipped) s.scale.y = -Math.abs(s.scale.y); else s.scale.y = Math.abs(s.scale.y);
+                const look = data[idx + 7];
+                const isFlipped = cfg.isSideways && Math.abs(look) < 1.57;
+                if (isFlipped) s.scale.y = -Math.abs(s.scale.y);
+                else s.scale.y = Math.abs(s.scale.y);
+
             } else s.visible = false;
         } else s.visible = false;
     }
 
-    // 4. BULLETS
+    // 4. RENDER BULLETS
     const bSize = WEAPON_CONFIG.bulletSize;
     for (let i = 0; i < totalBullets; i++) bulletSpritePool[i].visible = false;
     for (let i = 0; i < activeBulletCount; i++) {
-        const poolIdx = activeBulletIndices[i], bIdx = poolIdx * BULLET_STRIDE, s = bulletSpritePool[poolIdx];
+        const poolIdx = activeBulletIndices[i];
+        const bIdx = poolIdx * BULLET_STRIDE;
+        const s = bulletSpritePool[poolIdx];
         const bx = bulletData[bIdx], by = bulletData[bIdx + 1];
+
         if (bx > left && bx < right && by > top && by < bottom) {
-            s.visible = true; s.position.set(bx, by);
+            s.visible = true;
+            s.position.set(bx, by);
             s.rotation = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
             s.width = s.height = Math.max(bSize, 5 / zoom);
         }
     }
 
-    // 5. PLAYER
+    // 5. RENDER PLAYER
     const sc = SHIP_CONFIG, sf = Math.floor(player.shipFrame);
     const isFull = player.shipState === 'FULL' || player.shipState === 'THRUST';
     const sTexs = isFull ? shipAssets.pixiFull : shipAssets.pixiOn;
     const curFrame = sf % (isFull ? (sc.fullFrames || 1) : (sc.onFrames || 1));
-    playerSprite.position.set(cx, cy); playerSprite.rotation = player.rotation;
-    playerSprite.width = playerSprite.height = sc.visualSize * zoom;
-    if (shipAssets.baked && sTexs && sTexs[curFrame]) playerSprite.texture = sTexs[curFrame];
 
+    playerSprite.visible = true;
+    playerSprite.position.set(cx, cy);
+    playerSprite.rotation = player.rotation;
+    playerSprite.width = playerSprite.height = sc.visualSize * zoom;
+
+    if (shipAssets.baked && sTexs && sTexs[curFrame]) {
+        playerSprite.texture = sTexs[curFrame];
+    } else {
+        const rawSheet = isFull ? shipAssets.fullImg : shipAssets.onImg;
+        if (rawSheet.complete && rawSheet.naturalWidth > 0) {
+            const cols = isFull ? sc.fullCols : sc.onCols;
+            const size = isFull ? sc.fullSize : sc.onSize;
+            const baseTexture = PIXI.Texture.from(rawSheet);
+            playerSprite.texture = new PIXI.Texture({
+                source: baseTexture.source,
+                frame: new PIXI.Rectangle((curFrame % cols) * size, Math.floor(curFrame / cols) * size, size, size)
+            });
+        }
+    }
+
+    // Shield
     if (player.shieldActive && player.shieldAnimState !== 'OFF') {
         const isOn = player.shieldAnimState === 'ON';
         const shTexs = isOn ? shipAssets.pixiShieldOn : shipAssets.pixiShieldTurnOn;
         const sfrm = isOn ? (sc.shieldOnFrames || 1) : (sc.shieldTurnOnFrames || 1);
         const shf = Math.floor(player.shieldFrame) % sfrm;
-        shieldSprite.visible = true; shieldSprite.position.set(cx, cy);
-        shieldSprite.rotation = player.rotation; shieldSprite.width = shieldSprite.height = sc.shieldVisualSize * zoom;
+        shieldSprite.visible = true;
+        shieldSprite.position.set(cx, cy);
+        shieldSprite.rotation = player.rotation;
+        shieldSprite.width = shieldSprite.height = sc.shieldVisualSize * zoom;
         if (shipAssets.baked && shTexs && shTexs[shf]) shieldSprite.texture = shTexs[shf];
-    } else shieldSprite.visible = false;
+    } else {
+        shieldSprite.visible = false;
+    }
 
-    // 6. DAMAGE
+    // 6. DAMAGE NUMBERS
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
     for (let i = 0; i < activeDamageCount; i++) {
-        const poolIdx = activeDamageIndices[i], t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
+        const poolIdx = activeDamageIndices[i];
+        const t = damageTextPool[poolIdx];
+        const dn = damageNumbers[poolIdx];
         t.visible = true; t.text = dn.val; t.alpha = dn.life;
         t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy);
         t.scale.set(zoom * 2);
@@ -241,5 +295,6 @@ function draw() {
         if (skillAssets.baked && skillAssets.pixiSkill && skillAssets.pixiSkill[fIdx]) s.texture = skillAssets.pixiSkill[fIdx];
     }
 
+    // 8. EFFECTS
     drawFX();
 }
