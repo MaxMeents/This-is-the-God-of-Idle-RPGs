@@ -181,11 +181,21 @@ function arriveAtNewStage() {
  */
 function updateSkills(dt, now) {
     const cfg = SKILLS.MulticolorXFlame;
-    const speed = cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+    const gameSpd = PERFORMANCE.GAME_SPEED;
+    const animSpdBase = cfg.animSpeedSkill * (dt / 16.6) * gameSpd;
     const maxFrames = cfg.skillFrames;
+
     for (let i = activeSkills.length - 1; i >= 0; i--) {
         const s = activeSkills[i];
-        s.frame += speed;
+
+        // Progress animation frame
+        s.frame += animSpdBase;
+
+        // Orbit around the player
+        const oSpd = (s.orbitSpd || 0.05) * (dt / 16.6) * gameSpd;
+        s.angle += oSpd;
+
+        // Life cycle end
         if (s.frame >= maxFrames) activeSkills.splice(i, 1);
     }
 }
@@ -294,14 +304,17 @@ let canvas; // Will point to app.canvas
      * ASSET BOOTSTRAP
      */
     const loadSkillSheets = () => {
-        skillAssets.buttonImg.onload = () => {
+        let loaded = 0;
+        const check = () => {
+            loaded++;
             onAssetLoad();
-            if (skillAssets.skillImg.complete) { skillAssets.ready = true; bakeSkills(); }
+            if (loaded >= 2) {
+                skillAssets.ready = true;
+                bakeSkills();
+            }
         };
-        skillAssets.skillImg.onload = () => {
-            onAssetLoad();
-            if (skillAssets.buttonImg.complete) { skillAssets.ready = true; bakeSkills(); }
-        };
+        skillAssets.buttonImg.onload = check;
+        skillAssets.skillImg.onload = check;
         skillAssets.buttonImg.src = SKILLS.MulticolorXFlame.buttonSheet;
         skillAssets.skillImg.src = SKILLS.MulticolorXFlame.skillSheet;
     };

@@ -11,6 +11,7 @@ let lastReadyMapRebuild = 0;
 // Sprite Pools
 const enemySpritePool = [];
 const bulletSpritePool = [];
+const skillSpritePool = [];
 const damageTextPool = [];
 let playerSprite, shieldSprite, floorTile;
 
@@ -57,7 +58,16 @@ function initRendererPools() {
     shieldSprite.anchor.set(0.5);
     playerContainer.addChild(shieldSprite);
 
-    // 5. Damage Numbers (Text Pool)
+    // 5. Skills (must be in worldContainer for world-space positioning)
+    for (let i = 0; i < 200; i++) {
+        const s = new PIXI.Sprite();
+        s.anchor.set(0.5);
+        s.visible = false;
+        worldContainer.addChild(s);
+        skillSpritePool.push(s);
+    }
+
+    // 6. Damage Numbers (Text Pool)
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         const t = new PIXI.Text({ text: '', style: { fill: 0xff0000, fontWeight: 'bold', fontSize: 24 } });
         t.anchor.set(0.5);
@@ -249,7 +259,39 @@ function draw() {
         t.scale.set(zoom * 2); // Scale text with zoom but keep it readable
     }
 
-    // 7. EFFECTS (Particles)
+    // 7. SKILLS (Triple Ring Supernova)
+    const skCfg = SKILLS.MulticolorXFlame;
+
+    // Reset skill pool visibility
+    for (let i = 0; i < skillSpritePool.length; i++) skillSpritePool[i].visible = false;
+
+    if (activeSkills.length > 0 && Math.random() < 0.01) {
+        console.log(`[RENDER] Drawing ${activeSkills.length} skills, baked=${skillAssets.baked}`);
+    }
+
+    for (let i = 0; i < activeSkills.length; i++) {
+        if (i >= skillSpritePool.length) break;
+        const sData = activeSkills[i];
+        const s = skillSpritePool[i];
+
+        // These are world-space offsets relative to the player
+        const offX = Math.cos(sData.angle) * sData.radius;
+        const offY = Math.sin(sData.angle) * sData.radius;
+
+        s.visible = true;
+        s.position.set(player.x + offX, player.y + offY);
+        s.width = s.height = sData.size;
+        s.rotation = sData.angle + Math.PI / 2;
+
+        const fIdx = Math.floor(sData.frame) % skCfg.skillFrames;
+        if (skillAssets.baked && skillAssets.pixiSkill && skillAssets.pixiSkill[fIdx]) {
+            s.texture = skillAssets.pixiSkill[fIdx];
+        } else if (i === 0 && Math.random() < 0.1) {
+            console.warn(`[RENDER] Skill texture missing! baked=${skillAssets.baked}, hasArray=${!!skillAssets.pixiSkill}, frame=${fIdx}`);
+        }
+    }
+
+    // 8. EFFECTS (Particles)
     drawFX();
     // For now, we manually draw these to the worldContainer's graphics or just sprites
     // (Existing drawFX should be updated to use Pixi)

@@ -159,10 +159,30 @@ function initUIListeners() {
         const cfg = SKILLS.MulticolorXFlame;
         if (skillCooldownRemaining > 0) return;
         skillCooldownRemaining = cfg.cooldownTime;
-        // Spawn the particle data in the physics engine
-        for (let i = 0; i < cfg.instanceCount; i++) {
-            activeSkills.push({ angle: (i / cfg.instanceCount) * Math.PI * 2, frame: 0, done: false });
-        }
+
+        console.log('[SKILL] Triple Ring Supernova activated!');
+
+        // Function to spawn a ring
+        const spawnRing = (count, radius, size, delay) => {
+            setTimeout(() => {
+                console.log(`[SKILL] Spawning ring: ${count} flames at radius ${radius}, size ${size}`);
+                for (let i = 0; i < count; i++) {
+                    activeSkills.push({
+                        angle: (i / count) * Math.PI * 2,
+                        frame: 0,
+                        radius: radius,
+                        size: size,
+                        orbitSpd: 0.02 + (Math.random() * 0.02)
+                    });
+                }
+                console.log(`[SKILL] Total active skills: ${activeSkills.length}`);
+            }, delay);
+        };
+
+        // Triple Ring Supernova
+        spawnRing(15, 1200, 1400, 0);      // Inner Small Ring
+        spawnRing(20, 2500, 2200, 150);    // Mid Medium Ring
+        spawnRing(30, 4500, 3500, 300);    // Outer Massive Ring
     });
 
     // NAVIGATION SYSTEM

@@ -69,6 +69,7 @@ function update(dt, now, isFirstStep, s) {
     if (!isTraveling && now - lastCombatUpdate > DAMAGE_INTERVAL) {
         lastCombatUpdate = now;
         processAOEDamage();
+        processSkillDamage(); // Handle triple-ring supernova hits
     }
 
     // 6. WEAPON SYSTEMS
@@ -387,11 +388,69 @@ function processAOEDamage() {
                             data[idx + 8] = 0;
                             data[idx + 9] = 0.001;
                             spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 80);
-                            for (let k = 0; k < 5; k++) spawnFX(data[idx], data[idx + 1], (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
                         }
                     }
                 }
                 ptr = next[ptr];
+            }
+        }
+    }
+}
+
+/**
+ * SKILL COMBAT ENGINE (Triple Ring Hits)
+ */
+function processSkillDamage() {
+    if (activeSkills.length === 0) return;
+    const cfg = SKILLS.MulticolorXFlame;
+    const dmg = cfg.damageMult * DAMAGE_PER_POP;
+
+    // We iterate through each active flame instance
+    for (const skill of activeSkills) {
+        // Calculate world position of this flame
+        const sx = player.x + Math.cos(skill.angle) * skill.radius;
+        const sy = player.y + Math.sin(skill.angle) * skill.radius;
+
+        // Define hit radius for this specific flame
+        const hitRadius = skill.size * 0.4;
+        const rSq = hitRadius * hitRadius;
+
+        // Efficient Grid Search
+        const pgx = Math.floor((sx + GRID_WORLD_OFFSET) / GRID_CELL);
+        const pgy = Math.floor((sy + GRID_WORLD_OFFSET) / GRID_CELL);
+        const rCell = Math.ceil(hitRadius / GRID_CELL);
+
+        for (let ox = -rCell; ox <= rCell; ox++) {
+            const row = (pgy + ox);
+            if (row < 0 || row >= GRID_DIM) continue;
+            const cellRow = row * GRID_DIM;
+
+            for (let oy = -rCell; oy <= rCell; oy++) {
+                const col = (pgx + oy);
+                if (col < 0 || col >= GRID_DIM) continue;
+
+                const cell = cellRow + col;
+                let ptr = heads[cell];
+                while (ptr !== -1) {
+                    const idx = ptr * STRIDE;
+                    if (data[idx + 8] > 0) {
+                        const dx = data[idx] - sx, dy = data[idx + 1] - sy;
+                        const dSq = dx * dx + dy * dy;
+                        if (dSq < rSq) {
+                            data[idx + 8] -= dmg;
+                            spawnDamageNumber(data[idx], data[idx + 1] - 50, Math.floor(dmg));
+
+                            if (data[idx + 8] <= 0) {
+                                killCount++;
+                                stageKillCount++;
+                                data[idx + 8] = 0;
+                                data[idx + 9] = 0.001; // Trigger death animation
+                                spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 100);
+                            }
+                        }
+                    }
+                    ptr = next[ptr];
+                }
             }
         }
     }
