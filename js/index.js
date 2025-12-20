@@ -136,8 +136,11 @@ function changeStage(newStage) {
     damageNumbers.forEach(dn => dn.active = false);
     activeBulletIndices.fill(0);
     activeDamageIndices.fill(0);
-    activeBulletIndices.fill(0);
-    activeDamageIndices.fill(0);
+
+    // Reset combat timers to prevent immediate triggers at high speeds
+    lastFireTime = 0;
+    lastCombatUpdate = performance.now();
+    lastTargetUpdate = performance.now();
 
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
