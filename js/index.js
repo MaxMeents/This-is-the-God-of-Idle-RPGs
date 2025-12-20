@@ -118,6 +118,7 @@ function changeStage(newStage) {
     // Regenerate spawn list for the new stage immediately
     prepareStagePool(currentStage);
     spawnIndex = 0;
+    data.fill(0); // Clean up old enemies to prevent ghost collisions
 
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
@@ -168,7 +169,11 @@ let drawTimeSum = 0;
  * The heartbeat of the application. High-precision timing and multi-stepping logic.
  */
 function loop(now) {
-    const dt = now - last; last = now;
+    let dt = now - last;
+    last = now;
+    // Safety Clamp: If a frame takes > 100ms, don't try to simulate the "gap" at 25x.
+    // This prevents the "Spiral of Death" where one lag spike causes a teleport which causes more lag.
+    if (dt > 100) dt = 16.6;
     if (spawnList.length === 0) {
         requestAnimationFrame(loop);
         return;

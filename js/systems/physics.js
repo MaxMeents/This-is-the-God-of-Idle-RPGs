@@ -64,7 +64,7 @@ function update(dt, now, isFirstStep) {
     zoom += (targetZoom - zoom) * 0.1;
 
     updatePlayerMovement(dt, sc);
-    updateEnemies(dt, now);
+    updateEnemies(dt, now, isFirstStep);
 
     // 5. COMBAT TICK
     if (!isTraveling && now - lastCombatUpdate > DAMAGE_INTERVAL) {
@@ -142,6 +142,13 @@ function findNearestEnemy() {
  */
 function updatePlayerMovement(dt, sc) {
     const gameSpd = PERFORMANCE.GAME_SPEED;
+    // Speed 25x = Stride 6 (1 in 6 frames)
+    let animStride = 1.0;
+    if (gameSpd >= 25) animStride = 6.0;
+    else if (gameSpd >= 20) animStride = 5.0;
+    else if (gameSpd >= 15) animStride = 2.5;
+    else if (gameSpd >= 10) animStride = 1.66;
+    else if (gameSpd >= 5) animStride = 1.25;
 
     if (isTraveling) {
         const speed = PLAYER_SPEED * 50;
@@ -155,7 +162,8 @@ function updatePlayerMovement(dt, sc) {
             player.y += (dy / d) * speed;
         }
         player.shipState = 'FULL';
-        player.shipFrame = (player.shipFrame + sc.animSpeed * (dt / 16.6) * gameSpd) % sc.fullFrames;
+        const jitter = 0.8 + Math.random() * 0.4;
+        player.shipFrame = (player.shipFrame + sc.animSpeed * (dt / 16.6) * gameSpd * animStride * jitter) % sc.fullFrames;
     }
     else if (player.targetIdx !== -1) {
         const tIdx = player.targetIdx * STRIDE;
@@ -187,12 +195,22 @@ function updatePlayerMovement(dt, sc) {
 /**
  * ENEMY AI & PHYSICS
  */
-function updateEnemies(dt, now) {
+function updateEnemies(dt, now, isFirstStep) {
     if (isTraveling) return;
 
     const sizeMult = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
     const dmgMult = currentStage >= 2 ? 2 : 1;
     const gameSpd = PERFORMANCE.GAME_SPEED;
+
+    // ANIMATION DECIMATION (Skip frames at high speed to save GPU/Logic)
+    // Speed 25x = Stride 6 (1 in 6 frames), Speed 5x = Stride 1.25, etc.
+    let animStride = 1.0;
+    if (gameSpd >= 25) animStride = 6.0;
+    else if (gameSpd >= 20) animStride = 5.0;
+    else if (gameSpd >= 15) animStride = 2.5;
+    else if (gameSpd >= 10) animStride = 1.66;
+    else if (gameSpd >= 5) animStride = 1.25;
+
     const objectiveMet = stageKillCount >= (STAGE_CONFIG.STAGES[currentStage]?.kills || 300);
 
     for (let i = 0; i < spawnIndex; i++) {
@@ -234,12 +252,16 @@ function updateEnemies(dt, now) {
         let steerX = lookX * pullFactor;
         let steerY = lookY * pullFactor;
 
-        // SEPARATION FORCE
-        if (dSq < 144000000) {
+        // SEPARATION FORCE (Localized Avoidance)
+        // Optimized: Only run separation on half of the sub-steps to save CPU at extreme speeds.
+        // Also added a HARD_SCAN_CAP to prevent O(N^2) freezes in crowded cells.
+        if (dSq < 144000000 && (isFirstStep || i % 2 === 0)) {
             const gx = Math.floor((px + GRID_WORLD_OFFSET) / GRID_CELL);
             const gy = Math.floor((py + GRID_WORLD_OFFSET) / GRID_CELL);
             const NEIGHBOR_CAP = 4;
+            const HARD_SCAN_CAP = 20; // Never check more than 20 enemies per cell
             let neighbors = 0;
+            let checks = 0;
 
             for (let ox = -1; ox <= 1; ox++) {
                 const row = (gy + ox);
@@ -252,6 +274,7 @@ function updateEnemies(dt, now) {
                     const cell = cellRow + col;
                     let nIdx = heads[cell];
                     while (nIdx !== -1) {
+                        if (++checks > HARD_SCAN_CAP) break;
                         if (nIdx !== i) {
                             const oIdx = nIdx * STRIDE;
                             const vx = px - data[oIdx], vy = py - data[oIdx + 1];
@@ -288,21 +311,25 @@ function updateEnemies(dt, now) {
             data[idx + 4] = look + cfg.baseRotation;
 
             const moveDist = Math.sqrt(moveX * moveX + moveY * moveY);
-            data[idx + 5] = (data[idx + 5] + moveDist * cfg.walkAnimSpeed) % cfg.walkFrames;
+            // Apply randomized skip: stride * jitter factor
+            const jitter = 0.8 + Math.random() * 0.4;
+            data[idx + 5] = (data[idx + 5] + moveDist * cfg.walkAnimSpeed * animStride * jitter) % cfg.walkFrames;
         }
 
-        if (!objectiveMet && d < cfg.attackRange) processEnemyAttack(idx, cfg, dmgMult, d);
+        if (!objectiveMet && d < cfg.attackRange) processEnemyAttack(idx, cfg, dmgMult, d, animStride);
     }
 }
 
 /**
- * ATTACK LOGIC
+ * ATTACK LOGIC (With Animation Skipping)
  */
-function processEnemyAttack(idx, cfg, dmgMult, d) {
+function processEnemyAttack(idx, cfg, dmgMult, d, animStride) {
     if (data[idx + 10] === 0) data[idx + 10] = 0.1;
     else {
         const prevF = Math.floor(data[idx + 10]);
-        data[idx + 10] += cfg.attackAnimSpeed;
+        // Apply stride + jitter to attack progress
+        const jitter = 0.8 + Math.random() * 0.4;
+        data[idx + 10] += cfg.attackAnimSpeed * animStride * jitter;
         const currF = Math.floor(data[idx + 10]);
 
         if (prevF < (cfg.attackFrames / 2) && currF >= (cfg.attackFrames / 2)) {
