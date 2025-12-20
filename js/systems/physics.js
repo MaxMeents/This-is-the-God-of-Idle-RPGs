@@ -508,11 +508,24 @@ function spawnEnemy(i, typeKey, far = false) {
     const [gx, gy] = stageCoords;
     const centerX = (gx - 1) * STAGE_CONFIG.GRID_SIZE, centerY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
 
-    data[idx] = centerX + Math.cos(angle) * dist; data[idx + 1] = centerY + Math.sin(angle) * dist;
+    // Arch enemy logic: 1/50 chance for 30x HP and 5x size
+    const isArch = Math.random() < cfg.archChance;
+    const healthMult = isArch ? 30 : 1;
+    const sizeMult = isArch ? 5 : 1;
+
+    data[idx] = centerX + Math.cos(angle) * dist;
+    data[idx + 1] = centerY + Math.sin(angle) * dist;
     data[idx + 6] = cfg.moveSpeed * (0.8 + Math.random() * 0.4);
-    data[idx + 8] = cfg.healthMax; data[idx + 9] = 0;
+    data[idx + 8] = cfg.healthMax * healthMult;
+    data[idx + 9] = 0;
     data[idx + 5] = Math.random() * cfg.walkFrames;
-    data[idx + 10] = 0; data[idx + 11] = enemyKeys.indexOf(typeKey);
+    data[idx + 10] = 0;
+    data[idx + 11] = enemyKeys.indexOf(typeKey);
+    data[idx + 12] = isArch ? 1.0 : 0.0; // Arch flag
+
+    if (isArch) {
+        console.log(`[ARCH] Spawned ARCH ${typeKey}! HP: ${data[idx + 8]}, Size: ${cfg.size * sizeMult}`);
+    }
 }
 /**
  * WEAPON SPAWNING (Dual Lasers)

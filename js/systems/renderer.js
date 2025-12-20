@@ -178,8 +178,11 @@ function draw() {
                     }
                 }
 
+
                 // Absolute scale to prevent cumulative growth/flipping issues
-                const baseSize = cfg.size * growth;
+                const isArch = data[idx + 12] > 0.5; // Check Arch flag
+                const archMult = isArch ? 5 : 1;
+                const baseSize = cfg.size * growth * archMult;
                 s.width = baseSize;
                 s.height = baseSize;
 

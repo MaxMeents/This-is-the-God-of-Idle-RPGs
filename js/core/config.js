@@ -54,8 +54,8 @@ const SKILLS = {
         skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
         buttonFrames: 121, buttonCols: 11, buttonSize: 768,
         skillFrames: 109, skillCols: 11, skillSize: 512,
-        visualSize: 1600,
-        orbitRadius: 1000,
+        visualSize: 8600,
+        orbitRadius: 10000,
         animSpeedButton: 0.9,
         animSpeedSkill: 2,
         cooldownTime: 2000,
@@ -120,5 +120,17 @@ const GRID_WORLD_OFFSET = (GRID_DIM * GRID_CELL) / 2;
 
 /**
  * DATA STRIDE
+ * Each enemy uses 13 floats:
+ * 0-1: x, y position
+ * 2-3: velocity x, y
+ * 4: rotation
+ * 5: animation frame
+ * 6: move speed
+ * 7: look direction
+ * 8: health
+ * 9: death frame
+ * 10: attack frame
+ * 11: enemy type index
+ * 12: isArch flag (1.0 = Arch, 0.0 = normal)
  */
-const STRIDE = 12;
+const STRIDE = 13;

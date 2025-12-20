@@ -23,7 +23,8 @@ const Enemy = {
         walkSize: 512, deathSize: 512, attackSize: 512,
         walkAnimSpeed: 0.02, attackAnimSpeed: 1.0, deathAnimSpeed: 1.0,
         baseRotation: Math.PI / 2,
-        isSideways: false
+        isSideways: false,
+        archChance: 1 / 50  // 2% chance to spawn as Arch (30x HP, 5x size)
     },
     PhoenixSurrender: {
         size: 3000,
@@ -43,7 +44,8 @@ const Enemy = {
         walkSize: 512, deathSize: 512, attackSize: 512,
         walkAnimSpeed: 0.03, attackAnimSpeed: 2.0, deathAnimSpeed: 1.5,
         baseRotation: Math.PI / 2,
-        isSideways: false
+        isSideways: false,
+        archChance: 1 / 50  // 2% chance to spawn as Arch (30x HP, 5x size)
     },
     BlueDragon: {
         size: 3500,
@@ -63,6 +65,7 @@ const Enemy = {
         walkSize: 1024, deathSize: 512, attackSize: 512,
         walkAnimSpeed: 0.025, attackAnimSpeed: 1.8, deathAnimSpeed: 1.2,
         baseRotation: Math.PI / 2,
-        isSideways: false
+        isSideways: false,
+        archChance: 1 / 50  // 2% chance to spawn as Arch (30x HP, 5x size)
     }
 };
