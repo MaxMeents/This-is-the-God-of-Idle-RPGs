@@ -176,29 +176,6 @@ function arriveAtNewStage() {
     }
 }
 
-/**
- * SKILL ANIMATION UPDATER
- */
-function updateSkills(dt, now) {
-    const cfg = SKILLS.MulticolorXFlame;
-    const gameSpd = PERFORMANCE.GAME_SPEED;
-    const animSpdBase = cfg.animSpeedSkill * (dt / 16.6) * gameSpd;
-    const maxFrames = cfg.skillFrames;
-
-    for (let i = activeSkills.length - 1; i >= 0; i--) {
-        const s = activeSkills[i];
-
-        // Progress animation frame
-        s.frame += animSpdBase;
-
-        // Orbit around the player
-        const oSpd = (s.orbitSpd || 0.05) * (dt / 16.6) * gameSpd;
-        s.angle += oSpd;
-
-        // Life cycle end
-        if (s.frame >= maxFrames) activeSkills.splice(i, 1);
-    }
-}
 
 // Stats tracking for the HUD
 let last = 0, f = 0, t = 0;
@@ -234,7 +211,6 @@ function loop(now) {
         for (let s = 0; s < steps; s++) {
             update(stepDt, now + (s * stepDt), s === 0, s);
         }
-        updateSkills(dt, now);
         updateFX(dt);
         physicsTimeSum += (performance.now() - sUpdate);
     }
@@ -316,8 +292,8 @@ let canvas; // Will point to app.canvas
         };
         skillAssets.buttonImg.onload = check;
         skillAssets.skillImg.onload = check;
-        skillAssets.buttonImg.src = SKILLS.MulticolorXFlame.buttonSheet;
-        skillAssets.skillImg.src = SKILLS.MulticolorXFlame.skillSheet;
+        skillAssets.buttonImg.src = SKILLS.Tier3.buttonSheet;
+        skillAssets.skillImg.src = SKILLS.Tier3.skillSheet;
     };
     loadSkillSheets();
 

@@ -79,7 +79,7 @@ function bakeShip() {
  */
 function bakeSkills() {
     if (skillAssets.baked) return;
-    const cfg = SKILLS.MulticolorXFlame;
+    const cfg = SKILLS.Tier3; // Use Tier 3 as the base for baking assets
     for (let i = 0; i < cfg.buttonFrames; i++) {
         const can = document.createElement('canvas'); can.width = 512; can.height = 512;
         const cctx = can.getContext('2d');

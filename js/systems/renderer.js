@@ -77,8 +77,8 @@ function initRendererPools() {
     shieldSprite.anchor.set(0.5);
     playerContainer.addChild(shieldSprite);
 
-    // 6. Skills
-    for (let i = 0; i < 200; i++) {
+    // 6. Skills - Expanded pool for 25-ring Supernova (~1300 flames)
+    for (let i = 0; i < 2000; i++) {
         const s = new PIXI.Sprite();
         s.anchor.set(0.5);
         s.visible = false;
@@ -276,16 +276,23 @@ function draw() {
     }
 
     // 7. SKILLS
-    const skCfg = SKILLS.MulticolorXFlame;
     for (let i = 0; i < skillSpritePool.length; i++) skillSpritePool[i].visible = false;
+    if (!skillAssets.baked) return;
+
     for (let i = 0; i < activeSkills.length; i++) {
         if (i >= skillSpritePool.length) break;
-        const sData = activeSkills[i], s = skillSpritePool[i];
+        const sData = activeSkills[i], spr = skillSpritePool[i];
+        const skCfg = SKILLS['Tier' + (sData.tier || 3)] || SKILLS.Tier3;
+
         const offX = Math.cos(sData.angle) * sData.radius, offY = Math.sin(sData.angle) * sData.radius;
-        s.visible = true; s.position.set(player.x + offX, player.y + offY);
-        s.width = s.height = sData.size; s.rotation = sData.angle + Math.PI / 2;
+        spr.visible = true;
+        // Position relative to world origin (worldContainer handles camera/zoom)
+        spr.position.set(player.x + offX, player.y + offY);
+        spr.width = spr.height = sData.size;
+        spr.rotation = sData.angle + Math.PI / 2;
+
         const fIdx = Math.floor(sData.frame) % (skCfg.skillFrames || 1);
-        if (skillAssets.baked && skillAssets.pixiSkill && skillAssets.pixiSkill[fIdx]) s.texture = skillAssets.pixiSkill[fIdx];
+        if (skillAssets.pixiSkill && skillAssets.pixiSkill[fIdx]) spr.texture = skillAssets.pixiSkill[fIdx];
     }
 
     // 8. EFFECTS

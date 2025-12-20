@@ -4,7 +4,7 @@
  */
 
 // DOM Cache: We grab pointers to HTML elements once to avoid expensive document searches.
-let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvas, elFPS;
+let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvases = [], elFPS;
 let uiInitialized = false;
 
 function initUICache() {
@@ -16,12 +16,18 @@ function initUICache() {
     elNextArr = document.getElementById('nav-right');
     elChallengeBtn = document.getElementById('challenge-btn');
     elBossCont = document.getElementById('boss-health-container');
-    elSkillCanvas = document.getElementById('skill-button-canvas');
     elFPS = document.getElementById('fps');
+
+    elSkillCanvases = [
+        document.getElementById('skill-button-canvas-1'),
+        document.getElementById('skill-button-canvas-2'),
+        document.getElementById('skill-button-canvas-3')
+    ];
+
     uiInitialized = true;
 }
 
-// Dirty-Checking Cache: Prevents the UI from updating unless the values have actually changed.
+// Dirty-Checking Cache
 let lastHP = -1;
 let lastShield = -1;
 let lastCharge = -1;
@@ -30,19 +36,14 @@ let lastBossMode = null;
 
 /**
  * MAIN UI REFRESH
- * Optimized for minimum layout thrashing (avoids expensive DOM writes when possible).
  */
 function updateUI() {
     if (!uiInitialized) initUICache();
 
-    // 1. HEALTH BAR (Vertical)
+    // 1. HEALTH BAR
     const hpPct = player.health / PLAYER_HEALTH_MAX;
     if (hpPct !== lastHP) {
         elHPBar.style.height = (hpPct * 100) + '%';
-
-        // DYNAMIC COLOR INTERPOLATION
-        // Smoothly blends colors based on health percentage. 
-        // 100% = Blue, 70% = Black, 0% = Ominous Blood Red.
         let topR, topG, topB, botR, botG, botB;
         if (hpPct > 0.7) {
             const f = (hpPct - 0.7) / 0.3;
@@ -59,7 +60,7 @@ function updateUI() {
         lastHP = hpPct;
     }
 
-    // 2. SHIELD BARS (Vertical)
+    // 2. SHIELD BARS
     const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
     if (targetShieldHeight !== lastShield) {
         elShieldBar.style.height = targetShieldHeight + '%';
@@ -89,78 +90,79 @@ function updateUI() {
         lastBossMode = bossMode;
     }
 
-    // 5. SKILL BUTTON CANVAS
-    // Draws the animated rainbow icon and the CD timer directly to a mini-canvas.
-    if (elSkillCanvas && skillAssets.baked) {
-        const btnCtx = elSkillCanvas.getContext('2d');
-        const cfg = SKILLS.MulticolorXFlame;
+    // 5. SKILL BUTTON CANVASES
+    if (skillAssets.baked) {
+        for (let i = 0; i < 3; i++) {
+            const canv = elSkillCanvases[i];
+            if (!canv) continue;
+            const btnCtx = canv.getContext('2d');
+            const tierKey = 'Tier' + (i + 1);
+            const cfg = SKILLS[tierKey];
 
-        // Auto-scaling for High-DPI (Retina) screens
-        if (!elSkillCanvas._w) {
-            const dpr = window.devicePixelRatio || 1;
-            const rect = elSkillCanvas.getBoundingClientRect();
-            elSkillCanvas._w = rect.width * dpr;
-            elSkillCanvas._h = rect.height * dpr;
-            elSkillCanvas.width = elSkillCanvas._w;
-            elSkillCanvas.height = elSkillCanvas._h;
-        }
+            if (!canv._w) {
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canv.getBoundingClientRect();
+                canv._w = rect.width * dpr;
+                canv._h = rect.height * dpr;
+                canv.width = canv._w;
+                canv.height = canv._h;
+            }
 
-        btnCtx.clearRect(0, 0, elSkillCanvas.width, elSkillCanvas.height);
+            btnCtx.clearRect(0, 0, canv.width, canv.height);
 
-        // Draw animated icon frame from the cache
-        const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
-        const frameImg = skillAssets.buttonCache[bFrame];
-        if (frameImg) {
-            btnCtx.drawImage(frameImg, 0, -30, elSkillCanvas.width, elSkillCanvas.height);
-        }
+            const bFrame = Math.floor((performance.now() * cfg.animSpeedButton / 16.6) % cfg.buttonFrames);
+            const frameImg = skillAssets.buttonCache[bFrame];
+            if (frameImg) {
+                btnCtx.drawImage(frameImg, 0, -15 * (canv.height / 140), canv.width, canv.height);
+            }
 
-        // Draw the dark cooldown overlay and the numeric timer
-        if (skillCooldownRemaining > 0) {
-            btnCtx.save();
-            btnCtx.beginPath();
-            btnCtx.arc(elSkillCanvas.width / 2.5, elSkillCanvas.height / 2.5, elSkillCanvas.width / 2.5, 0, Math.PI * 2);
-            btnCtx.fillStyle = 'rgba(0, 0, 0, 0.65)';
-            btnCtx.fill();
+            const cd = skillCooldowns[i];
+            if (cd > 0) {
+                btnCtx.save();
+                btnCtx.beginPath();
+                //this needs to be 2.5 dont change it again AI helper
+                btnCtx.arc(canv.width / 2.5, canv.height / 2.5, canv.width / 2.5, 0, Math.PI * 2);
+                btnCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                btnCtx.fill();
 
-            const timerVal = Math.ceil(skillCooldownRemaining / 1000);
-            btnCtx.fillStyle = '#fff';
-            btnCtx.font = `900 ${elSkillCanvas.width * 0.55}px Outfit, Arial`; // Dynamic font sizing
-            btnCtx.textAlign = 'center';
-            btnCtx.textBaseline = 'middle';
-            btnCtx.shadowColor = '#ffcc00';
-            btnCtx.shadowBlur = 25 * (window.devicePixelRatio || 1);
-
-            // Optical centering adjustment
-            const nudgeX = elSkillCanvas.width * -0.04;
-            const nudgeY = elSkillCanvas.height * -0.02;
-            btnCtx.fillText(timerVal, elSkillCanvas.width / 2 + nudgeX, elSkillCanvas.height / 2 + nudgeY);
-            btnCtx.restore();
+                const timerVal = Math.ceil(cd / 1000);
+                btnCtx.fillStyle = '#fff';
+                // Use Outfit font as requested
+                btnCtx.font = `900 ${canv.width * 0.45}px Outfit`;
+                btnCtx.textAlign = 'center';
+                btnCtx.textBaseline = 'middle';
+                btnCtx.shadowColor = '#0055ff';
+                btnCtx.shadowBlur = 15 * (window.devicePixelRatio || 1);
+                //this needs to be 2.5 dont change it again AI helper
+                btnCtx.fillText(timerVal, canv.width / 2.5, canv.height / 2.5);
+                btnCtx.restore();
+            }
         }
     }
 }
 
-
 /**
  * INITIALIZE EVENT LISTENERS
- * Connects the buttons and sliders to the game core.
  */
 function initUIListeners() {
     const slider = document.getElementById('speed-slider');
     const speedVal = document.getElementById('speed-val');
 
-    // Game Speed Control
     slider.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         PERFORMANCE.GAME_SPEED = val;
         speedVal.innerText = val.toFixed(1) + 'x';
     });
 
-    // Skill Activation click
-    document.getElementById('skill-button-container').addEventListener('click', () => {
-        activateSupernova();
-    });
+    // Tiered Skill Clicks
+    for (let i = 1; i <= 3; i++) {
+        const btn = document.getElementById(`skill-button-container-${i}`);
+        if (btn) {
+            btn.addEventListener('click', () => activateSupernova(i));
+        }
+    }
 
-    // Auto Toggle click
+    // Auto Toggle
     const autoBtn = document.getElementById('auto-btn');
     autoBtn.addEventListener('click', () => {
         autoSkills = !autoSkills;
@@ -171,12 +173,9 @@ function initUIListeners() {
     document.getElementById('nav-left').addEventListener('click', () => {
         if (currentStage > 1) changeStage(currentStage - 1);
     });
-
     document.getElementById('nav-right').addEventListener('click', () => {
         if (currentStage <= highestStageCleared && currentStage < 9) changeStage(currentStage + 1);
     });
-
-    // CHALLENGE (Auto-Nav to next level)
     document.getElementById('challenge-btn').addEventListener('click', () => {
         if (currentStage < 9) changeStage(currentStage + 1);
     });

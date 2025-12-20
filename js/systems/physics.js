@@ -10,14 +10,15 @@ let lastCombatUpdate = 0;
 
 /**
  * SKILL ACTIVATION (Supernova)
- * Triggers the massive triple-ring solar flare effect.
+ * Triggers a massive solar flare effect scaled by tier.
  */
-function activateSupernova() {
-    const cfg = SKILLS.MulticolorXFlame;
-    if (skillCooldownRemaining > 0) return;
-    skillCooldownRemaining = cfg.cooldownTime;
+function activateSupernova(tier = 1) {
+    const tierKey = 'Tier' + tier;
+    const cfg = SKILLS[tierKey];
+    if (skillCooldowns[tier - 1] > 0) return;
+    skillCooldowns[tier - 1] = cfg.cooldownTime;
 
-    console.log('[SKILL] Triple Ring Supernova activated!');
+    console.log(`[SKILL] Tier ${tier} Supernova activated! (${cfg.rings} rings)`);
 
     const spawnRing = (count, radius, size, delay) => {
         setTimeout(() => {
@@ -27,15 +28,23 @@ function activateSupernova() {
                     frame: 0,
                     radius: radius,
                     size: size,
-                    orbitSpd: 0.02 + (Math.random() * 0.02)
+                    orbitSpd: 0.02 + (Math.random() * 0.02),
+                    tier: tier
                 });
             }
         }, delay);
     };
 
-    spawnRing(15, 1200, 1400, 0);      // Inner
-    spawnRing(20, 2500, 2200, 150);    // Mid
-    spawnRing(30, 4500, 3500, 300);    // Outer
+    // Construct rings based on config
+    const baseRadius = 1200;
+    const baseSize = 1400;
+    for (let r = 0; r < cfg.rings; r++) {
+        const radius = baseRadius + (r * 1300);
+        const size = baseSize + (r * 800);
+        const count = 15 + (r * 3);
+        const delay = r * 80;
+        spawnRing(count, radius, size, delay);
+    }
 }
 
 /**
@@ -84,21 +93,33 @@ function update(dt, now, isFirstStep, s) {
 
     // 4. PLAYER SYSTEMS
     updatePlayerShield(dt, sc);
-    if (skillCooldownRemaining > 0) {
-        skillCooldownRemaining -= dt * PERFORMANCE.GAME_SPEED;
-        if (skillCooldownRemaining < 0) skillCooldownRemaining = 0;
+    for (let i = 0; i < 3; i++) {
+        if (skillCooldowns[i] > 0) {
+            skillCooldowns[i] -= dt * PERFORMANCE.GAME_SPEED;
+            if (skillCooldowns[i] < 0) skillCooldowns[i] = 0;
+        }
     }
 
     // AUTO SKILL TRIGGER
-    if (autoSkills && skillCooldownRemaining <= 0) {
-        if (player.targetIdx !== -1) {
-            const tIdx = player.targetIdx * STRIDE;
-            const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
-            const distSq = dx * dx + dy * dy;
-            const range = SKILLS.MulticolorXFlame.skillRange;
-            if (distSq < (range * range)) {
-                activateSupernova();
-            }
+    if (autoSkills && player.targetIdx !== -1) {
+        const tIdx = player.targetIdx * STRIDE;
+        const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
+        const distSq = dx * dx + dy * dy;
+
+        if (skillCooldowns[0] <= 0 && distSq < (SKILLS.Tier1.skillRange * SKILLS.Tier1.skillRange)) activateSupernova(1);
+        if (skillCooldowns[1] <= 0 && distSq < (SKILLS.Tier2.skillRange * SKILLS.Tier2.skillRange)) activateSupernova(2);
+        if (skillCooldowns[2] <= 0 && distSq < (SKILLS.Tier3.skillRange * SKILLS.Tier3.skillRange)) activateSupernova(3);
+    }
+
+    // 5. SKILL INSTANCE UPDATES (Animation & Lifespan)
+    for (let i = activeSkills.length - 1; i >= 0; i--) {
+        const s = activeSkills[i];
+        const cfg = SKILLS['Tier' + (s.tier || 3)] || SKILLS.Tier3;
+        s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+        s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+
+        if (s.frame >= cfg.skillFrames) {
+            activeSkills.splice(i, 1);
         }
     }
 
@@ -581,11 +602,12 @@ function processAOEDamage() {
  */
 function processSkillDamage() {
     if (activeSkills.length === 0) return;
-    const cfg = SKILLS.MulticolorXFlame;
-    const dmg = cfg.damageMult * DAMAGE_PER_POP;
 
     // We iterate through each active flame instance
     for (const skill of activeSkills) {
+        const tierCfg = SKILLS['Tier' + (skill.tier || 3)];
+        if (!tierCfg) continue;
+        const dmg = tierCfg.damageMult * (typeof DAMAGE_PER_POP !== 'undefined' ? DAMAGE_PER_POP : 1);
         // Calculate world position of this flame
         const sx = player.x + Math.cos(skill.angle) * skill.radius;
         const sy = player.y + Math.sin(skill.angle) * skill.radius;

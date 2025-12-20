@@ -58,7 +58,39 @@ const SHIP_CONFIG = {
  * SKILLS CONFIGURATION
  */
 const SKILLS = {
-    MulticolorXFlame: {
+    Tier1: {
+        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
+        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+        buttonFrames: 121, buttonCols: 11, buttonSize: 768,
+        skillFrames: 109, skillCols: 11, skillSize: 512,
+        visualSize: 12000,
+        orbitRadius: 10000,
+        animSpeedButton: 0.9,
+        animSpeedSkill: 2,
+        cooldownTime: 25000,
+        instanceCount: 22,
+        damageMult: 100.0,
+        aoeMult: 3.0,
+        skillRange: 15000,
+        rings: 25
+    },
+    Tier2: {
+        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
+        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+        buttonFrames: 121, buttonCols: 11, buttonSize: 768,
+        skillFrames: 109, skillCols: 11, skillSize: 512,
+        visualSize: 9500,
+        orbitRadius: 10000,
+        animSpeedButton: 0.9,
+        animSpeedSkill: 2,
+        cooldownTime: 12000,
+        instanceCount: 22,
+        damageMult: 50.0,
+        aoeMult: 1.75,
+        skillRange: 12000,
+        rings: 8
+    },
+    Tier3: {
         buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
         skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
         buttonFrames: 121, buttonCols: 11, buttonSize: 768,
@@ -72,6 +104,7 @@ const SKILLS = {
         damageMult: 30.0,
         aoeMult: 1.25,
         skillRange: 10000,
+        rings: 3
     }
 };
 

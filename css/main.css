@@ -398,22 +398,54 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 /**
- * SKILL BUTTON (Bottom Right)
+ * SKILL BUTTONS RACK (Bottom Right)
  */
-:root {
-    --btn-size: 140px;
-}
-
-#skill-button-container {
+#skill-buttons-rack {
     position: fixed;
     bottom: 30px;
     right: 30px;
-    width: var(--btn-size);
-    height: var(--btn-size);
-    cursor: pointer;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 15px;
     z-index: 2000;
+}
+
+.skill-btn-wrapper {
+    position: relative;
+    cursor: pointer;
     border-radius: 50%;
     overflow: hidden;
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8),
+        inset 0 0 15px rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.skill-btn-wrapper:hover {
+    transform: translateY(-5px) scale(1.05);
+}
+
+#skill-button-container-1 {
+    width: 140px;
+    height: 140px;
+}
+
+#skill-button-container-2 {
+    width: 93px;
+    height: 93px;
+}
+
+#skill-button-container-3 {
+    width: 62px;
+    height: 62px;
+}
+
+.skill-btn-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
 
 #skill-button-canvas {

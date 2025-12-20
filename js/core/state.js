@@ -58,7 +58,7 @@ const player = {
 
 // Ability State
 const activeSkills = []; // Tracks live particle systems
-let skillCooldownRemaining = 0;
+let skillCooldowns = [0, 0, 0]; // Cooldowns for Tier 1, 2, 3
 let autoSkills = true;  // If true, skills fire automatically when ready
 
 // Bullet State (High Performance)
