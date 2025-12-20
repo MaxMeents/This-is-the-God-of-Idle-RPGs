@@ -18,6 +18,10 @@ function init(firstLoad = false) {
     player.shieldCooldownRemaining = 0;
     player.shieldHP = player.shieldMaxHP;
     player.targetIdx = -1;
+
+    // Bullet Reset
+    bulletData.fill(0);
+    lastFireTime = 0;
     activeSkills.length = 0;
     damageNumbers.forEach(d => d.active = false);
 
@@ -69,13 +73,17 @@ function prepareStagePool(stageId) {
 function updateDamageNumbers(dt) {
     const gameSpd = PERFORMANCE.GAME_SPEED;
     const dtMult = (dt / 16.6) * gameSpd;
-    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
-        const dn = damageNumbers[i];
-        if (!dn.active) continue;
+    for (let i = activeDamageCount - 1; i >= 0; i--) {
+        const idx = activeDamageIndices[i];
+        const dn = damageNumbers[idx];
         dn.life -= 0.02 * dtMult;
         dn.x += dn.vx * dtMult;
         dn.y += dn.vy * dtMult;
-        if (dn.life <= 0) dn.active = false;
+        if (dn.life <= 0) {
+            dn.active = false;
+            activeDamageIndices[i] = activeDamageIndices[activeDamageCount - 1];
+            activeDamageCount--;
+        }
     }
 }
 
@@ -85,6 +93,7 @@ function updateDamageNumbers(dt) {
  * spawn 20 enemies per frame until the requirement is met.
  */
 function handleSpawning() {
+    if (isTraveling) return; // FIX: Don't spawn NEW enemies while we are speeding off to the next stage
     const cfg = STAGE_CONFIG.STAGES[currentStage];
     if (!cfg) return;
 
@@ -119,6 +128,16 @@ function changeStage(newStage) {
     prepareStagePool(currentStage);
     spawnIndex = 0;
     data.fill(0); // Clean up old enemies to prevent ghost collisions
+
+    // NEW: Wipe existing projectiles and damage numbers to ensure a clean transition
+    bulletData.fill(0);
+    activeBulletCount = 0;
+    activeDamageCount = 0;
+    damageNumbers.forEach(dn => dn.active = false);
+    activeBulletIndices.fill(0);
+    activeDamageIndices.fill(0);
+    activeBulletIndices.fill(0);
+    activeDamageIndices.fill(0);
 
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
@@ -190,7 +209,7 @@ function loop(now) {
     // Physics Engine Tick
     const sUpdate = performance.now();
     for (let s = 0; s < steps; s++) {
-        update(stepDt, now + (s * stepDt), s === 0);
+        update(stepDt, now + (s * stepDt), s === 0, s);
     }
     updateSkills(dt, now);
     physicsTimeSum += (performance.now() - sUpdate);
@@ -262,6 +281,9 @@ shipLoader(SHIP_CONFIG.onPath, shipAssets.onImg);
 shipLoader(SHIP_CONFIG.fullPath, shipAssets.fullImg);
 shipLoader(SHIP_CONFIG.shieldOnPath, shipAssets.shieldOnImg);
 shipLoader(SHIP_CONFIG.shieldTurnOnPath, shipAssets.shieldTurnOnImg);
+
+const laserLoader = (p, img) => { img.onload = onAssetLoad; img.src = p; };
+laserLoader(WEAPON_CONFIG.laserPath, laserImg);
 
 // Start the animation loop
 requestAnimationFrame(loop);

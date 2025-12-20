@@ -65,6 +65,20 @@ const SKILLS = {
 };
 
 /**
+ * WEAPON CONFIGURATION
+ */
+const WEAPON_CONFIG = {
+    laserPath: 'img/Laser Sprites/01.png',
+    fireRate: 10,        // Shots per second
+    damage: 10,
+    bulletSpeed: 100,    // Very fast, but visible
+    bulletLife: 3000,    // Disappear after 3 seconds if no hit
+    bulletSize: 180,     // Visual scale
+    offsetSide: 140,     // Left/Right shift from ship center
+    offsetFront: 80      // Forward shift from center
+};
+
+/**
  * WORLD / STAGE MAP
  */
 const STAGE_CONFIG = {

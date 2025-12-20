@@ -42,6 +42,7 @@ enemyKeys.forEach(k => {
 });
 
 const floorImg = new Image();
+const laserImg = new Image();
 let floorPattern = null;
 
 /**
@@ -104,7 +105,7 @@ function bakeSkills() {
  */
 function onAssetLoad() {
     loadedCt++;
-    const totalToLoad = (enemyKeys.length * 3) + 1 + 4 + 2; // enemies + floor + ship + skills
+    const totalToLoad = (enemyKeys.length * 3) + 1 + 4 + 2 + 1; // enemies + floor + ship + skills + laser
 
     if (loadedCt >= totalToLoad) {
         document.getElementById('loading').style.display = 'none';

@@ -178,6 +178,24 @@ function draw() {
             if (frameImg) ctx.drawImage(frameImg, sx - sCfg.visualSize / 2, sy - sCfg.visualSize / 2, sCfg.visualSize, sCfg.visualSize);
         }
     }
+    // 3.5. DRAW WEAPON PROJECTILES (Optimized)
+    const bSize = WEAPON_CONFIG.bulletSize;
+    const viewMargin = bSize;
+    for (let i = 0; i < activeBulletCount; i++) {
+        const bIdx = activeBulletIndices[i] * BULLET_STRIDE;
+        const bx = bulletData[bIdx], by = bulletData[bIdx + 1];
+
+        // OFF-SCREEN CULLING: Don't rotate/draw if out of view
+        if (bx < left - viewMargin || bx > right + viewMargin || by < top - viewMargin || by > bottom + viewMargin) continue;
+
+        const bRot = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(bRot);
+        ctx.drawImage(laserImg, -bSize / 2, -bSize / 2, bSize, bSize);
+        ctx.restore();
+    }
+
     ctx.restore();
 
     // 4. PLAYER & OVERLAY DRAWING
@@ -207,12 +225,10 @@ function draw() {
     ctx.restore();
 
     // 5. UI ELEMENTS (DAMAGE NUMBERS)
-    // Damage numbers are drawn in 1:1 pixel space (not zoomed) so they stay readable.
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.font = "bold 24px Arial";
-    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
-        const dn = damageNumbers[i];
-        if (!dn.active) continue;
+    for (let i = 0; i < activeDamageCount; i++) {
+        const dn = damageNumbers[activeDamageIndices[i]];
         const sx = (dn.x - player.x) * zoom + cx;
         const sy = (dn.y - player.y) * zoom + cy;
         ctx.fillStyle = `rgba(255, 0, 0, ${dn.life})`;

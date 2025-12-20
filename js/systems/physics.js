@@ -12,7 +12,7 @@ let lastCombatUpdate = 0;
  * MAIN UPDATE TICK
  * Called multiple times per frame if the game speed is high.
  */
-function update(dt, now, isFirstStep) {
+function update(dt, now, isFirstStep, s) {
     if (player.health <= 0) return;
     const sc = SHIP_CONFIG;
 
@@ -23,9 +23,8 @@ function update(dt, now, isFirstStep) {
     }
 
     // 2. SPATIAL GRID REBUILD (Throttled to Once Per Frame)
-    if (isFirstStep) {
+    if (isFirstStep && !isTraveling && spawnIndex > 0) {
         // We use an ABSOLUTE world grid now centered at GRID_WORLD_OFFSET. 
-        // This means we don't need to rebuild it every time the player moves.
         for (let i = 0; i < occupiedCount; i++) heads[occupiedCells[i]] = -1;
         occupiedCount = 0;
 
@@ -70,6 +69,19 @@ function update(dt, now, isFirstStep) {
     if (!isTraveling && now - lastCombatUpdate > DAMAGE_INTERVAL) {
         lastCombatUpdate = now;
         processAOEDamage();
+    }
+
+    // 6. WEAPON SYSTEMS
+    if (!isTraveling && player.targetIdx !== -1) {
+        if (now - lastFireTime > (1000 / WEAPON_CONFIG.fireRate)) {
+            spawnLasers();
+            lastFireTime = now;
+        }
+    }
+    // Sub-step Throttle for Bullets: At high speed (25x), update every 2nd step to save CPU.
+    // Use the sub-step index 's' to ensure balanced load across the frame.
+    if (!isTraveling && (PERFORMANCE.GAME_SPEED < 10 || isFirstStep || s % 2 === 0)) {
+        updateBullets(dt);
     }
 }
 
@@ -367,20 +379,7 @@ function processAOEDamage() {
                     const dSq = dx * dx + dy * dy;
                     if (dSq < rSq) {
                         data[idx + 8] -= DAMAGE_PER_POP;
-
-                        for (let p = 0; p < DAMAGE_POOL_SIZE; p++) {
-                            if (!damageNumbers[p].active) {
-                                const dn = damageNumbers[p];
-                                dn.active = true;
-                                dn.x = data[idx];
-                                dn.y = data[idx + 1] - 50;
-                                dn.val = DAMAGE_PER_POP;
-                                dn.life = 1.0;
-                                dn.vx = (Math.random() - 0.5) * 2;
-                                dn.vy = -2 - Math.random() * 2;
-                                break;
-                            }
-                        }
+                        spawnDamageNumber(data[idx], data[idx + 1] - 50, DAMAGE_PER_POP);
 
                         if (data[idx + 8] <= 0) {
                             killCount++;
@@ -438,4 +437,106 @@ function spawnEnemy(i, typeKey, far = false) {
     data[idx + 8] = cfg.healthMax; data[idx + 9] = 0;
     data[idx + 5] = Math.random() * cfg.walkFrames;
     data[idx + 10] = 0; data[idx + 11] = enemyKeys.indexOf(typeKey);
+}
+/**
+ * WEAPON SPAWNING (Dual Lasers)
+ */
+function spawnLasers() {
+    const cfg = WEAPON_CONFIG;
+    const rot = player.rotation;
+    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const sideX = -sin * cfg.offsetSide, sideY = cos * cfg.offsetSide;
+    const frontX = cos * cfg.offsetFront, frontY = sin * cfg.offsetFront;
+
+    // Spawn Left and Right
+    createBullet(player.x + frontX + sideX, player.y + frontY + sideY, cos * cfg.bulletSpeed, sin * cfg.bulletSpeed);
+    createBullet(player.x + frontX - sideX, player.y + frontY - sideY, cos * cfg.bulletSpeed, sin * cfg.bulletSpeed);
+}
+
+function createBullet(x, y, vx, vy) {
+    if (activeBulletCount >= totalBullets) return;
+
+    // Find first inactive slot
+    for (let i = 0; i < totalBullets; i++) {
+        const idx = i * BULLET_STRIDE;
+        if (bulletData[idx + 5] === 0) {
+            bulletData[idx] = x; bulletData[idx + 1] = y;
+            bulletData[idx + 2] = vx; bulletData[idx + 3] = vy;
+            bulletData[idx + 4] = WEAPON_CONFIG.bulletLife;
+            bulletData[idx + 5] = 1;
+            activeBulletIndices[activeBulletCount++] = i;
+            return;
+        }
+    }
+}
+
+/**
+ * PROJECTILE SIMULATION & COLLISION
+ */
+function updateBullets(dt) {
+    const spd = PERFORMANCE.GAME_SPEED;
+    const dmg = WEAPON_CONFIG.damage;
+
+    for (let i = activeBulletCount - 1; i >= 0; i--) {
+        const bulletIdx = activeBulletIndices[i];
+        const idx = bulletIdx * BULLET_STRIDE;
+
+        // Move
+        bulletData[idx] += bulletData[idx + 2] * (dt / 16.6) * spd;
+        bulletData[idx + 1] += bulletData[idx + 3] * (dt / 16.6) * spd;
+        bulletData[idx + 4] -= dt * spd;
+
+        let bulletDead = bulletData[idx + 4] <= 0;
+
+        if (!bulletDead) {
+            const bx = bulletData[idx], by = bulletData[idx + 1];
+            const gx = Math.floor((bx + GRID_WORLD_OFFSET) / GRID_CELL);
+            const gy = Math.floor((by + GRID_WORLD_OFFSET) / GRID_CELL);
+
+            if (gx >= 0 && gx < GRID_DIM && gy >= 0 && gy < GRID_DIM) {
+                const cell = gy * GRID_DIM + gx;
+                let ptr = heads[cell];
+                while (ptr !== -1) {
+                    const eIdx = ptr * STRIDE;
+                    if (data[eIdx + 8] > 0) {
+                        const ex = data[eIdx], ey = data[eIdx + 1];
+                        const cfg = Enemy[enemyKeys[data[eIdx + 11] | 0]];
+                        const dSq = (bx - ex) ** 2 + (by - ey) ** 2;
+                        const r = cfg.size * 0.4;
+                        if (dSq < r * r) {
+                            data[eIdx + 8] -= dmg;
+                            spawnDamageNumber(bx, by - 50, dmg);
+                            if (data[eIdx + 8] <= 0) { killCount++; stageKillCount++; data[eIdx + 8] = 0; data[eIdx + 9] = 0.001; }
+                            bulletDead = true; break;
+                        }
+                    }
+                    ptr = next[ptr];
+                }
+            }
+        }
+
+        if (bulletDead) {
+            bulletData[idx + 5] = 0;
+            activeBulletIndices[i] = activeBulletIndices[activeBulletCount - 1];
+            activeBulletCount--;
+        }
+    }
+}
+
+/**
+ * DAMAGE SYSTEM (Floating Numbers)
+ */
+function spawnDamageNumber(x, y, val) {
+    if (activeDamageCount >= DAMAGE_POOL_SIZE) return;
+    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
+        if (!damageNumbers[i].active) {
+            const dn = damageNumbers[i];
+            dn.active = true; dn.x = x; dn.y = y; dn.val = val;
+            dn.life = 1.0;
+            dn.vx = (Math.random() - 0.5) * 5;
+            dn.vy = -5 - Math.random() * 2;
+            activeDamageIndices[activeDamageCount++] = i;
+            return;
+        }
+    }
 }

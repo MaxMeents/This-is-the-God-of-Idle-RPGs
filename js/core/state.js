@@ -59,9 +59,19 @@ const player = {
 const activeSkills = []; // Tracks live particle systems
 let skillCooldownRemaining = 0;
 
+// Bullet State (High Performance)
+const BULLET_STRIDE = 6; // [x, y, vx, vy, life, active]
+const totalBullets = 500;
+const bulletData = new Float32Array(totalBullets * BULLET_STRIDE);
+const activeBulletIndices = new Int32Array(totalBullets);
+let activeBulletCount = 0;
+let lastFireTime = 0;
+
 // Damage Numbers Pool (Prevents Garbage Collection lag)
 const DAMAGE_POOL_SIZE = 100;
 const damageNumbers = Array.from({ length: DAMAGE_POOL_SIZE }, () => ({ x: 0, y: 0, val: 0, life: 0, vx: 0, vy: 0, active: false }));
+const activeDamageIndices = new Int32Array(DAMAGE_POOL_SIZE);
+let activeDamageCount = 0;
 
 /**
  * SPATIAL GRID STATE (Linked-List Grid)
