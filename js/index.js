@@ -268,7 +268,7 @@ let canvas; // Will point to app.canvas
     app = new PIXI.Application();
     await app.init({
         resizeTo: window,
-        backgroundColor: 0x000000,
+        backgroundAlpha: 0,
         antialias: false,
         preference: 'webgl'
     });

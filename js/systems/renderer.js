@@ -13,7 +13,7 @@ const enemySpritePool = [];
 const bulletSpritePool = [];
 const skillSpritePool = [];
 const damageTextPool = [];
-let playerSprite, shieldSprite, floorTile;
+let playerSprite, shieldSprite;
 
 // Fallback Texture Cache (Used for immediate display while LOD builds)
 const fallbackTextures = {};
@@ -24,15 +24,10 @@ const fallbackTextures = {};
 function initRendererPools() {
     console.log("[RENDER] Initializing Sprite Pools...");
 
-    // 1. Floor (Tiling Background)
-    const floorTexture = PIXI.Texture.from(floorImg);
-    floorTile = new PIXI.TilingSprite({
-        texture: floorTexture,
-        width: 100000,
-        height: 100000
-    });
-    floorTile.anchor.set(0.5);
-    worldContainer.addChildAt(floorTile, 0);
+    // 1. SETUP CSS BACKGROUND (Stutter-Free / Zoom-Stable)
+    document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
+    document.body.style.backgroundRepeat = 'repeat';
+    document.body.style.backgroundColor = '#000000';
 
     // 2. Pre-cache Fallback Textures (from raw 512px sheets)
     enemyKeys.forEach(typeKey => {
@@ -111,16 +106,14 @@ function draw() {
     worldContainer.scale.set(zoom);
     worldContainer.position.set(cx - player.x * zoom, cy - player.y * zoom);
 
-    // Sync Floor Tiling
-    const targetTileSize = 16000;
-    const sourceWidth = (floorTile.texture && floorTile.texture.width) || 1024;
-    const tScale = targetTileSize / sourceWidth;
-    floorTile.width = (app.screen.width / zoom) + 100;
-    floorTile.height = (app.screen.height / zoom) + 100;
-    floorTile.tileScale.set(tScale);
-    floorTile.tilePosition.x = -player.x / tScale;
-    floorTile.tilePosition.y = -player.y / tScale;
-    floorTile.position.set(player.x, player.y);
+    // --- SYNC CSS BACKGROUND ---
+    // This is the "Nuclear Option" for solid tiling.
+    const bgSize = FLOOR_TILE_SIZE * zoom;
+    const bgX = (cx - player.x * zoom);
+    const bgY = (cy - player.y * zoom);
+
+    document.body.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+    document.body.style.backgroundPosition = `${bgX}px ${bgY}px`;
 
     // View boundaries
     const margin = 100 + (3200 * 2);
