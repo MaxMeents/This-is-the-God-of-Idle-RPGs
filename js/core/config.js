@@ -247,7 +247,24 @@ const DAMAGE_INTERVAL = 100;
 const AOE_RADIUS = 900;
 const PLAYER_SPEED = 80;
 const FLOOR_TILE_SIZE = 46000;
-const LUCKY_HIT_CHANCE = 0.1; // 10% chance for a lucky hit
+const LUCKY_HIT_CHANCE = 0.1;
+
+// CRIT SYSTEM CONFIG
+const CRIT_CONFIG = {
+    BASE_CHANCE: 0.75,      // 75% for 1st tier (Arch)
+    RECURSIVE_CHANCE: 0.05, // 5% for each subsequent tier
+    TIER_COLORS: [
+        0xffffff, // 0: Normal (White)
+        0x00ffff, // 1: Arch (Cyan/Blue)
+        0xffd700, // 2: God (Gold/Rainbow)
+        0xff0000, // 3: Omega (Red/Omega)
+        0xff00ff  // 4: Alpha (Magenta/Alpha) - HIGHEST
+    ],
+    TIER_PREFIXES: ["", "CRIT", "GODLY CRIT", "OMEGA CRIT", "ALPHA CRIT"],
+    LUCKY_PREFIXES: ["LUCKY", "LUCKY CRIT", "LUCKY GODLY CRIT", "LUCKY OMEGA CRIT", "LUCKY ALPHA CRIT"],
+    MULTIPLIERS: [1, 2, 4, 8, 16] // Each tier doubles damage
+};
+// 10% chance for a lucky hit
 
 /**
  * LOOT & DROPS CONFIGURATION
@@ -481,52 +498,52 @@ const STAGE_CONFIG = {
         1: {
             kills: 25,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 30, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.02, God: 0.001, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.02, God: 0.001, Omega: 0.0, Alpha: 0.0 }
         },
         2: {
             kills: 50,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.03, God: 0.002, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.03, God: 0.002, Omega: 0.0, Alpha: 0.0 }
         },
         3: {
             kills: 100,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.04, God: 0.003, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.04, God: 0.003, Omega: 0.0, Alpha: 0.0 }
         },
         4: {
             kills: 150,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.05, God: 0.004, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.05, God: 0.004, Omega: 0.0, Alpha: 0.0 }
         },
         5: {
             kills: 200,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.06, God: 0.005, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.06, God: 0.005, Omega: 0.0, Alpha: 0.0 }
         },
         6: {
             kills: 250,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.07, God: 0.007, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.07, God: 0.007, Omega: 0.0, Alpha: 0.0 }
         },
         7: {
             kills: 300,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.08, God: 0.01, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.08, God: 0.01, Omega: 0.0, Alpha: 0.0 }
         },
         8: {
             kills: 350,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.09, God: 0.012, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.09, God: 0.012, Omega: 0.0, Alpha: 0.0 }
         },
         9: {
             kills: 400,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
-            tierChances: { Arch: 0.10, God: 0.015, Alpha: 0.0, Omega: 0.0 }
+            tierChances: { Arch: 0.10, God: 0.015, Omega: 0.0, Alpha: 0.0 }
         },
         10: {
             kills: 1,
             enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 1 },
-            tierChances: { Arch: 0, God: 0, Alpha: 1, Omega: 0.0 }
+            tierChances: { Arch: 0, God: 0, Omega: 0.0, Alpha: 1 }
         }
     }
 };

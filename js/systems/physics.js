@@ -493,8 +493,8 @@ function updateEnemies(dt, now, isFirstStep) {
 
         if (tierIndex === 1) targetRadius = cfg.archAttackRange || targetRadius;
         else if (tierIndex === 2) targetRadius = cfg.godAttackRange || targetRadius;
-        else if (tierIndex === 3) targetRadius = cfg.alphaAttackRange || targetRadius;
-        else if (tierIndex === 4) targetRadius = cfg.omegaAttackRange || targetRadius;
+        else if (tierIndex === 3) targetRadius = cfg.omegaAttackRange || targetRadius;
+        else if (tierIndex === 4) targetRadius = cfg.alphaAttackRange || targetRadius;
 
         const pSpace = (cfg.size * sizeMult * (LOOT_CONFIG.TIERS[tierIndex].sizeMult || 1)) + cfg.spacing;
         const pSpaceSq = pSpace * pSpace;
@@ -532,8 +532,8 @@ function updateEnemies(dt, now, isFirstStep) {
             let chargeSpd = cfg.chargeSpeed;
             if (tierIndex === 1) chargeSpd = cfg.archChargeSpeed || chargeSpd;
             else if (tierIndex === 2) chargeSpd = cfg.godChargeSpeed || chargeSpd;
-            else if (tierIndex === 3) chargeSpd = cfg.alphaChargeSpeed || chargeSpd;
-            else if (tierIndex === 4) chargeSpd = cfg.omegaChargeSpeed || chargeSpd;
+            else if (tierIndex === 3) chargeSpd = cfg.omegaChargeSpeed || chargeSpd;
+            else if (tierIndex === 4) chargeSpd = cfg.alphaChargeSpeed || chargeSpd;
 
             // Move in the stored direction at charge speed
             steerX = chargeDirX * chargeSpd;
@@ -595,8 +595,8 @@ function updateEnemies(dt, now, isFirstStep) {
                 speedCap = cfg.chargeSpeed;
                 if (tierIndex === 1) speedCap = cfg.archChargeSpeed || speedCap;
                 else if (tierIndex === 2) speedCap = cfg.godChargeSpeed || speedCap;
-                else if (tierIndex === 3) speedCap = cfg.alphaChargeSpeed || speedCap;
-                else if (tierIndex === 4) speedCap = cfg.omegaChargeSpeed || speedCap;
+                else if (tierIndex === 3) speedCap = cfg.omegaChargeSpeed || speedCap;
+                else if (tierIndex === 4) speedCap = cfg.alphaChargeSpeed || speedCap;
             }
             const speed = Math.min(speedCap, mag * 20);
             const moveFactor = speed / mag;
@@ -625,8 +625,8 @@ function updateEnemies(dt, now, isFirstStep) {
             let walkAnimSpd = cfg.walkAnimSpeed;
             if (tierIndex === 1) walkAnimSpd = cfg.archWalkAnimSpeed || walkAnimSpd;
             else if (tierIndex === 2) walkAnimSpd = cfg.godWalkAnimSpeed || walkAnimSpd;
-            else if (tierIndex === 3) walkAnimSpd = cfg.alphaWalkAnimSpeed || walkAnimSpd;
-            else if (tierIndex === 4) walkAnimSpd = cfg.omegaWalkAnimSpeed || walkAnimSpd;
+            else if (tierIndex === 3) walkAnimSpd = cfg.omegaWalkAnimSpeed || walkAnimSpd;
+            else if (tierIndex === 4) walkAnimSpd = cfg.alphaWalkAnimSpeed || walkAnimSpd;
 
             // Apply randomized skip: stride * jitter factor
             const jitter = 0.8 + Math.random() * 0.4;
@@ -674,8 +674,8 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, tierIndex, targetR
         let attackSpeed = cfg.attackAnimSpeed;
         if (tierIndex === 1) attackSpeed = cfg.archAttackAnimSpeed || attackSpeed;
         else if (tierIndex === 2) attackSpeed = cfg.godAttackAnimSpeed || attackSpeed;
-        else if (tierIndex === 3) attackSpeed = cfg.alphaAttackAnimSpeed || attackSpeed;
-        else if (tierIndex === 4) attackSpeed = cfg.omegaAttackAnimSpeed || attackSpeed;
+        else if (tierIndex === 3) attackSpeed = cfg.omegaAttackAnimSpeed || attackSpeed;
+        else if (tierIndex === 4) attackSpeed = cfg.alphaAttackAnimSpeed || attackSpeed;
 
         // Apply stride + jitter to attack progress
         const jitter = 0.8 + Math.random() * 0.4;
@@ -704,8 +704,8 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, tierIndex, targetR
         let chargeMult = cfg.chargeDistanceMult;
         if (tierIndex === 1) chargeMult = cfg.archChargeDistanceMult || chargeMult;
         else if (tierIndex === 2) chargeMult = cfg.godChargeDistanceMult || chargeMult;
-        else if (tierIndex === 3) chargeMult = cfg.alphaChargeDistanceMult || chargeMult;
-        else if (tierIndex === 4) chargeMult = cfg.omegaChargeDistanceMult || chargeMult;
+        else if (tierIndex === 3) chargeMult = cfg.omegaChargeDistanceMult || chargeMult;
+        else if (tierIndex === 4) chargeMult = cfg.alphaChargeDistanceMult || chargeMult;
 
         const chargeTargetDist = targetRadius * chargeMult;
 
@@ -888,10 +888,10 @@ function spawnEnemy(i, typeKey, far = false) {
     const roll = Math.random();
 
     // Check from rarest to most common
-    if (roll < chances.Omega) tierIndex = 4;
-    else if (roll < (chances.Omega + chances.Alpha)) tierIndex = 3;
-    else if (roll < (chances.Omega + chances.Alpha + chances.God)) tierIndex = 2;
-    else if (roll < (chances.Omega + chances.Alpha + chances.God + chances.Arch)) tierIndex = 1;
+    if (roll < chances.Alpha) tierIndex = 4;
+    else if (roll < (chances.Alpha + chances.Omega)) tierIndex = 3;
+    else if (roll < (chances.Alpha + chances.Omega + chances.God)) tierIndex = 2;
+    else if (roll < (chances.Alpha + chances.Omega + chances.God + chances.Arch)) tierIndex = 1;
 
     // Stat Scaling from config
     const tierCfg = LOOT_CONFIG.TIERS[tierIndex];
@@ -903,8 +903,8 @@ function spawnEnemy(i, typeKey, far = false) {
     // Scale moveSpeed if tier specific exists
     if (tierIndex === 1) data[idx + 6] = cfg.archMoveSpeed || data[idx + 6];
     else if (tierIndex === 2) data[idx + 6] = cfg.godMoveSpeed || data[idx + 6];
-    else if (tierIndex === 3) data[idx + 6] = cfg.alphaMoveSpeed || data[idx + 6];
-    else if (tierIndex === 4) data[idx + 6] = cfg.omegaMoveSpeed || data[idx + 6];
+    else if (tierIndex === 3) data[idx + 6] = cfg.omegaMoveSpeed || data[idx + 6];
+    else if (tierIndex === 4) data[idx + 6] = cfg.alphaMoveSpeed || data[idx + 6];
 
     data[idx + 8] = cfg.healthMax * tierCfg.healthMult;
     data[idx + 9] = 0;
@@ -1037,11 +1037,29 @@ function updateBullets(dt) {
  */
 function spawnDamageNumber(x, y, val, lucky = false) {
     if (activeDamageCount >= DAMAGE_POOL_SIZE) return;
+
+    // RECURSIVE CRIT LOGIC
+    let critTier = 0;
+    if (Math.random() < CRIT_CONFIG.BASE_CHANCE) {
+        critTier = 1;
+        // Recursive rolls (Arch -> God -> Omega -> Alpha)
+        while (critTier < 4 && Math.random() < CRIT_CONFIG.RECURSIVE_CHANCE) {
+            critTier++;
+        }
+    }
+
+    // Multiply damage based on crit tier
+    const finalVal = val * CRIT_CONFIG.MULTIPLIERS[critTier];
+
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         if (!damageNumbers[i].active) {
             const dn = damageNumbers[i];
-            dn.active = true; dn.x = x; dn.y = y; dn.val = val;
+            dn.active = true;
+            dn.x = x;
+            dn.y = y;
+            dn.val = finalVal;
             dn.isLucky = lucky;
+            dn.critTier = critTier;
             dn.life = 1.0;
             dn.vx = (Math.random() - 0.5) * 5;
             dn.vy = -5 - Math.random() * 2;

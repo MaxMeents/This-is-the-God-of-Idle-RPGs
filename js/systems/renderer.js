@@ -322,25 +322,43 @@ function draw() {
         t.position.set(screenX, screenY);
 
         const valStr = String(dn.val);
-        const textContent = dn.isLucky ? "LUCKY! " + valStr : valStr;
+        const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
+        const textContent = prefix ? prefix + " " + valStr : valStr;
 
         if (t.text !== textContent) {
             t.text = textContent;
 
-            // SEXY STYLING SWITCH
+            // TIERED STYLING
+            t.style.fill = CRIT_CONFIG.TIER_COLORS[dn.critTier];
+            t.style.stroke = (dn.critTier > 1) ? 0x000000 : 0x222222;
+            t.style.strokeThickness = (dn.critTier > 1) ? 6 : 3;
+
+            // Tier-specific font sizes
+            if (dn.critTier === 0) t.style.fontSize = 28;
+            else if (dn.critTier === 1) t.style.fontSize = 32;
+            else if (dn.critTier === 2) t.style.fontSize = 38;
+            else if (dn.critTier === 3) t.style.fontSize = 46;
+            else if (dn.critTier === 4) t.style.fontSize = 54;
+
             if (dn.isLucky) {
-                t.style.fill = 0xffd700; // Gold
-                t.style.stroke = 0xff0000; // Red stroke for impact
-                t.style.fontSize = 42;
-            } else {
-                t.style.fill = 0xffffff;
-                t.style.stroke = 0x000000;
-                t.style.fontSize = 28;
+                t.style.fill = 0xffd700; // Gold base for lucky hit logic
+                if (dn.critTier > 0) {
+                    // Lucky Crit: Blend gold with tier color or use special impact
+                    t.style.stroke = 0xff0000;
+                }
             }
         }
 
-        // In screen space, we keep the scale mostly stable but slightly reactive to zoom
-        const baseScale = dn.isLucky ? 1.4 : 1.0;
+        // Tiered Shimmer/Vibration for high tiers
+        let offTickX = 0, offTickY = 0;
+        if (dn.critTier >= 3) {
+            offTickX = (Math.random() - 0.5) * (dn.critTier * 4);
+            offTickY = (Math.random() - 0.5) * (dn.critTier * 4);
+            t.position.set(screenX + offTickX, screenY + offTickY);
+        }
+
+        // In screen space, we keep the scale mostly stable but reactive to zoom
+        const baseScale = 1.0 + (dn.critTier * 0.2);
         t.scale.set(baseScale * (0.8 + zoom * 0.2));
     }
 

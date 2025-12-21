@@ -71,8 +71,8 @@ function initLootLogUI() {
                     <div class="tier-circle tier-normal active" onclick="toggleLogTier(\'normal\')"></div>
                     <div class="tier-circle tier-epic active" onclick="toggleLogTier(\'epic\')"></div>
                     <div class="tier-circle tier-god active" onclick="toggleLogTier(\'god\')"></div>
-                    <div class="tier-circle tier-alpha active" onclick="toggleLogTier(\'alpha\')"></div>
                     <div class="tier-circle tier-omega active" onclick="toggleLogTier(\'omega\')"></div>
+                    <div class="tier-circle tier-alpha active" onclick="toggleLogTier(\'alpha\')"></div>
                 </div>
             </div>
             <div id="loot-log-content" class="modal-body custom-scrollbar">

@@ -88,14 +88,14 @@
     animation: rotateCenteredCCW 3s linear infinite;
 }
 
-/* God/Omega Tier: Silver/Black Chasing */
+/* God/Alpha Tier: Silver/Black Chasing */
 .loot-tier-god .loot-box::before,
-.loot-tier-omega .loot-box::before {
+.loot-tier-alpha .loot-box::before {
     background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
 }
 
-/* Alpha Tier: White Chasing + White Box Body */
-.loot-tier-alpha .loot-box::before {
+/* Omega Tier: White Chasing + White Box Body */
+.loot-tier-omega .loot-box::before {
     background: conic-gradient(from 0deg, #fff, #ccc, #fff, #ccc, #fff);
 }
 
