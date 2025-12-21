@@ -559,6 +559,87 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 20px;
+    /* Space for Zoom Bar */
+}
+
+/* CATEGORY FILTERS (Pill Buttons) */
+.category-filters {
+    display: flex;
+    gap: 10px;
+    margin-left: 20px;
+}
+
+.cat-btn {
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    /* Pill shape */
+    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+}
+
+.cat-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.cat-btn.active {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.2));
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+/* ZOOM CONTROLS */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 0 32px 15px 32px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.zoom-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+input[type=range].zoom-slider {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+}
+
+input[type=range].zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffd700;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    transition: transform 0.2s;
+}
+
+input[type=range].zoom-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #fff;
 }
 
 .time-filters {
@@ -637,13 +718,15 @@
 
 .tier-filters {
     display: flex;
-    gap: 16px;
-    /* Increased gap for larger circles */
+    gap: 12px;
+    /* Reduced gap */
+    align-items: center;
 }
 
 .tier-circle {
-    width: 50px;
-    height: 50px;
+    width: 35px;
+    /* Compact Size */
+    height: 35px;
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid rgba(0, 0, 0, 0.3);
@@ -660,8 +743,9 @@
 .tier-circle::before {
     content: '';
     position: absolute;
-    width: 44px;
-    height: 44px;
+    width: 29px;
+    /* Scaled for 35px */
+    height: 29px;
     background: #fff;
     border-radius: 50%;
     z-index: 1;
@@ -670,8 +754,10 @@
 .tier-circle.active {
     opacity: 1;
     filter: none;
-    transform: scale(1.1);
-    box-shadow: 0 0 15px currentColor;
+    transform: scale(1.15);
+    /* Slightly larger scale on active */
+    box-shadow: 0 0 10px currentColor;
+    /* Toned down shadow */
     animation: rotate 3s linear infinite;
 }
 
@@ -743,13 +829,71 @@
 .loot-item.in-log {
     width: 100%;
     max-width: 800px;
-    /* Increased max width */
-    height: 110px !important;
-    /* Balanced row height (fits ~7) */
+    /* Height is now dynamic via inline style, default 110px */
     animation: none;
     pointer-events: auto;
     display: flex;
     align-items: center;
+    transition: height 0.2s ease;
+}
+
+/* GRID LAYOUT STYLES */
+.loot-log-row-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.loot-grid-item {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Grid item tier colors */
+.loot-grid-item.loot-tier-god {
+    border-color: #ff00ff;
+    background: rgba(255, 0, 255, 0.05);
+}
+
+.loot-grid-item.loot-tier-alpha {
+    border-color: #00ffff;
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.loot-grid-item.loot-tier-omega {
+    border-color: #ff0000;
+    background: rgba(255, 0, 0, 0.05);
+}
+
+.loot-grid-item.loot-tier-epic {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+}
+
+/* Compact Grid Icons */
+.loot-grid-item .loot-icon-wrapper {
+    width: 60px !important;
+    height: 60px !important;
+    margin-right: 15px;
+}
+
+.loot-grid-item .loot-icon-bg::before {
+    width: 52px !important;
+    height: 52px !important;
+}
+
+.loot-grid-item .loot-text {
+    padding-left: 0;
 }
 
 /* Reset staircase margins for log items */

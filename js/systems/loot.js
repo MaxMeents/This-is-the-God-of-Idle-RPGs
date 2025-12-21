@@ -116,11 +116,15 @@ const LootPersistence = {
 };
 
 let logViewState = {
-    currentView: 'hours',
-    selectedHour: null,
-    timeScope: 'all', // Changed to 'all' so users see their history by default
+    // State for the Log View
+    currentView: 'index', // 'index' (hours) or 'detail' (specific hour)
+    currentHour: null,
+    timeScope: 'all', // 'session', 'today', 'all'
     activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega']),
-    clusterize: null // Store Clusterize instance
+    activeCategory: 'drops', // 'spending', 'drops', 'rewards'
+    zoom: 1.0, // 0.0 to 1.0 (1.0 = Max Size, 0.0 = Grid Mode)
+    clusterize: null,
+    scrollPos: 0
 };
 
 /**
@@ -170,6 +174,12 @@ function createLootLogModal() {
                     <button class="filter-btn" data-scope="today" onclick="setLogTimeScope('today')">Today</button>
                     <button class="filter-btn active" data-scope="all" onclick="setLogTimeScope('all')">All Time</button>
                 </div>
+                <!-- Category Filters -->
+                <div class="category-filters">
+                    <button class="cat-btn" onclick="setLogCategory('spending')">Spending</button>
+                    <button class="cat-btn active" onclick="setLogCategory('drops')">Monster Drops</button>
+                    <button class="cat-btn" onclick="setLogCategory('rewards')">Rewards</button>
+                </div>
                 <div class="tier-filters">
                     <div class="tier-circle tier-normal active" onclick="toggleLogTier('normal')"></div>
                     <div class="tier-circle tier-epic active" onclick="toggleLogTier('epic')"></div>
@@ -177,6 +187,12 @@ function createLootLogModal() {
                     <div class="tier-circle tier-omega active" onclick="toggleLogTier('omega')"></div>
                     <div class="tier-circle tier-alpha active" onclick="toggleLogTier('alpha')"></div>
                 </div>
+            </div>
+            <!-- Zoom Controls -->
+            <div class="zoom-controls">
+                <span class="zoom-label">View Size</span>
+                <input type="range" min="0" max="100" value="100" class="zoom-slider" oninput="handleLogZoom(this.value)">
+                <span class="zoom-label">Grid Mode</span>
             </div>
             <div id="loot-log-content" class="modal-body custom-scrollbar">
                 <!-- Items built on the fly -->
@@ -327,6 +343,31 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     }, 3000);
 }
 
+// --- Zoom & Category Logic ---
+
+function handleLogZoom(val) {
+    const zoomLevel = parseInt(val) / 100;
+    logViewState.zoom = zoomLevel;
+
+    // Re-render to apply new scale/grid mode immediately
+    // If in detail view, we likely want to re-render the detail log
+    if (logViewState.currentView === 'detail') {
+        // We need to re-render the detail log with the current data
+        // renderLootLog handles all filtering and view logic
+        renderLootLog();
+    }
+}
+
+function setLogCategory(cat) {
+    logViewState.activeCategory = cat;
+    // Update UI active state
+    $('.category-filters .cat-btn').removeClass('active');
+    $(`.category-filters .cat-btn:contains('${cat === 'drops' ? 'Monster Drops' : cat.charAt(0).toUpperCase() + cat.slice(1)}')`).addClass('active'); // Simple text match for demo
+
+    renderLootLog();
+}
+
+// --- Filtering & Rendering ---
 /**
  * Logic for opening/closing and rendering the log
  */
@@ -336,8 +377,8 @@ function openLootLog() {
     // Defer parsing until looking
     LootPersistence.syncMemory();
 
-    logViewState.currentView = 'hours';
-    logViewState.selectedHour = null;
+    logViewState.currentView = 'index';
+    logViewState.currentHour = null;
 
     renderLootLog();
 
@@ -369,7 +410,7 @@ function closeLootLog() {
 
 function viewHourLog(hour) {
     logViewState.currentView = 'detail';
-    logViewState.selectedHour = hour;
+    logViewState.currentHour = hour;
 
     // Cleanup old clusterize
     if (logViewState.clusterize) {
@@ -383,8 +424,8 @@ function viewHourLog(hour) {
 }
 
 function viewHoursIndex() {
-    logViewState.currentView = 'hours';
-    logViewState.selectedHour = null;
+    logViewState.currentView = 'index';
+    logViewState.currentHour = null;
 
     // Cleanup old clusterize
     if (logViewState.clusterize) {
@@ -451,6 +492,15 @@ function renderLootLog() {
         return has;
     });
 
+    // 3. Filter by Active Category (currently only 'drops' is populated)
+    // This is a placeholder for future categories like 'spending', 'rewards'
+    if (logViewState.activeCategory === 'drops') {
+        // No additional filtering needed as lootLogHistory only contains drops
+    } else {
+        filteredHistory = []; // Clear if category is not 'drops' for now
+    }
+
+
     console.log(`[LOOT] Rendering Log: ${filteredHistory.length} items (Tiers: ${Array.from(logViewState.activeTiers).join(',')})`);
 
     if (filteredHistory.length === 0) {
@@ -465,7 +515,7 @@ function renderLootLog() {
         return;
     }
 
-    if (logViewState.currentView === 'hours') {
+    if (logViewState.currentView === 'index') {
         renderHoursIndex(content, headerTitle, filteredHistory);
     } else {
         renderDetailLog(content, headerTitle, filteredHistory);
@@ -516,9 +566,9 @@ function renderHoursIndex(content, headerTitle, data) {
 
 function renderDetailLog(content, headerTitle, data) {
     const $content = $(content);
-    headerTitle.innerHTML = `Loot Log: ${logViewState.selectedHour}`;
+    headerTitle.innerHTML = `Loot Log: ${logViewState.currentHour}`;
 
-    const filtered = data.filter(item => item.hourLabel === logViewState.selectedHour);
+    const filteredHistory = data.filter(item => item.hourLabel === logViewState.currentHour);
 
     // 1. Initial Setup for Clusterize
     if (!$content.find('.clusterize-scroll').length) {
@@ -528,47 +578,113 @@ function renderDetailLog(content, headerTitle, data) {
             .on('click', viewHoursIndex);
         $content.append($backBtn);
 
-        const $scrollArea = $('<div id="scrollArea" class="clusterize-scroll"></div>');
-        const $contentArea = $('<div id="contentArea" class="clusterize-content"></div>');
+        const $scrollArea = $('<div id="loot-log-scroll-area" class="clusterize-scroll"></div>');
+        const $contentArea = $('<div id="loot-log-content-area" class="clusterize-content"></div>'); // Renamed to avoid ID conflict
         $scrollArea.append($contentArea);
         $content.append($scrollArea);
     }
 
-    // 2. Prepare Row HTML Array
-    const rows = filtered.map(itemData => {
-        const itemCfg = LOOT_CONFIG.ITEMS[itemData.itemKey];
-        if (!itemCfg) return '';
+    // Destroy existing clusterize instance before creating a new one
+    if (logViewState.clusterize) {
+        logViewState.clusterize.destroy();
+        logViewState.clusterize = null;
+    }
 
-        return `
-            <div class="loot-log-row loot-tier-${itemData.tier}">
-                <div class="log-timestamp">${itemData.timestamp}</div>
-                <div class="loot-item in-log">
-                    <div class="loot-box">
-                        <div class="loot-text">
-                            <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
-                            <span class="loot-name shimmer-text">${itemCfg.name}</span>
-                        </div>
-                    </div>
-                    <div class="loot-icon-wrapper">
-                        <div class="loot-icon-bg"></div>
-                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 70px !important; height: 70px !important;">
+    // Grid Mode Logic (Zoom < 0.4)
+    if (logViewState.zoom < 0.4) {
+        // Render 2 items per row
+        const gridRows = [];
+        for (let i = 0; i < filteredHistory.length; i += 2) {
+            const item1 = filteredHistory[i];
+            const item2 = filteredHistory[i + 1];
+
+            let rowHtml = `<div class="loot-log-row-grid">`;
+            rowHtml += renderGridItem(item1);
+            if (item2) rowHtml += renderGridItem(item2);
+            rowHtml += `</div>`;
+            gridRows.push(rowHtml);
+        }
+
+        logViewState.clusterize = new Clusterize({
+            rows: gridRows,
+            scrollId: 'loot-log-scroll-area',
+            contentId: 'loot-log-content-area',
+            rows_in_block: 20
+        });
+        return;
+
+    }
+
+    // Standard List Mode
+    // Calculate dynamic sizes based on Zoom (1.0 = 110px row, 90px icon)
+    // Min Size (at zoom 0.4): ~60px row, 40px icon
+    const baseHeight = 110;
+    const minHeight = 60;
+    const rowHeight = Math.max(minHeight, minHeight + (baseHeight - minHeight) * ((logViewState.zoom - 0.4) / 0.6));
+
+    // Pass scale info to renderDetailLogRows
+    const listRows = filteredHistory.map(item => renderDetailRow(item, rowHeight, logViewState.zoom));
+
+    // 4. Init Clusterize
+    logViewState.clusterize = new Clusterize({
+        rows: listRows,
+        scrollId: 'loot-log-scroll-area',
+        contentId: 'loot-log-content-area',
+        rows_in_block: 50 // Render more rows since they might be smaller
+    });
+}
+
+function renderGridItem(itemData) {
+    const itemCfg = LOOT_CONFIG.ITEMS[itemData.id];
+    if (!itemCfg) return '';
+
+    return `
+        <div class="loot-grid-item loot-tier-${itemData.tier}">
+             <div class="loot-icon-wrapper">
+                <div class="loot-icon-bg"></div>
+                <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 40px; height: 40px;">
+            </div>
+            <div class="loot-text">
+                <span class="loot-amount" style="font-size: 14px;">${itemData.amount.toLocaleString()}</span>
+                <span class="loot-name shimmer-text" style="font-size: 11px;">${itemCfg.name}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderDetailRow(itemData, height, zoom) {
+    const itemCfg = LOOT_CONFIG.ITEMS[itemData.id];
+    if (!itemCfg) return '';
+
+    // Calculate dynamic icon sizes
+    // Base Icon Wrapper: 90px, Min: 40px
+    const baseWrapper = 90;
+    const minWrapper = 40;
+    const wrapperSize = Math.floor(minWrapper + (baseWrapper - minWrapper) * ((zoom - 0.4) / 0.6));
+
+    // Scale white center (ratio ~0.86)
+    const whiteCenter = Math.floor(wrapperSize * 0.86);
+
+    // Scale image (ratio ~0.77)
+    const imgSize = Math.floor(wrapperSize * 0.77);
+
+    return `
+        <div class="loot-log-row loot-tier-${itemData.tier}">
+            <div class="log-timestamp" style="line-height: ${height}px;">${itemData.timestamp}</div>
+            <div class="loot-item in-log" style="height: ${height}px !important;">
+                <div class="loot-box">
+                    <div class="loot-text">
+                        <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
+                        <span class="loot-name shimmer-text">${itemCfg.name}</span>
                     </div>
                 </div>
+                <div class="loot-icon-wrapper" style="width: ${wrapperSize}px !important; height: ${wrapperSize}px !important;">
+                    <div class="loot-icon-bg"><style>.in-log .loot-icon-wrapper[style*="width: ${wrapperSize}px"] .loot-icon-bg::before { width: ${whiteCenter}px !important; height: ${whiteCenter}px !important; }</style></div>
+                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: ${imgSize}px !important; height: ${imgSize}px !important;">
+                </div>
             </div>
-        `;
-    });
-
-    // 3. Init or Update Clusterize
-    if (!logViewState.clusterize) {
-        logViewState.clusterize = new Clusterize({
-            rows: rows,
-            scrollId: 'scrollArea',
-            contentId: 'contentArea',
-            no_data_text: 'Your ledger is empty for this hour, God.'
-        });
-    } else {
-        logViewState.clusterize.update(rows);
-    }
+        </div>
+    `;
 }
 
 /**
