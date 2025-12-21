@@ -217,6 +217,12 @@
     /* Ensure text is above mask */
 }
 
+/* Specific text alignment for the log */
+.in-log .loot-text {
+    padding-left: 20px;
+    /* Reset padding since we are using flex */
+}
+
 .loot-amount {
     color: #ffcc00;
     font-size: 21px;
@@ -628,25 +634,42 @@
 
 .tier-filters {
     display: flex;
-    gap: 12px;
+    gap: 16px;
+    /* Increased gap for larger circles */
 }
 
 .tier-circle {
-    width: 20px;
-    height: 20px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid rgba(0, 0, 0, 0.3);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     opacity: 0.3;
     filter: grayscale(1);
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.tier-circle::before {
+    content: '';
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    background: #fff;
+    border-radius: 50%;
+    z-index: 1;
 }
 
 .tier-circle.active {
     opacity: 1;
     filter: none;
-    transform: scale(1.2);
+    transform: scale(1.1);
     box-shadow: 0 0 15px currentColor;
+    animation: rotate 3s linear infinite;
 }
 
 .tier-circle.tier-normal {
@@ -655,22 +678,22 @@
 }
 
 .tier-circle.tier-epic {
-    background: linear-gradient(135deg, #fff, #ffd700);
+    background: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
     color: #ffd700;
 }
 
 .tier-circle.tier-god {
-    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+    background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
     color: #ff00ff;
 }
 
 .tier-circle.tier-alpha {
-    background: linear-gradient(45deg, #00ffff, #fff, #00ffff);
+    background: conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff);
     color: #00ffff;
 }
 
 .tier-circle.tier-omega {
-    background: linear-gradient(135deg, #fff, #ff00ff);
+    background: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
     color: #ff00ff;
 }
 
@@ -715,31 +738,35 @@
 
 /* Override Loot Item for Log Display */
 .loot-item.in-log {
-    width: 400px;
-    height: 60px;
+    width: 100%;
+    max-width: 800px;
+    /* Increased max width */
+    height: 320px !important;
+    /* Massive row height */
     animation: none;
-    /* No slide-in in log */
     pointer-events: auto;
-    /* Allow mouse interaction in log if needed */
+    display: flex;
+    align-items: center;
 }
 
 /* Reset staircase margins for log items */
 .in-log .loot-box {
-    left: 20px;
-    height: 48px;
+    margin: 0;
+    width: 100%;
+    /* Ensure box fills space for text centering */
+    display: flex;
+    align-items: center;
 }
 
 .in-log .loot-icon-wrapper {
     position: relative;
     right: 0;
-    width: 50px;
-    height: 50px;
-}
-
-.in-log .loot-icon-bg::before {
-    width: 44px;
-    /* Scaled for 50px wrapper */
-    height: 44px;
+    width: 300px !important;
+    /* HUGE Icon Wrapper */
+    height: 300px !important;
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-right: 40px;
 }
 
 /* Inherit Tier Gradients and Animations for Icon BG in Log */
@@ -750,14 +777,16 @@
     justify-content: center;
     align-items: center;
     box-shadow: none;
+    width: 100%;
+    height: 100%;
 }
 
 .in-log .loot-icon-bg::before {
     content: '';
     position: absolute;
-    width: 44px;
-    /* Scaled for 50px log icons */
-    height: 44px;
+    width: 260px !important;
+    /* Scaled white center */
+    height: 260px !important;
     background: #fff;
     border-radius: 50%;
 }
@@ -841,21 +870,27 @@
 }
 
 /* Scrollbar Styling */
+/* Scrollbar Styling - The Best Scrollbar Ever (Sci-Fi Power Core) */
 .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 12px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.9);
+    border-radius: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 215, 0, 0.3);
-    border-radius: 3px;
+    background: linear-gradient(180deg, #ffd700, #ff8c00);
+    border-radius: 6px;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5), inset 0 0 2px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 215, 0, 0.3);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 215, 0, 0.5);
+    background: linear-gradient(180deg, #ffe033, #ff9d00);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.8), inset 0 0 3px rgba(255, 255, 255, 0.8);
 }
 
 /* Virtual Scrolling Styles */
@@ -869,12 +904,18 @@
     /* Required for absolute positioning of virtual rows */
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
+    /* Kill horizontal scrollbar */
     max-height: 100%;
 }
 
 /* Clusterize.js Tweaks */
 .clusterize-scroll {
     max-height: 100% !important;
+    overflow-x: hidden !important;
+    /* Kill horizontal scrollbar */
+    padding-right: 5px;
+    /* Prevent content from touching scrollbar */
 }
 
 .clusterize-content {
