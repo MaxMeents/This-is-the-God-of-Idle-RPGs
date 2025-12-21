@@ -560,37 +560,46 @@ body {
 
 /* FILTER BAR */
 .ledger-filter-bar {
-    padding: 20px 32px;
+    padding: 10px 20px;
+    /* Reduced padding for more space */
     background: rgba(255, 255, 255, 0.02);
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    /* Space for Zoom Bar */
+    flex-wrap: wrap;
+    /* Allow wrapping if needed */
+    gap: 10px;
+    /* Gap for wrapped rows */
+    margin-bottom: 10px;
 }
 
 /* CATEGORY FILTERS (Pill Buttons) */
 .category-filters {
     display: flex;
-    gap: 10px;
-    margin-left: 20px;
+    gap: 8px;
+    /* Tighter gap */
+    margin-left: 10px;
+    /* Reduced margin */
 }
 
 .cat-btn {
-    padding: 8px 16px;
+    padding: 6px 12px;
+    /* Reduced padding */
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
-    /* Pill shape */
     color: #888;
     font-family: 'Orbitron', sans-serif;
-    font-size: 10px;
+    font-size: 9px;
+    /* Reduced font size */
     font-weight: bold;
     text-transform: uppercase;
     cursor: pointer;
     transition: all 0.3s;
     letter-spacing: 1px;
+    white-space: nowrap;
+    /* Prevent text wrapping */
 }
 
 .cat-btn:hover {
@@ -718,16 +727,20 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
 
 .filter-btn.active {
     background: rgba(255, 215, 0, 0.15);
-    border-color: #ffd700;
+    ```css border-color: #ffd700;
     color: #ffd700;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
 }
 
+/* TIER FILTERS */
 .tier-filters {
     display: flex;
     gap: 12px;
     /* Reduced gap */
     align-items: center;
+    flex-shrink: 0;
+    /* Prevent shrinking */
+    /* margin-left: auto; Removed to allow natural flow/wrapping */
 }
 
 .tier-circle {
@@ -959,13 +972,14 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
 
 /* Compact Grid Icons */
 .loot-grid-item .loot-icon-wrapper {
+    position: relative !important;
+    /* Override global absolute */
+    left: auto !important;
+    right: auto !important;
     width: 50px !important;
-    /* Slightly smaller */
     height: 50px !important;
     margin-right: 0;
-    /* Reset margin since it's on the right now */
     margin-left: 10px;
-    /* Add margin left */
     flex-shrink: 0;
 }
 

@@ -31,8 +31,8 @@ const PERFORMANCE = {
  * SHIP CONFIGURATION
  */
 const SHIP_CONFIG = {
-    onPath: 'img/Ship/Ship Engines on/Spritesheet/768x768/Ship Engines on_768x768_sheet.png',
-    fullPath: 'img/Ship/Ship Full Engine Power/Spritesheet/768x768/Ship Full Engine Power_768x768_sheet.png',
+    onPath: 'img/Ship/Ship Engines on/Spritesheet/768x768/Ship Engines on_768x768_sheet.webp',
+    fullPath: 'img/Ship/Ship Full Engine Power/Spritesheet/768x768/Ship Full Engine Power_768x768_sheet.webp',
     onFrames: 27, onCols: 6, onSize: 768,
     fullFrames: 18, fullCols: 5, fullSize: 768,
     idleFrames: 3,
@@ -43,8 +43,8 @@ const SHIP_CONFIG = {
     visualSize: 800,
     stopRange: 10,
     turnSpeed: Math.PI * 3,
-    shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.png',
-    shieldTurnOnPath: 'img/Ship/Ship Shield Turn On/Spritesheet/768x768/Ship Shield Turn On_768x768_sheet.png',
+    shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.webp',
+    shieldTurnOnPath: 'img/Ship/Ship Shield Turn On/Spritesheet/768x768/Ship Shield Turn On_768x768_sheet.webp',
     shieldOnFrames: 14, shieldOnCols: 4, shieldOnSize: 1024,
     shieldTurnOnFrames: 145, shieldTurnOnCols: 13, shieldTurnOnSize: 768,
     shieldMaxHealthMult: 3,
@@ -59,8 +59,8 @@ const SHIP_CONFIG = {
  */
 const SKILLS = {
     Tier1: {
-        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
-        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.webp',
+        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.webp',
         buttonFrames: 121, buttonCols: 11, buttonSize: 768,
         skillFrames: 109, skillCols: 11, skillSize: 512,
         visualSize: 12000,
@@ -75,8 +75,8 @@ const SKILLS = {
         rings: 25
     },
     Tier2: {
-        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
-        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.webp',
+        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.webp',
         buttonFrames: 121, buttonCols: 11, buttonSize: 768,
         skillFrames: 109, skillCols: 11, skillSize: 512,
         visualSize: 9500,
@@ -91,8 +91,8 @@ const SKILLS = {
         rings: 8
     },
     Tier3: {
-        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.png',
-        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.png',
+        buttonSheet: 'img/Skills/Buttons/Multicolor X Flame Button/Spritesheet/768x768/Multicolor X Flame Button_768x768_sheet.webp',
+        skillSheet: 'img/Skills/Multicolor X Flame/Spritesheet/512x512/Multicolor X Flame_512x512_sheet.webp',
         buttonFrames: 121, buttonCols: 11, buttonSize: 768,
         skillFrames: 109, skillCols: 11, skillSize: 512,
         visualSize: 8600,
@@ -108,7 +108,7 @@ const SKILLS = {
     },
     SwordOfLight: {
         // We use the same sheet for both button and skill
-        skillSheet: 'img/Skills/Sword of Light/Spritesheet/1024x1024/Sword of Light_1024x1024_sheet.png',
+        skillSheet: 'img/Skills/Sword of Light/Spritesheet/1024x1024/Sword of Light_1024x1024_sheet.webp',
         skillFrames: 16, skillCols: 4, skillSize: 1024,
         visualSize: 7000,   // "Enormous"
         orbitRadius: 5000,   // "Fair distance from the ship"
@@ -126,7 +126,7 @@ const SKILLS = {
  */
 const WEAPON_CONFIG = {
     bullet_left_side: {
-        path: 'img/Laser Sprites/01.png',
+        path: 'img/Laser Sprites/01.webp',
         fireRate: 10,
         damage: 10,
         speed: 500,
@@ -142,7 +142,7 @@ const WEAPON_CONFIG = {
         minAmmoToFire: 10    // Must recover to 200 before firing again after depletion
     },
     bullet_right_side: {
-        path: 'img/Laser Sprites/01.png',
+        path: 'img/Laser Sprites/01.webp',
         fireRate: 10,
         damage: 10,
         speed: 500,
@@ -158,7 +158,7 @@ const WEAPON_CONFIG = {
         minAmmoToFire: 10
     },
     laser: {
-        path: 'img/Laser Sprites/02.png',
+        path: 'img/Laser Sprites/02.webp',
         fireRate: 95,
         damage: 10,
         speed: 500,
@@ -238,7 +238,7 @@ const STAGE_CONFIG = {
 }
 
 // GLOBAL CONSTANTS
-const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.png';
+const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.webp';
 const PLAYER_HEALTH_MAX = 35000;
 const MIN_ZOOM = 0.0001;
 const MAX_ZOOM = 2590.0;
@@ -275,16 +275,16 @@ const LOOT_CONFIG = {
         'Dragon Claw': { id: 1, name: 'Dragon Claw', icon: 'img/Enemy Drops/Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2, tier: 'epic' },
         'Dragon Heart': { id: 2, name: 'Dragon Heart', icon: 'img/Enemy Drops/Dragon Heart.webp', baseChance: 0.05, min: 1, max: 1, tier: 'god' },
         'Dragon Horn': { id: 3, name: 'Dragon Horn', icon: 'img/Enemy Drops/Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2, tier: 'epic' },
-        'Galaxy Dragon Claw': { id: 4, name: 'Galaxy Dragon Claw', icon: 'img/Enemy Drops/Galaxy Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'omega' },
-        'Galaxy Dragon Horn': { id: 5, name: 'Galaxy Dragon Horn', icon: 'img/Enemy Drops/Galaxy Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'alpha' },
-        'Blue Dragon Claw': { id: 6, name: 'Blue Dragon Claw', icon: 'img/Enemy Drops/Blue Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'god' },
-        'Blue Dragon Horn': { id: 7, name: 'Blue Dragon Horn', icon: 'img/Enemy Drops/Blue Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'god' },
+        'Galaxy Dragon Claw': { id: 4, name: 'Galaxy Dragon Claw', icon: 'img/Enemy Drops/Galaxy Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2, tier: 'omega' },
+        'Galaxy Dragon Horn': { id: 5, name: 'Galaxy Dragon Horn', icon: 'img/Enemy Drops/Galaxy Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2, tier: 'alpha' },
+        'Blue Dragon Claw': { id: 6, name: 'Blue Dragon Claw', icon: 'img/Enemy Drops/Blue Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2, tier: 'god' },
+        'Blue Dragon Horn': { id: 7, name: 'Blue Dragon Horn', icon: 'img/Enemy Drops/Blue Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2, tier: 'god' },
         'Phoenix Feather': { id: 8, name: 'Phoenix Feather', icon: 'img/Enemy Drops/Phoenix Feather.webp', baseChance: 0.15, min: 1, max: 3, tier: 'normal' },
         'Butterfly Wing': { id: 9, name: 'Butterfly Wing', icon: 'img/Enemy Drops/Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'normal' },
-        'Blue White Butterfly Wing': { id: 10, name: 'Blue White Butterfly Wing', icon: 'img/Enemy Drops/Blue White Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'god' },
-        'Gold Butterfly Wing': { id: 11, name: 'Gold Butterfly Wing', icon: 'img/Enemy Drops/Gold Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
-        'Green Black Butterfly Wing': { id: 12, name: 'Green Black Butterfly Wing', icon: 'img/Enemy Drops/Green Black Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
-        'Black Red Butterfly Wing': { id: 13, name: 'Black Red Butterfly Wing', icon: 'img/Enemy Drops/Black Red Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Blue White Butterfly Wing': { id: 10, name: 'Blue White Butterfly Wing', icon: 'img/Enemy Drops/Blue White Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'god' },
+        'Gold Butterfly Wing': { id: 11, name: 'Gold Butterfly Wing', icon: 'img/Enemy Drops/Gold Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Green Black Butterfly Wing': { id: 12, name: 'Green Black Butterfly Wing', icon: 'img/Enemy Drops/Green Black Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Black Red Butterfly Wing': { id: 13, name: 'Black Red Butterfly Wing', icon: 'img/Enemy Drops/Black Red Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
         'Main Game Currency': { id: 14, name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.webp', baseChance: .05, min: 10, max: 50, tier: 'god' },
         'Crystal': { id: 15, name: 'Crystal', icon: 'img/Enemy Drops/Crystal.webp', baseChance: 0.01, min: 1, max: 1, tier: 'epic' }
     },
