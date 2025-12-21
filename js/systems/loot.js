@@ -101,6 +101,22 @@ function addLootToHistory(itemKey, amount) {
             if (oldest.parentNode) oldest.parentNode.removeChild(oldest);
         }, 300);
     }
+
+    // Auto-remove after 3 seconds (clean up old items)
+    setTimeout(() => {
+        // Only remove if it hasn't been removed already (check parentNode)
+        if (el.parentNode) {
+            el.classList.add('removing');
+            setTimeout(() => {
+                if (el.parentNode) {
+                    el.parentNode.removeChild(el);
+                    // Also remove from array if present
+                    const idx = lootHistory.indexOf(el);
+                    if (idx !== -1) lootHistory.splice(idx, 1);
+                }
+            }, 300);
+        }
+    }, 3000);
 }
 
 /**
