@@ -250,6 +250,7 @@ let canvas;
     });
 
     initUIListeners();
+    if (typeof initLootSystem === 'function') initLootSystem();
 
     requestAnimationFrame(loop);
 })();

@@ -116,10 +116,7 @@ function finalizeAssets() {
     if (typeof bakeShip === 'function') bakeShip();
     if (typeof bakeSkills === 'function') bakeSkills();
 
-    // Trigger Remaining TIERS (MedLow to Micro)
-    if (typeof startPriorityLODPipeline === 'function') {
-        startPriorityLODPipeline();
-    }
+    // Gold Standard only uses 512px tier - no additional LOD tiers loaded
 
     // Critical check: Ensure ship is ready before enabling combat
     if (typeof shipAssets !== 'undefined' && !shipAssets.baked) {
