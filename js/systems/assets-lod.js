@@ -63,19 +63,19 @@ function getSheetPath(enemyName, animationType, size) {
     // This is much more robust as it uses the path defined in enemies.js as a base.
     const templatePath = cfg[animationType + 'Path'];
 
-    // The pattern is always ".../Spritesheet/ORIGINAL_SIZE/FILENAME_ORIGINAL_SIZE_sheet.png"
+    // The pattern is always ".../Spritesheet/ORIGINAL_SIZE/FILENAME_ORIGINAL_SIZE_sheet.webp"
     const splitKey = '/Spritesheet/';
     const parts = templatePath.split(splitKey);
     if (parts.length < 2) return null;
 
     const basePath = parts[0];
-    const pathAfterSpritesheet = parts[1]; // e.g. "512x512/Galaxy Dragon Death_512x512_sheet.png"
+    const pathAfterSpritesheet = parts[1]; // e.g. "512x512/Galaxy Dragon Death_512x512_sheet.webp"
 
     const pathParts = pathAfterSpritesheet.split('/');
     if (pathParts.length < 2) return null;
 
     const originalSizeFolder = pathParts[0]; // "512x512"
-    const originalFilename = pathParts[1]; // "Galaxy Dragon Death_512x512_sheet.png"
+    const originalFilename = pathParts[1]; // "Galaxy Dragon Death_512x512_sheet.webp"
 
     // Construct the new path by replacing the size folder and the size suffix in the filename
     const newFilename = originalFilename.replace(`_${originalSizeFolder}_`, `_${folder}_`);

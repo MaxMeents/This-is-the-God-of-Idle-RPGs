@@ -184,20 +184,22 @@ function updateLoadingProgress() {
         }
     }
 
-    // UNLOCK PLAY BUTTON ONLY WHEN 100% COMPLETE
-    if (currentTotal >= GRAND_TOTAL) {
+    // UNLOCK PLAY BUTTON EARLY (Once Micro tier is ready)
+    if (currentTotal >= MINIMUM_GOAL && !isPriorityDone) {
+        isPriorityDone = true;
         if (startBtn) {
             startBtn.style.display = 'inline-block';
             startBtn.innerText = "BEGIN COMBAT";
-            startBtn.style.background = '#00ff00';
         }
-        status.innerText = "ALL SYSTEMS READY - 100% LOADED";
+        status.innerText = "MINIMUM ASSETS LOADED - READY TO PLAY";
         status.style.color = '#00ff00';
         checkAutoStart();
-    } else if (currentTotal >= MINIMUM_GOAL && !isPriorityDone) {
-        isPriorityDone = true;
-        status.innerText = `LOADING HIGH-RES ASSETS... ${Math.floor((currentTotal / GRAND_TOTAL) * 100)}%`;
-        status.style.color = '#ffcc00';
+    }
+
+    // Show completion when all assets loaded
+    if (currentTotal >= GRAND_TOTAL) {
+        status.innerText = "ALL ASSETS LOADED - ULTRA QUALITY";
+        status.style.color = '#00ff00';
     }
 }
 
