@@ -769,6 +769,18 @@
 .modal-body {
     position: relative;
     /* Required for absolute positioning of virtual rows */
+    flex: 1;
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+/* Clusterize.js Tweaks */
+.clusterize-scroll {
+    max-height: 100% !important;
+}
+
+.clusterize-content {
+    outline: none;
 }
 
 .in-log .loot-box {

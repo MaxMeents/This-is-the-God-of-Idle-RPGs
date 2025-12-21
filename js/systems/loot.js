@@ -16,7 +16,9 @@ const LootPersistence = {
         const stored = localStorage.getItem(this.STORAGE_KEY);
         if (stored) {
             this.BUFFER = stored;
-            this.syncMemory();
+            console.log(`[LOOT] Persistence loaded: ${this.BUFFER.split(',').length} entries`);
+        } else {
+            console.log("[LOOT] No existing persistence found");
         }
     },
 
@@ -37,8 +39,33 @@ const LootPersistence = {
         // Save to localStorage immediately (or we could throttle)
         localStorage.setItem(this.STORAGE_KEY, this.BUFFER);
 
-        // Update memory cache
-        this.syncEntry(id, Date.now(), amount, isLucky);
+        // LIVE UI UPDATE (Only if open)
+        const modal = document.getElementById('loot-log-modal');
+        if (modal) {
+            this.syncEntry(id, Date.now(), amount, isLucky);
+
+            const now = new Date();
+            const hourLabel = now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
+            const safeHour = hourLabel.replace(':', '-');
+
+            if (logViewState.currentView === 'hours') {
+                const countEl = document.getElementById(`log-count-${safeHour}`);
+                if (countEl) {
+                    const hourCount = lootLogHistory.filter(item => item.hourLabel === hourLabel).length;
+                    countEl.innerText = `${hourCount} Drops Recorded`;
+
+                    const btn = countEl.closest('.loot-log-hour-btn');
+                    if (btn && btn.classList.contains('disabled')) {
+                        btn.classList.remove('disabled');
+                        btn.onclick = () => viewHourLog(hourLabel);
+                    }
+                }
+            } else if (logViewState.currentView === 'detail' && logViewState.selectedHour === hourLabel) {
+                const content = document.getElementById('loot-log-content');
+                const headerTitle = document.querySelector('.modal-header h2');
+                renderDetailLog(content, headerTitle, lootLogHistory);
+            }
+        }
     },
 
     syncMemory() {
@@ -46,17 +73,23 @@ const LootPersistence = {
         if (!this.BUFFER) return;
 
         const entries = this.BUFFER.split(',');
-        // For performance, we only parse what we need for the UI currently
-        // or we parse all if memory allows (JSON is ready for detailed view)
+        console.log(`[LOOT] Syncing ${entries.length} persistent entries...`);
+
         entries.forEach(e => {
-            const [idStr, timeBase36, amtBase36, luckyFlag] = e.split(':');
+            if (!e) return;
+            const parts = e.split(':');
+            if (parts.length < 3) return;
+
+            const [idStr, timeBase36, amtBase36, luckyFlag] = parts;
             const id = parseInt(idStr);
             const time = parseInt(timeBase36, 36);
             const amt = parseInt(amtBase36, 36);
-            const lucky = luckyFlag === '1';
+            const lucky = luckyFlag === '1'; // Handles old 3-part format as false
+
             this.syncEntry(id, time, amt, lucky, false);
         });
         lootLogHistory.sort((a, b) => b.rawTime - a.rawTime);
+        console.log(`[LOOT] Memory synced: ${lootLogHistory.length} items parsed`);
     },
 
     syncEntry(id, time, amt, isLucky = false, sort = true) {
@@ -84,10 +117,9 @@ const LootPersistence = {
 let logViewState = {
     currentView: 'hours',
     selectedHour: null,
-    timeScope: 'session',
+    timeScope: 'all', // Changed to 'all' so users see their history by default
     activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega']),
-    scrollPos: 0,
-    visibleCount: 20
+    clusterize: null // Store Clusterize instance
 };
 
 /**
@@ -106,27 +138,20 @@ function initLootSystem() {
     LootPersistence.init();
 
     // Initialize the historical log UI
-    initLootLogUI();
-
-    console.log("[LOOT] System Initialized");
-}
-
-/**
- * Injects the Loot Log button and modal on-the-fly
- */
-function initLootLogUI() {
-    const ui = document.getElementById('ui');
-    if (!ui || document.getElementById('loot-log-trigger')) return;
-
-    // 1. Create Floating Button
     const btn = document.createElement('div');
     btn.id = 'loot-log-trigger';
     btn.className = 'premium-hud-btn';
     btn.innerHTML = '<span>Loot Log</span>';
     btn.onclick = openLootLog;
     ui.appendChild(btn);
+}
 
-    // 2. Create Modal Structure
+/**
+ * Creates the modal structure only when needed
+ */
+function createLootLogModal() {
+    if (document.getElementById('loot-log-modal')) return document.getElementById('loot-log-modal');
+
     const modal = document.createElement('div');
     modal.id = 'loot-log-modal';
     modal.className = 'modal-backdrop hidden';
@@ -140,16 +165,16 @@ function initLootLogUI() {
             </div>
             <div id="ledger-filter-bar" class="ledger-filter-bar">
                 <div class="time-filters">
-                    <button class="filter-btn active" data-scope="session" onclick="setLogTimeScope(\'session\')">Session</button>
-                    <button class="filter-btn" data-scope="today" onclick="setLogTimeScope(\'today\')">Today</button>
-                    <button class="filter-btn" data-scope="all" onclick="setLogTimeScope(\'all\')">All Time</button>
+                    <button class="filter-btn" data-scope="session" onclick="setLogTimeScope('session')">Session</button>
+                    <button class="filter-btn" data-scope="today" onclick="setLogTimeScope('today')">Today</button>
+                    <button class="filter-btn active" data-scope="all" onclick="setLogTimeScope('all')">All Time</button>
                 </div>
                 <div class="tier-filters">
-                    <div class="tier-circle tier-normal active" onclick="toggleLogTier(\'normal\')"></div>
-                    <div class="tier-circle tier-epic active" onclick="toggleLogTier(\'epic\')"></div>
-                    <div class="tier-circle tier-god active" onclick="toggleLogTier(\'god\')"></div>
-                    <div class="tier-circle tier-omega active" onclick="toggleLogTier(\'omega\')"></div>
-                    <div class="tier-circle tier-alpha active" onclick="toggleLogTier(\'alpha\')"></div>
+                    <div class="tier-circle tier-normal active" onclick="toggleLogTier('normal')"></div>
+                    <div class="tier-circle tier-epic active" onclick="toggleLogTier('epic')"></div>
+                    <div class="tier-circle tier-god active" onclick="toggleLogTier('god')"></div>
+                    <div class="tier-circle tier-omega active" onclick="toggleLogTier('omega')"></div>
+                    <div class="tier-circle tier-alpha active" onclick="toggleLogTier('alpha')"></div>
                 </div>
             </div>
             <div id="loot-log-content" class="modal-body custom-scrollbar">
@@ -158,6 +183,7 @@ function initLootLogUI() {
         </div>
     `;
     document.body.appendChild(modal);
+    return modal;
 }
 
 /**
@@ -303,34 +329,96 @@ function addLootToHistory(itemKey, amount, isLucky = false) {
  * Logic for opening/closing and rendering the log
  */
 function openLootLog() {
-    const modal = document.getElementById('loot-log-modal');
-    if (!modal) return;
+    const modal = createLootLogModal();
 
-    // Always reset to hours index when opening
+    // Defer parsing until looking
+    LootPersistence.syncMemory();
+
     logViewState.currentView = 'hours';
     logViewState.selectedHour = null;
 
     renderLootLog();
-    modal.classList.remove('hidden');
-    modal.classList.add('visible');
+
+    // Small timeout for CSS transition
+    requestAnimationFrame(() => {
+        modal.classList.remove('hidden');
+        modal.classList.add('visible');
+    });
 }
 
 function closeLootLog() {
     const modal = document.getElementById('loot-log-modal');
     if (!modal) return;
+
     modal.classList.remove('visible');
-    setTimeout(() => modal.classList.add('hidden'), 300);
+
+    // Destroy clusterize if active
+    if (logViewState.clusterize) {
+        logViewState.clusterize.destroy();
+        logViewState.clusterize = null;
+    }
+
+    setTimeout(() => {
+        if (modal.parentNode) modal.parentNode.removeChild(modal);
+        // Clear memory to save RAM when not looking
+        lootLogHistory.length = 0;
+    }, 300);
 }
 
 function viewHourLog(hour) {
     logViewState.currentView = 'detail';
     logViewState.selectedHour = hour;
+
+    // Cleanup old clusterize
+    if (logViewState.clusterize) {
+        logViewState.clusterize.destroy();
+        logViewState.clusterize = null;
+    }
+
+    const $content = $('#loot-log-content');
+    $content.empty(); // Force full clear on view change
     renderLootLog();
 }
 
 function viewHoursIndex() {
     logViewState.currentView = 'hours';
     logViewState.selectedHour = null;
+
+    // Cleanup old clusterize
+    if (logViewState.clusterize) {
+        logViewState.clusterize.destroy();
+        logViewState.clusterize = null;
+    }
+
+    const $content = $('#loot-log-content');
+    $content.empty(); // Force full clear on view change
+    renderLootLog();
+}
+
+/**
+ * Filter Actions
+ */
+function setLogTimeScope(scope) {
+    logViewState.timeScope = scope;
+
+    // Update button active states
+    $('.time-filters .filter-btn').each(function () {
+        $(this).toggleClass('active', $(this).data('scope') === scope);
+    });
+
+    renderLootLog();
+}
+
+function toggleLogTier(tier) {
+    if (logViewState.activeTiers.has(tier)) {
+        logViewState.activeTiers.delete(tier);
+    } else {
+        logViewState.activeTiers.add(tier);
+    }
+
+    // Update circle active states
+    $(`.tier-filters .tier-circle.tier-${tier}`).toggleClass('active', logViewState.activeTiers.has(tier));
+
     renderLootLog();
 }
 
@@ -393,10 +481,12 @@ function renderHoursIndex(content, headerTitle, data) {
         const btn = document.createElement('div');
         const isDisabled = count === 0;
 
+        const safeHour = hour.replace(':', '-');
         btn.className = `loot-log-hour-btn ${isDisabled ? 'disabled' : ''}`;
+        btn.setAttribute('data-hour', hour);
         btn.innerHTML = `
             <span class="hour-text">${hour} ${i === 0 ? '<small>(Current)</small>' : ''}</span>
-            <span class="hour-count">${isDisabled ? 'No History' : count + ' Drops Recorded'}</span>
+            <span class="hour-count" id="log-count-${safeHour}">${isDisabled ? 'No History' : count + ' Drops Recorded'}</span>
             <div class="fleur-de-lis">📜</div>
         `;
 
@@ -408,67 +498,59 @@ function renderHoursIndex(content, headerTitle, data) {
 }
 
 function renderDetailLog(content, headerTitle, data) {
+    const $content = $(content);
     headerTitle.innerHTML = `Loot Log: ${logViewState.selectedHour}`;
 
     const filtered = data.filter(item => item.hourLabel === logViewState.selectedHour);
 
-    // Virtual Scrolling Logic
-    const itemHeight = 70; // Approximation of row height + gap
-    const totalHeight = filtered.length * itemHeight;
+    // 1. Initial Setup for Clusterize
+    if (!$content.find('.clusterize-scroll').length) {
+        $content.empty();
 
-    content.innerHTML = '';
+        const $backBtn = $('<div class="log-back-btn">← Back to Ledger Index</div>')
+            .on('click', viewHoursIndex);
+        $content.append($backBtn);
 
-    // Add Back Button (Always at top)
-    const backBtn = document.createElement('div');
-    backBtn.className = 'log-back-btn';
-    backBtn.innerHTML = '← Back to Ledger Index';
-    backBtn.onclick = viewHoursIndex;
-    content.appendChild(backBtn);
+        const $scrollArea = $('<div id="scrollArea" class="clusterize-scroll"></div>');
+        const $contentArea = $('<div id="contentArea" class="clusterize-content"></div>');
+        $scrollArea.append($contentArea);
+        $content.append($scrollArea);
+    }
 
-    // Virtual Scroll Container
-    const scrollContainer = document.createElement('div');
-    scrollContainer.className = 'virtual-scroll-container';
-    scrollContainer.style.height = `${totalHeight}px`;
-    scrollContainer.style.position = 'relative';
-    content.appendChild(scrollContainer);
+    // 2. Prepare Row HTML Array
+    const rows = filtered.map(itemData => {
+        const itemCfg = LOOT_CONFIG.ITEMS[itemData.itemKey];
+        if (!itemCfg) return '';
 
-    // Calculate visible range
-    const scrollTop = content.scrollTop;
-    const startIndex = Math.max(0, Math.floor((scrollTop - 50) / itemHeight));
-    const endIndex = Math.min(filtered.length, startIndex + logViewState.visibleCount);
-
-    // Attach scroll listener if not present (or every render for simplicity here)
-    content.onscroll = () => {
-        if (logViewState.currentView === 'detail') renderDetailLog(content, headerTitle, data);
-    };
-
-    for (let i = startIndex; i < endIndex; i++) {
-        const data = filtered[i];
-        const itemCfg = LOOT_CONFIG.ITEMS[data.itemKey];
-        if (!itemCfg) continue;
-
-        const row = document.createElement('div');
-        row.className = `loot-log-row loot-tier-${data.tier}`;
-        row.style.position = 'absolute';
-        row.style.top = `${i * itemHeight}px`;
-        row.style.width = '100%';
-
-        row.innerHTML = `
-            <div class="log-timestamp">${data.timestamp}</div>
-            <div class="loot-item in-log">
-                <div class="loot-box">
-                    <div class="loot-text">
-                        <span class="loot-amount">${data.amount.toLocaleString()}</span>
-                        <span class="loot-name">${itemCfg.name}</span>
+        return `
+            <div class="loot-log-row loot-tier-${itemData.tier}">
+                <div class="log-timestamp">${itemData.timestamp}</div>
+                <div class="loot-item in-log">
+                    <div class="loot-box">
+                        <div class="loot-text">
+                            <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
+                            <span class="loot-name">${itemCfg.name}</span>
+                        </div>
                     </div>
-                </div>
-                <div class="loot-icon-wrapper">
-                    <div class="loot-icon-bg"></div>
-                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
+                    <div class="loot-icon-wrapper">
+                        <div class="loot-icon-bg"></div>
+                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
+                    </div>
                 </div>
             </div>
         `;
-        scrollContainer.appendChild(row);
+    });
+
+    // 3. Init or Update Clusterize
+    if (!logViewState.clusterize) {
+        logViewState.clusterize = new Clusterize({
+            rows: rows,
+            scrollId: 'scrollArea',
+            contentId: 'contentArea',
+            no_data_text: 'Your ledger is empty for this hour, God.'
+        });
+    } else {
+        logViewState.clusterize.update(rows);
     }
 }
 
