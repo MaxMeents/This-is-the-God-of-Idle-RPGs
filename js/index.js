@@ -249,5 +249,7 @@ let canvas;
         window.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, window.targetZoom));
     });
 
+    initUIListeners();
+
     requestAnimationFrame(loop);
 })();
