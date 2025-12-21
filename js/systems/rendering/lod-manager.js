@@ -183,10 +183,7 @@ function startAsyncLODPipeline(tiers, aggressive, onComplete) {
         }
 
         const { typeKey, tier, animType } = taskQueue[taskIndex];
-        const sheetImg = enemyAssets[typeKey][animType];
-
-        // Ensure we only process loaded images
-        const data = enemyAssets[typeKey][animType];
+        const data = enemyAssets[typeKey][animType]; // Direct image reference in modular version
         const cfg = Enemy[typeKey];
 
         if (data && data.naturalWidth > 0) {
