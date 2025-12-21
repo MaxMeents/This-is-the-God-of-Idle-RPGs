@@ -6,6 +6,7 @@
 // DOM Cache: We grab pointers to HTML elements once to avoid expensive document searches.
 let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvases = [], elFPS;
 let elLaserBar, elBulletBar;
+let elTargetCont, elTargetName, elTargetBar; // Target HUD map
 let uiInitialized = false;
 
 function initUICache() {
@@ -29,6 +30,10 @@ function initUICache() {
     elLaserBar = document.getElementById('laser-ammo-bar');
     elBulletBar = document.getElementById('bullet-ammo-bar');
 
+    elTargetCont = document.getElementById('target-hud-container');
+    elTargetName = document.getElementById('target-name');
+    elTargetBar = document.getElementById('target-health-bar');
+
     if (typeof initLootSystem === 'function') initLootSystem();
 
     uiInitialized = true;
@@ -45,6 +50,9 @@ let lastLaserRecharge = null;
 let lastBulletRecharge = null;
 let lastStageTxt = "";
 let lastBossMode = null;
+let lastTargetVisible = false;
+let lastTargetName = "";
+let lastTargetWidth = -1;
 
 /**
  * MAIN UI REFRESH
@@ -197,6 +205,71 @@ function updateUI() {
                 btnCtx.fillText(timerVal, canv.width / 2.5, canv.height / 2.5);
                 btnCtx.restore();
             }
+        }
+    }
+    // 6. TARGET HUD (Bottom Center)
+    if (player.targetIdx !== -1) {
+        // CRITICAL FIX: Multiply by STRIDE (17) to get correct data offset
+        // player.targetIdx is the Entity Index (0, 1, 2...), not the Data Index!
+        const stride = (typeof STRIDE !== 'undefined') ? STRIDE : 17;
+        const idx = player.targetIdx * stride;
+
+        // Safety check bounds
+        if (idx < 0 || idx >= data.length) {
+            player.targetIdx = -1;
+            return;
+        }
+
+        const hp = data[idx + 8]; // HP is idx+8
+
+        if (hp > 0) {
+            // Show HUD
+            if (!lastTargetVisible) {
+                elTargetCont.style.display = 'block';
+                lastTargetVisible = true;
+            }
+
+            const typeIdx = data[idx + 11] | 0;
+            const typeKey = enemyKeys[typeIdx];
+
+            if (typeKey && Enemy[typeKey]) {
+                const name = Enemy[typeKey].folderName || typeKey; // Safe name access
+
+                if (lastTargetName !== name) {
+                    elTargetName.innerText = name;
+                    lastTargetName = name;
+                }
+
+                // MaxHP Calc: Base * Tier Multiplier
+                const tierIdx = data[idx + 12] | 0;
+                // Safe Tier Config Access
+                const tiers = (typeof LOOT_CONFIG !== 'undefined' && LOOT_CONFIG.TIERS) ? LOOT_CONFIG.TIERS : null;
+                const tierCfg = (tiers && tiers[tierIdx]) ? tiers[tierIdx] : { healthMult: 1 };
+
+                const baseMax = Enemy[typeKey].healthMax;
+                const maxHp = baseMax * tierCfg.healthMult;
+
+                let pct = (hp / maxHp) * 100;
+                pct = Math.max(0, Math.min(100, pct));
+
+                if (Math.abs(pct - lastTargetWidth) > 0.5) {
+                    elTargetBar.style.width = pct + '%';
+                    lastTargetWidth = pct;
+                }
+            }
+        } else {
+            // Target Dead
+            if (lastTargetVisible) {
+                elTargetCont.style.display = 'none';
+                lastTargetVisible = false;
+            }
+            player.targetIdx = -1;
+        }
+    } else {
+        // No Target
+        if (lastTargetVisible) {
+            elTargetCont.style.display = 'none';
+            lastTargetVisible = false;
         }
     }
 }

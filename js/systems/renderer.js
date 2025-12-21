@@ -254,21 +254,23 @@ function draw() {
         playerSprite.texture = sTexs[curFrame];
     } else {
         const rawSheet = isFull ? shipAssets.fullImg : shipAssets.onImg;
-        if (rawSheet.complete && rawSheet.naturalWidth > 0) {
+        if (rawSheet && rawSheet.complete && rawSheet.naturalWidth > 0) {
             const cols = isFull ? sc.fullCols : sc.onCols;
             const size = isFull ? sc.fullSize : sc.onSize;
             const cacheKey = `player_${isFull}_${curFrame}`;
 
-            // Use PIXI.Assets.cache or a simple local map if Assets is too complex
-            if (!PIXI.Cache.has(cacheKey)) {
+            // Local fallback cache to avoid PIXI.Cache issues
+            if (!window.playerTextureCache) window.playerTextureCache = new Map();
+
+            if (!window.playerTextureCache.has(cacheKey)) {
                 const baseTexture = PIXI.Texture.from(rawSheet);
                 const tex = new PIXI.Texture({
                     source: baseTexture.source,
                     frame: new PIXI.Rectangle((curFrame % cols) * size, Math.floor(curFrame / cols) * size, size, size)
                 });
-                PIXI.Cache.set(cacheKey, tex);
+                window.playerTextureCache.set(cacheKey, tex);
             }
-            playerSprite.texture = PIXI.Cache.get(cacheKey);
+            playerSprite.texture = window.playerTextureCache.get(cacheKey);
         }
     }
 

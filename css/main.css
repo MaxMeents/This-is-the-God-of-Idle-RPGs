@@ -669,7 +669,53 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 #boss-health-bar {
-    width: 100%;
     height: 100%;
     background: #ff0000;
+}
+
+/**
+ * TARGET HUD (Bottom Center)
+ */
+#target-hud-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 400px;
+    z-index: 1000;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+#target-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 18px;
+    color: #fff;
+    font-weight: 900;
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+#target-health-bg {
+    width: 100%;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    position: relative;
+}
+
+#target-health-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #8b0000 0%, #ff0000 50%, #8b0000 100%);
+    background-size: 200% 100%;
+    animation: healthFlowVertical 2s linear infinite;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+    transition: width 0.1s linear;
 }
