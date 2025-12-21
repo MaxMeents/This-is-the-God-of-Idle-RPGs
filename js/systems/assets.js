@@ -184,16 +184,20 @@ function updateLoadingProgress() {
         }
     }
 
-    // UNLOCK PLAY BUTTON EARLY (Once Micro is ready)
-    if (currentTotal >= MINIMUM_GOAL && !isPriorityDone) {
-        isPriorityDone = true;
+    // UNLOCK PLAY BUTTON ONLY WHEN 100% COMPLETE
+    if (currentTotal >= GRAND_TOTAL) {
         if (startBtn) {
             startBtn.style.display = 'inline-block';
-            startBtn.innerText = "READY (FAST START)";
+            startBtn.innerText = "BEGIN COMBAT";
+            startBtn.style.background = '#00ff00';
         }
-        status.innerText = "SYSTEMS ONLINE - MINIMUM ENGAGEMENT READY";
-        status.style.color = '#ffcc00';
+        status.innerText = "ALL SYSTEMS READY - 100% LOADED";
+        status.style.color = '#00ff00';
         checkAutoStart();
+    } else if (currentTotal >= MINIMUM_GOAL && !isPriorityDone) {
+        isPriorityDone = true;
+        status.innerText = `LOADING HIGH-RES ASSETS... ${Math.floor((currentTotal / GRAND_TOTAL) * 100)}%`;
+        status.style.color = '#ffcc00';
     }
 }
 

@@ -17,13 +17,13 @@ const PERFORMANCE = {
     SPAWNS_PER_FRAME: 500,
     GAME_SPEED: 1.0,
 
-    // THE THROTTLE: Adjust these values to control high-res loading 'power'
+    // THE THROTTLE: Spread loading over time to prevent ANY lag
     BACKGROUND_THROTTLE: {
-        msBetweenDownloads: 1000,   // Delay after a high-res file pipeline completes
-        msBetweenDecodes: 200,      // Delay between off-thread image decodes
-        msBetweenWarming: 1000,     // Delay between GPU texture uploads
-        framesPerWarmBatch: 30,     // How many frames to warm per 'breath' (much faster with bitmaps)
-        msBetweenSliceBatches: 16   // Wait between slicing next frames in worker
+        msBetweenDownloads: 2000,   // Wait 2 seconds between each spritesheet download
+        msBetweenDecodes: 500,      // Wait 500ms between image decodes in worker
+        msBetweenWarming: 2000,     // Wait 2 seconds between GPU texture upload batches
+        framesPerWarmBatch: 10,     // Only upload 10 frames at a time (was 30)
+        msBetweenSliceBatches: 50   // Slower worker slicing to reduce CPU load
     }
 };
 

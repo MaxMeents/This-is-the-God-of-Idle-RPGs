@@ -101,6 +101,7 @@ function initRendererPools() {
 }
 
 function draw() {
+    const drawStart = performance.now();
     if (!app || !app.renderer) return;
     if (enemySpritePool.length === 0) initRendererPools();
 
@@ -345,4 +346,10 @@ function draw() {
 
     // 8. EFFECTS
     drawFX();
+
+    // Performance logging
+    const drawTime = performance.now() - drawStart;
+    if (drawTime > 10) {
+        console.warn(`[PERF] Draw took ${drawTime.toFixed(2)}ms | Enemies: ${spawnIndex} | OnScreen: ${onScreenCount} | ActiveSkills: ${activeSkillCount}`);
+    }
 }

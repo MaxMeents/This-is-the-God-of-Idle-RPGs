@@ -199,11 +199,26 @@ function loop(now) {
 
     if (!gamePaused) {
         const sUpdate = performance.now();
+        let gridTime = 0, targetTime = 0, playerTime = 0, enemyTime = 0, combatTime = 0, weaponTime = 0, bulletTime = 0;
+
         for (let s = 0; s < steps; s++) {
+            const stepStart = performance.now();
             update(stepDt, now + (s * stepDt), s === 0, s);
+            const stepEnd = performance.now();
+
+            // Log slow steps
+            if (stepEnd - stepStart > 5) {
+                console.warn(`[PERF] Slow step ${s}: ${(stepEnd - stepStart).toFixed(2)}ms`);
+            }
         }
         updateFX(dt);
-        physicsTimeSum += (performance.now() - sUpdate);
+        const totalPhysics = performance.now() - sUpdate;
+        physicsTimeSum += totalPhysics;
+
+        // Log if physics is taking too long
+        if (totalPhysics > 16) {
+            console.warn(`[PERF] Physics took ${totalPhysics.toFixed(2)}ms (target: 16ms) | Steps: ${steps} | ActiveSkills: ${activeSkillCount} | SpawnIndex: ${spawnIndex}`);
+        }
     }
 
     const sDraw = performance.now();
