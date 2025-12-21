@@ -24,7 +24,8 @@ function init(firstLoad = false) {
     Object.keys(weaponTimers).forEach(k => weaponTimers[k] = 0);
     Object.keys(weaponAmmo).forEach(k => weaponAmmo[k] = WEAPON_CONFIG[k].maxAmmo);
     Object.keys(weaponRechargeMode).forEach(k => weaponRechargeMode[k] = false);
-    activeSkills.length = 0;
+    activeSkillCount = 0;
+    skillData.fill(0);
     damageNumbers.forEach(d => d.active = false);
 
     isTraveling = false;
@@ -136,6 +137,10 @@ function changeStage(newStage) {
     fxData.fill(0);
     activeFxCount = 0;
     activeFxIndices.fill(0);
+
+    skillData.fill(0);
+    activeSkillCount = 0;
+    activeSkillIndices.fill(0);
 
     heads.fill(-1);
     occupiedCount = 0;
