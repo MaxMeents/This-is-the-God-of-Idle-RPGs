@@ -93,6 +93,7 @@ function addLootToHistory(itemKey, amount) {
     lootHistory.push(el);
 
     // Maintain max history (shift up / remove top)
+    // Maintain max history (shift up / remove top)
     if (lootHistory.length > LOOT_CONFIG.MAX_HISTORY) {
         const oldest = lootHistory.shift();
         oldest.classList.add('removing');
@@ -101,6 +102,58 @@ function addLootToHistory(itemKey, amount) {
         }, 300);
     }
 }
+
+/**
+ * BATCHING SYSTEM
+ * queues drops effectively decoupling logic from DOM updates
+ */
+let lootQueue = {};
+let lastLootProcess = 0;
+
+function queueLoot(itemKey, amount) {
+    if (!lootQueue[itemKey]) lootQueue[itemKey] = 0;
+    lootQueue[itemKey] += amount;
+
+    // Process queue if we haven't in a while (e.g. 250ms)
+    // We rely on the game loop or interval for main processing but this is a failsafe
+    const now = performance.now();
+    if (now - lastLootProcess > 250) {
+        processLootQueue();
+        lastLootProcess = now;
+    }
+}
+
+// Override original addLoot to use queue
+const originalAddLoot = addLootToHistory;
+// We redefine the internal function used by checks
+addLootToHistory = (itemKey, amount) => {
+    queueLoot(itemKey, amount);
+};
+
+// Also override the exported function name if it was used directly
+// But 'rollForItem' uses local 'addLootToHistory' reference, so redefining it here works for local calls
+
+function processLootQueue() {
+    const keys = Object.keys(lootQueue);
+    if (keys.length === 0) return;
+
+    keys.forEach(key => {
+        const amount = lootQueue[key];
+        if (amount > 0) {
+            // Call the REAL DOM update with aggregated amount
+            // We need to bypass the override.
+            // Wait, we overwrote 'addLootToHistory'. We need 'originalAddLoot'
+            originalAddLoot(key, amount);
+        }
+    });
+
+    // Clear queue
+    lootQueue = {};
+}
+
+// Hook into game loop via global access or setInterval fallback
+// Update UI 4 times a second max to keep DOM thrashing low
+setInterval(processLootQueue, 250);
 
 // Global exposure
 window.handleEnemyDrop = handleEnemyDrop;

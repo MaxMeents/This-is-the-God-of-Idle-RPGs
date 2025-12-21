@@ -98,19 +98,23 @@ function initEnemyLODAssets() {
         enemyLODAssets[typeKey] = { walk: {}, death: {}, attack: {} };
     });
 
-    // In this version, we treat ONLY the lowest tier as mandatory to start
-    const lowestTier = PERFORMANCE.LOD_TIERS[PERFORMANCE.LOD_TIERS.length - 1];
-    const otherTiers = PERFORMANCE.LOD_TIERS.slice(0, -1);
+    // ONLY USE 512px TIER
+    const tier512 = PERFORMANCE.LOD_TIERS.find(t => t.size === 512);
+    if (!tier512) {
+        console.error('[LOD] No 512px tier found!');
+        return;
+    }
+    const otherTiers = PERFORMANCE.LOD_TIERS.filter(t => t.size === 512 && t.id !== tier512.id);
 
-    // Mandatory (Micro 16px)
+    // Load 512px as the mandatory tier
     enemyKeys.forEach(typeKey => {
         ['walk', 'death', 'attack'].forEach(animType => {
-            const path = getSheetPath(typeKey, animType, lowestTier.size);
+            const path = getSheetPath(typeKey, animType, 512);
             if (path) {
                 const img = new Image();
                 img.crossOrigin = "anonymous";
                 img.src = path;
-                enemyLODAssets[typeKey][animType][lowestTier.id] = { img, tierID: lowestTier.id };
+                enemyLODAssets[typeKey][animType][tier512.id] = { img, tierID: tier512.id };
                 lodPriorityLoadCount++;
                 img.onload = () => handlePriorityLoad();
                 img.onerror = () => handlePriorityLoad();
@@ -118,8 +122,9 @@ function initEnemyLODAssets() {
         });
     });
 
-    // Everything else goes to the background worker
+    // ONLY QUEUE 512px RESOLUTION - Skip all other sizes
     otherTiers.forEach(tier => {
+        if (tier.size !== 512) return; // Skip non-512px tiers
         enemyKeys.forEach(typeKey => {
             ['walk', 'death', 'attack'].forEach(animType => {
                 backgroundLoadQueue.push({ typeKey, tier, animType });
@@ -138,10 +143,10 @@ function handlePriorityLoad() {
     if (lodPriorityLoadedCount >= lodPriorityLoadCount && !isPriorityLODStarted) {
         isPriorityLODStarted = true;
 
-        // Build the 16px cache immediately (it's tiny, no lag)
-        const lowestTier = [PERFORMANCE.LOD_TIERS[PERFORMANCE.LOD_TIERS.length - 1]];
-        startAsyncLODPipeline(lowestTier, true, () => {
-            console.log("[LOD] Minimum resolution ready. Streaming high-res in background...");
+        // Build the 512px cache
+        const tier512 = PERFORMANCE.LOD_TIERS.filter(t => t.size === 512);
+        startAsyncLODPipeline(tier512, true, () => {
+            console.log("[LOD] 512px resolution ready.");
             // Now unlock the background stream
             setTimeout(processNextBackgroundLoad, 1000);
         });
@@ -271,7 +276,10 @@ function startAsyncLODPipeline(tiers, aggressive, onComplete) {
                     frame: new PIXI.Rectangle((i % cols) * size, Math.floor(i / cols) * size, size, size)
                 }));
             }
-            enemyAssets[typeKey].caches[animType][tier.id] = frames;
+            // Assign to ALL tiers (since we only use 512px now)
+            PERFORMANCE.LOD_TIERS.forEach(t => {
+                enemyAssets[typeKey].caches[animType][t.id] = frames;
+            });
         }
         if (typeof conversionCt !== 'undefined') conversionCt++;
         if (typeof updateLoadingProgress === 'function') updateLoadingProgress();

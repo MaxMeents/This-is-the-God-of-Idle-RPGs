@@ -146,8 +146,9 @@ const PRIORITY_LOD_COUNT = (enemyKeys.length * PRIORITY_TIERS.length * 3);
 const BKGD_LOD_COUNT = (enemyKeys.length * BKGD_TIERS.length * 3);
 
 // Goal for "Ready to Play"
-const GRAND_TOTAL = TOTAL_BASIC_ASSETS + (PRIORITY_LOD_COUNT + BKGD_LOD_COUNT) * 3;
-const MINIMUM_GOAL = TOTAL_BASIC_ASSETS + (enemyKeys.length * 3 * 3); // Basic + Micro Images + Micro Conv + Micro Warm
+// Goal for "Ready to Play" (We only load ONE tier now - 512px)
+const MINIMUM_GOAL = TOTAL_BASIC_ASSETS + (enemyKeys.length * 3 * 3); // Basic + 512px Images + Conv + Warm
+const GRAND_TOTAL = MINIMUM_GOAL; // No background loading, everything is upfront
 
 let conversionCt = 0;
 let prewarmCt = 0;

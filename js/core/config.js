@@ -3,11 +3,11 @@
  */
 const PERFORMANCE = {
     LOD_TIERS: [
-        { id: 'Ultra', size: 512, max: 150, priority: false },
-        { id: 'High', size: 512, max: 400, priority: false },
-        { id: 'MidHigh', size: 512, max: 800, priority: false },
+        { id: 'Ultra', size: 512, max: 0, priority: false },
+        { id: 'High', size: 512, max: 0, priority: false },
+        { id: 'MidHigh', size: 512, max: 0, priority: false },
         { id: 'Med', size: 512, max: 1200, priority: false },
-        { id: 'MedLow', size: 512, max: 2000, priority: true },
+        { id: 'MedLow', size: 512, max: 25000, priority: true },
         { id: 'Low', size: 512, max: 2500, priority: true },
         { id: 'VLow', size: 512, max: 7000, priority: true },
         { id: 'Tiny', size: 512, max: 10000, priority: true },
