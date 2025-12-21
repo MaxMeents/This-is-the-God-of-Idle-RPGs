@@ -41,7 +41,7 @@ const SHIP_CONFIG = {
     thrustDist: 1500,
     reachDist: 200,
     visualSize: 800,
-    stopRange: 10,
+    stopRange: 10000,
     turnSpeed: Math.PI * 3,
     shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.webp',
     shieldTurnOnPath: 'img/Ship/Ship Shield Turn On/Spritesheet/768x768/Ship Shield Turn On_768x768_sheet.webp',
@@ -67,7 +67,7 @@ const SKILLS = {
         orbitRadius: 10000,
         animSpeedButton: 0.9,
         animSpeedSkill: 2,
-        cooldownTime: 25000,
+        cooldownTime: 250000,
         instanceCount: 22,
         damageMult: 100.0,
         aoeMult: 3.0,
@@ -83,7 +83,7 @@ const SKILLS = {
         orbitRadius: 10000,
         animSpeedButton: 0.9,
         animSpeedSkill: 2,
-        cooldownTime: 12000,
+        cooldownTime: 120000,
         instanceCount: 22,
         damageMult: 50.0,
         aoeMult: 1.75,
@@ -99,7 +99,7 @@ const SKILLS = {
         orbitRadius: 10000,
         animSpeedButton: 0.9,
         animSpeedSkill: 2,
-        cooldownTime: 8000,
+        cooldownTime: 80000,
         instanceCount: 22,
         damageMult: 30.0,
         aoeMult: 1.25,
@@ -112,9 +112,9 @@ const SKILLS = {
         visualSize: 7000,
         orbitRadius: 5000,
         animSpeedSkill: 1.2,
-        cooldownTime: 5000,
+        cooldownTime: 180000,
         duration: 2000,
-        damageMult: 500.0,
+        damageMult: 5.0,
         aoeMult: 5.0,
         skillRange: 9000
     }
@@ -126,40 +126,40 @@ const SKILLS = {
 const WEAPON_CONFIG = {
     bullet_left_side: {
         path: 'img/Laser Sprites/01.webp',
-        fireRate: 10,
-        damage: 10,
+        fireRate: 3,
+        damage: 3,
         speed: 500,
         life: 2000,
         size: 980,
         offsetSide: -140,
         offsetFront: 80,
-        penetration: 5,
+        penetration: 1,
         visualStretch: 1.0,
-        maxAmmo: 50,
-        recoveryRate: 5,
+        maxAmmo: 5000,
+        recoveryRate: 1,
         tint: 0x00ffff,
         minAmmoToFire: 10
     },
     bullet_right_side: {
         path: 'img/Laser Sprites/01.webp',
-        fireRate: 10,
-        damage: 10,
+        fireRate: 3,
+        damage: 3,
         speed: 500,
         life: 2000,
         size: 980,
         offsetSide: 140,
         offsetFront: 80,
-        penetration: 5,
+        penetration: 1,
         visualStretch: 1.0,
-        maxAmmo: 50,
-        recoveryRate: 5,
+        maxAmmo: 5000,
+        recoveryRate: 1,
         tint: 0x00ffff,
         minAmmoToFire: 10
     },
     laser: {
         path: 'img/Laser Sprites/02.webp',
         fireRate: 95,
-        damage: 10,
+        damage: .01,
         speed: 500,
         life: 4000,
         size: 380,
@@ -167,7 +167,7 @@ const WEAPON_CONFIG = {
         offsetSide: 0,
         offsetFront: 80,
         penetration: 25,
-        maxAmmo: 200,
+        maxAmmo: 1000,
         recoveryRate: 1,
         tint: 0xff00ff,
         minAmmoToFire: 50
@@ -184,63 +184,63 @@ const STAGE_CONFIG = {
     ],
     STAGES: {
         1: {
-            kills: 20000,
-            enemies: { BlueDragon: 2500, GalaxyDragon: 2500, PhoenixSurrender: 5000, BlackRedButterfly: 2500, BlueWhiteButterfly: 2500, GoldButterfly: 2500, GreenBlackButterfly: 2500, GalaxyButterfly: 2500 },
+            kills: 25,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 30, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.02, God: 0.001, Alpha: 0.0, Omega: 0.0 }
         },
         2: {
-            kills: 500,
-            enemies: { PhoenixSurrender: 200, GalaxyDragon: 300, BlackRedButterfly: 100, BlueWhiteButterfly: 100 },
+            kills: 50,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.03, God: 0.002, Alpha: 0.0, Omega: 0.0 }
         },
         3: {
-            kills: 700,
-            enemies: { GalaxyDragon: 500, BlueDragon: 100, GoldButterfly: 150, GreenBlackButterfly: 150 },
+            kills: 100,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.04, God: 0.003, Alpha: 0.0, Omega: 0.0 }
         },
         4: {
-            kills: 900,
-            enemies: { GalaxyDragon: 600, PhoenixSurrender: 200, GalaxyButterfly: 200 },
+            kills: 150,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.05, God: 0.004, Alpha: 0.0, Omega: 0.0 }
         },
         5: {
-            kills: 1100,
-            enemies: { BlueDragon: 400, PhoenixSurrender: 400, BlackRedButterfly: 300, BlueWhiteButterfly: 300 },
+            kills: 200,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.06, God: 0.005, Alpha: 0.0, Omega: 0.0 }
         },
         6: {
-            kills: 1300,
-            enemies: { BlueDragon: 600, PhoenixSurrender: 400, GoldButterfly: 400, GreenBlackButterfly: 400 },
+            kills: 250,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.07, God: 0.007, Alpha: 0.0, Omega: 0.0 }
         },
         7: {
-            kills: 1500,
-            enemies: { GalaxyDragon: 800, PhoenixSurrender: 500, GalaxyButterfly: 500 },
+            kills: 300,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.08, God: 0.01, Alpha: 0.0, Omega: 0.0 }
         },
         8: {
-            kills: 1700,
-            enemies: { BlueDragon: 800, GalaxyDragon: 500, BlackRedButterfly: 400, BlueWhiteButterfly: 400 },
+            kills: 350,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.09, God: 0.012, Alpha: 0.0, Omega: 0.0 }
         },
         9: {
-            kills: 2000,
-            enemies: { PhoenixSurrender: 800, BlueDragon: 1000, GoldButterfly: 500, GreenBlackButterfly: 500 },
+            kills: 400,
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 0 },
             tierChances: { Arch: 0.10, God: 0.015, Alpha: 0.0, Omega: 0.0 }
         },
         10: {
             kills: 1,
-            enemies: { PhoenixSurrender: 1500, BlueDragon: 1500, GalaxyButterfly: 1000 },
-            tierChances: { Arch: 0.15, God: 0.05, Alpha: 0.0, Omega: 0.0 }
+            enemies: { BlueDragon: 0, GalaxyDragon: 0, PhoenixSurrender: 0, BlackRedButterfly: 0, BlueWhiteButterfly: 0, GoldButterfly: 0, GreenBlackButterfly: 0, GalaxyButterfly: 1 },
+            tierChances: { Arch: 0, God: 0, Alpha: 1, Omega: 0.0 }
         }
     }
 };
 
 // GLOBAL CONSTANTS
 const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.webp';
-const PLAYER_HEALTH_MAX = 35000;
-const MIN_ZOOM = 0.0001;
-const MAX_ZOOM = 2590.0;
+const PLAYER_HEALTH_MAX = 100;
+const MIN_ZOOM = 0.005;
+const MAX_ZOOM = 1.0;
 const DAMAGE_PER_POP = 10;
 const DAMAGE_INTERVAL = 100;
 const AOE_RADIUS = 900;
@@ -258,7 +258,7 @@ const LOOT_CONFIG = {
         'Dragon Horn': { name: 'Dragon Horn', icon: 'img/Enemy Drops/Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2 },
         'Phoenix Feather': { name: 'Phoenix Feather', icon: 'img/Enemy Drops/Phoenix Feather.webp', baseChance: 0.15, min: 1, max: 3 },
         'Butterfly Wing': { name: 'Butterfly Wing', icon: 'img/Enemy Drops/Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5 },
-        'Main Game Currency': { name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.webp', baseChance: 1.0, min: 10, max: 50 },
+        'Main Game Currency': { name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.webp', baseChance: .05, min: 10, max: 50 },
         'Crystal': { name: 'Crystal', icon: 'img/Enemy Drops/Crystal.webp', baseChance: 0.01, min: 1, max: 1 }
     },
     // Tier multipliers (Standard < Arch < God < Alpha < Omega)
