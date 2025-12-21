@@ -6,7 +6,7 @@
     position: fixed;
     bottom: 180px;
     /* Moved down significantly */
-    right: -60px;
+    right: -20px;
     /* Moved to the right */
     display: flex;
     flex-direction: column;
@@ -54,21 +54,19 @@
  */
 .loot-box {
     position: absolute;
-    right: 0;
-    width: 308px;
-    /* 300px + 4px + 4px border */
+    left: 60px;
+    /* User preferred dock position */
+    width: fit-content;
     height: 56px;
-    /* 48px + 4px + 4px border */
+    padding-right: 25px;
+    /* Small buffer for "just bigger" feel */
     background: transparent;
-    /* Must be transparent so negative z-index children show */
     border-radius: 8px;
-    /* Outer radius */
+    font-weight: bold;
     display: flex;
     align-items: center;
     overflow: hidden;
-    /* CLIPS the giant spinning square */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
-    /* Clip-path removed */
 }
 
 /* BOX BORDER: The Spinning Gradient Layer */
@@ -163,7 +161,8 @@
     flex-direction: column;
     justify-content: center;
     line-height: 1.1;
-    width: 100%;
+    width: auto;
+    /* Changed from 100% to allow parent fit-content */
     position: relative;
     z-index: 2;
     /* Ensure text is above mask */
@@ -173,23 +172,41 @@
     color: #ffcc00;
     font-size: 21px;
     /* 14px * 1.5 */
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Orbitron', sans-serif;
     font-weight: bold;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
 }
 
 .loot-name {
-    color: #ffffff;
     font-size: 15px;
-    /* 10px * 1.5 */
-    font-family: Arial, sans-serif;
+    font-family: 'Outfit', sans-serif;
     text-transform: uppercase;
     letter-spacing: 1px;
     white-space: nowrap;
+    font-weight: bold;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 195px;
-    /* Scaled max width */
+    max-width: 260px;
+
+    /* Premium Pulsating Gradient */
+    background: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+    background-size: 100% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: textFlowVertical 0.8s linear infinite;
+
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+@keyframes textFlowVertical {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% -200%;
+    }
 }
 
 @keyframes rotate {

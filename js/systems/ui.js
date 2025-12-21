@@ -6,7 +6,8 @@
 // DOM Cache: We grab pointers to HTML elements once to avoid expensive document searches.
 let elHPBar, elShieldBar, elChargeBar, elStageDisp, elPrevArr, elNextArr, elChallengeBtn, elBossCont, elSkillCanvases = [], elFPS;
 let elLaserBar, elBulletBar;
-let elTargetCont, elTargetName, elTargetBar; // Target HUD map
+let elTargetCont, elTargetName, elTargetBar, elTargetBarGhost; // Target HUD map
+let elHPGhost; // Player ghost
 let uiInitialized = false;
 
 function initUICache() {
@@ -33,6 +34,8 @@ function initUICache() {
     elTargetCont = document.getElementById('target-hud-container');
     elTargetName = document.getElementById('target-name');
     elTargetBar = document.getElementById('target-health-bar');
+    elTargetBarGhost = document.getElementById('target-health-ghost');
+    elHPGhost = document.getElementById('player-health-ghost');
 
     if (typeof initLootSystem === 'function') initLootSystem();
 
@@ -53,6 +56,9 @@ let lastBossMode = null;
 let lastTargetVisible = false;
 let lastTargetName = "";
 let lastTargetWidth = -1;
+let lastTargetWidthGhost = -1;
+let lastHPGhost = -1;
+let lastTargetTier = ""; // For theme switching
 
 /**
  * MAIN UI REFRESH
@@ -64,6 +70,20 @@ function updateUI() {
     const hpPct = player.health / PLAYER_HEALTH_MAX;
     if (hpPct !== lastHP) {
         elHPBar.style.height = (hpPct * 100) + '%';
+
+        // Ghost Logic
+        if (hpPct < lastHP) {
+            // Damage: Linger then shrink
+            setTimeout(() => {
+                if (elHPGhost) elHPGhost.style.height = (hpPct * 100) + '%';
+                lastHPGhost = hpPct;
+            }, 300);
+        } else {
+            // Heal or reset: Instant
+            if (elHPGhost) elHPGhost.style.height = (hpPct * 100) + '%';
+            lastHPGhost = hpPct;
+        }
+
         let topR, topG, topB, botR, botG, botB;
         if (hpPct > 0.7) {
             const f = (hpPct - 0.7) / 0.3;
@@ -195,8 +215,8 @@ function updateUI() {
 
                 const timerVal = Math.ceil(cd / 1000);
                 btnCtx.fillStyle = '#fff';
-                // Use Outfit font as requested
-                btnCtx.font = `900 ${canv.width * 0.45}px Outfit`;
+                // Use Orbitron font as requested
+                btnCtx.font = `900 ${canv.width * 0.45}px Orbitron`;
                 btnCtx.textAlign = 'center';
                 btnCtx.textBaseline = 'middle';
                 btnCtx.shadowColor = '#0055ff';
@@ -227,33 +247,65 @@ function updateUI() {
             if (!lastTargetVisible) {
                 elTargetCont.style.display = 'block';
                 lastTargetVisible = true;
+                // Reset tracking so we don't animate from previous enemy
+                lastTargetWidth = -1;
+                lastTargetWidthGhost = -1;
             }
 
             const typeIdx = data[idx + 11] | 0;
             const typeKey = enemyKeys[typeIdx];
 
             if (typeKey && Enemy[typeKey]) {
-                const name = Enemy[typeKey].folderName || typeKey; // Safe name access
+                const tierIdx = data[idx + 12] | 0;
+                const tiers = (typeof LOOT_CONFIG !== 'undefined' && LOOT_CONFIG.TIERS) ? LOOT_CONFIG.TIERS : null;
+                const tierCfg = (tiers && tiers[tierIdx]) ? tiers[tierIdx] : { id: 'Standard', healthMult: 1 };
 
-                if (lastTargetName !== name) {
-                    elTargetName.innerText = name;
-                    lastTargetName = name;
+                // Construct Display Name: [Tier] [Name] (Omit Standard)
+                const baseName = Enemy[typeKey].folderName || typeKey;
+                const displayName = (tierCfg.id && tierCfg.id !== 'Standard') ? `${tierCfg.id} ${baseName}` : baseName;
+
+                if (lastTargetName !== displayName) {
+                    elTargetName.innerText = displayName;
+                    lastTargetName = displayName;
+                }
+
+                // Apply Tier Theme
+                const currentTier = tierCfg.id ? tierCfg.id.toLowerCase() : 'standard';
+                if (lastTargetTier !== currentTier) {
+                    // Remove old tier class
+                    if (lastTargetTier && lastTargetTier !== 'standard') {
+                        elTargetCont.classList.remove(`tier-${lastTargetTier}`);
+                    }
+                    // Add new tier class
+                    if (currentTier !== 'standard') {
+                        elTargetCont.classList.add(`tier-${currentTier}`);
+                    }
+                    lastTargetTier = currentTier;
                 }
 
                 // MaxHP Calc: Base * Tier Multiplier
-                const tierIdx = data[idx + 12] | 0;
-                // Safe Tier Config Access
-                const tiers = (typeof LOOT_CONFIG !== 'undefined' && LOOT_CONFIG.TIERS) ? LOOT_CONFIG.TIERS : null;
-                const tierCfg = (tiers && tiers[tierIdx]) ? tiers[tierIdx] : { healthMult: 1 };
-
                 const baseMax = Enemy[typeKey].healthMax;
                 const maxHp = baseMax * tierCfg.healthMult;
 
                 let pct = (hp / maxHp) * 100;
                 pct = Math.max(0, Math.min(100, pct));
 
-                if (Math.abs(pct - lastTargetWidth) > 0.5) {
+                if (Math.abs(pct - lastTargetWidth) > 0.1) {
                     elTargetBar.style.width = pct + '%';
+
+                    // Ghost Logic
+                    if (pct < lastTargetWidth) {
+                        // Damage: Linger then shrink
+                        setTimeout(() => {
+                            if (elTargetBarGhost) elTargetBarGhost.style.width = pct + '%';
+                            lastTargetWidthGhost = pct;
+                        }, 300);
+                    } else {
+                        // Heal or reset: Instant
+                        if (elTargetBarGhost) elTargetBarGhost.style.width = pct + '%';
+                        lastTargetWidthGhost = pct;
+                    }
+
                     lastTargetWidth = pct;
                 }
             }
@@ -270,6 +322,11 @@ function updateUI() {
         if (lastTargetVisible) {
             elTargetCont.style.display = 'none';
             lastTargetVisible = false;
+            // Clear tier class
+            if (lastTargetTier && lastTargetTier !== 'standard') {
+                elTargetCont.classList.remove(`tier-${lastTargetTier}`);
+            }
+            lastTargetTier = "";
         }
     }
 }

@@ -167,6 +167,17 @@ canvas {
     overflow: hidden;
 }
 
+#player-health-ghost {
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.5);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 0;
+    transition: height 0.3s ease-out;
+}
+
 #player-health-bar {
     width: 100%;
     height: 100%;
@@ -694,6 +705,31 @@ input[type=range]::-webkit-slider-thumb {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
 }
 
+/* TIER THEMES */
+#target-hud-container.tier-arch {
+    background: linear-gradient(135deg, rgba(184, 134, 11, 0.9) 0%, rgba(255, 215, 0, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+}
+
+#target-hud-container.tier-god {
+    background: linear-gradient(135deg, rgba(0, 35, 102, 0.9) 0%, rgba(65, 105, 225, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 25px rgba(65, 105, 225, 0.5);
+}
+
+#target-hud-container.tier-alpha {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+}
+
+#target-hud-container.tier-omega {
+    background: linear-gradient(135deg, rgba(75, 0, 130, 0.9) 0%, rgba(147, 112, 219, 0.9) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 25px rgba(147, 112, 219, 0.5);
+}
+
 #target-name {
     font-family: 'Orbitron', sans-serif;
     font-size: 14px;
@@ -703,6 +739,19 @@ input[type=range]::-webkit-slider-thumb {
     letter-spacing: 2px;
     margin-bottom: 4px;
     text-transform: uppercase;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+
+/* TIER NAME OVERRIDES */
+#target-hud-container.tier-alpha #target-name {
+    color: #000;
+    text-shadow: none;
+}
+
+#target-hud-container.tier-arch #target-name,
+#target-hud-container.tier-god #target-name,
+#target-hud-container.tier-omega #target-name {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
 }
 
 #target-health-bg {
@@ -718,9 +767,25 @@ input[type=range]::-webkit-slider-thumb {
     /* Inner padding for "cased" look */
 }
 
+#target-health-ghost {
+    height: 100%;
+    width: 0%;
+    /* Initialize at 0 */
+    background: rgba(255, 255, 255, 0.4);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    transition: width 0.3s ease-out;
+}
+
 #target-health-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    z-index: 2;
     /* 45deg gradient for diagonal flow effect */
     background: linear-gradient(45deg, #660000 0%, #ff0000 25%, #ff4444 50%, #ff0000 75%, #660000 100%);
     background-size: 200% 200%;
