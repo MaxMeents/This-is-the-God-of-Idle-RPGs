@@ -33,20 +33,17 @@
     display: none !important;
 }
 
-/* STAIRCASE LAYOUT - Only need 3 levels */
-.loot-item:nth-last-child(1) {
+/* STAIRCASE LAYOUT - Only for items IN the history container */
+#loot-history-container .loot-item:nth-last-child(1) {
     margin-right: 180px;
-    /* 120px * 1.5 */
 }
 
-.loot-item:nth-last-child(2) {
+#loot-history-container .loot-item:nth-last-child(2) {
     margin-right: 135px;
-    /* 90px * 1.5 */
 }
 
-.loot-item:nth-last-child(3) {
+#loot-history-container .loot-item:nth-last-child(3) {
     margin-right: 90px;
-    /* 60px * 1.5 */
 }
 
 /**
@@ -229,18 +226,13 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
 }
 
-/* Bounce Classes */
-.amount-bounce-slight {
+/* Dynamic Bounce Class */
+.loot-amount.bouncing {
     display: inline-block;
-    animation: bounceSlight 1s ease-in-out infinite;
+    animation: bounceDynamic var(--bounce-dur, 1s) ease-in-out infinite;
 }
 
-.amount-bounce-noticeable {
-    display: inline-block;
-    animation: bounceNoticeable 0.6s ease-in-out infinite;
-}
-
-@keyframes bounceSlight {
+@keyframes bounceDynamic {
 
     0%,
     100% {
@@ -248,19 +240,7 @@
     }
 
     50% {
-        transform: translateY(-3px) scale(1.05);
-    }
-}
-
-@keyframes bounceNoticeable {
-
-    0%,
-    100% {
-        transform: translateY(0) scale(1);
-    }
-
-    50% {
-        transform: translateY(-8px) scale(1.25);
+        transform: translateY(var(--bounce-dist, -3px)) scale(var(--bounce-scale, 1.05));
     }
 }
 
@@ -399,4 +379,228 @@
     opacity: 0;
     transform: translateY(-30px);
     transition: all 0.3s ease-out;
+}
+
+/* LOOT LOG TRIGGER BUTTON (Bottom Left) */
+#loot-log-trigger {
+    position: fixed;
+    bottom: 30px;
+    left: 20px;
+    z-index: 2000;
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Orbitron', sans-serif;
+    color: #ffd700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+#loot-log-trigger::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.5s ease;
+}
+
+#loot-log-trigger:hover {
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+#loot-log-trigger:hover::before {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+#loot-log-trigger span {
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+/* MODAL STYLES */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.modal-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-backdrop.hidden {
+    display: none;
+}
+
+.modal-panel {
+    width: 800px;
+    max-height: 85vh;
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+        inset 0 0 100px rgba(255, 215, 0, 0.05);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.modal-backdrop.visible .modal-panel {
+    transform: translateY(0) scale(1);
+}
+
+.modal-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(to right, rgba(255, 215, 0, 0.05), transparent);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    color: #ffd700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-size: 24px;
+}
+
+.close-btn {
+    font-size: 32px;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: #fff;
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* LOG ROWS */
+.loot-log-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    border-left: 3px solid transparent;
+}
+
+.log-timestamp {
+    font-family: 'Orbitron', sans-serif;
+    color: #666;
+    font-size: 12px;
+    width: 100px;
+}
+
+/* Override Loot Item for Log Display */
+.loot-item.in-log {
+    width: 400px;
+    height: 60px;
+    animation: none;
+    /* No slide-in in log */
+    pointer-events: auto;
+    /* Allow mouse interaction in log if needed */
+}
+
+/* Reset staircase margins for log items */
+.in-log .loot-box {
+    left: 20px;
+    height: 48px;
+}
+
+.in-log .loot-icon-wrapper {
+    right: 20px;
+    width: 50px;
+    height: 50px;
+}
+
+.in-log .loot-icon-bg {
+    box-shadow: none;
+}
+
+/* Tier Specific Left Accents */
+.loot-tier-god.loot-log-row {
+    border-left-color: #ff00ff;
+}
+
+.loot-tier-alpha.loot-log-row {
+    border-left-color: #00ffff;
+}
+
+.loot-tier-omega.loot-log-row {
+    border-left-color: #ff0000;
+}
+
+.loot-tier-epic.loot-log-row {
+    border-left-color: #ffd700;
+}
+
+.empty-log-msg {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-style: italic;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Scrollbar Styling */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.5);
 }

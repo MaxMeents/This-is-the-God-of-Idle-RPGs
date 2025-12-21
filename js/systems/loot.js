@@ -4,6 +4,14 @@
  */
 
 const lootHistory = [];
+const lootLogHistory = [];
+const MAX_LOG_HISTORY = 100;
+
+// Log UI State
+let logViewState = {
+    currentView: 'hours', // 'hours' or 'detail'
+    selectedHour: null    // e.g. "13:00"
+};
 
 /**
  * Initializes the loot container
@@ -17,7 +25,45 @@ function initLootSystem() {
     container.id = 'loot-history-container';
     ui.appendChild(container);
 
+    // Initialize the historical log UI
+    initLootLogUI();
+
     console.log("[LOOT] System Initialized");
+}
+
+/**
+ * Injects the Loot Log button and modal on-the-fly
+ */
+function initLootLogUI() {
+    const ui = document.getElementById('ui');
+    if (!ui || document.getElementById('loot-log-trigger')) return;
+
+    // 1. Create Floating Button
+    const btn = document.createElement('div');
+    btn.id = 'loot-log-trigger';
+    btn.className = 'premium-hud-btn';
+    btn.innerHTML = '<span>Loot Log</span>';
+    btn.onclick = openLootLog;
+    ui.appendChild(btn);
+
+    // 2. Create Modal Structure
+    const modal = document.createElement('div');
+    modal.id = 'loot-log-modal';
+    modal.className = 'modal-backdrop hidden';
+    modal.onclick = (e) => { if (e.target === modal) closeLootLog(); };
+
+    modal.innerHTML = `
+        <div class="modal-panel loot-log-panel">
+            <div class="modal-header">
+                <h2>God\'s Loot Ledger</h2>
+                <div class="close-btn" onclick="closeLootLog()">×</div>
+            </div>
+            <div id="loot-log-content" class="modal-body custom-scrollbar">
+                <!-- Items built on the fly -->
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
 }
 
 /**
@@ -90,10 +136,25 @@ function addLootToHistory(itemKey, amount) {
         flowClass = Math.random() > 0.5 ? 'flow-up' : 'flow-down';
     }
 
+    // Dynamic Amount-based bounce logic (Ramp from 10 to 100)
+    let amtClass = '';
+    let amtStyle = '';
+    if (amount > 10) {
+        amtClass = 'bouncing';
+        // factor 0.0 at 10, 1.0 at 100+
+        const factor = Math.min(1, (amount - 10) / 90);
+
+        const dist = -1.5 - (5 * factor);      // Halved height: -1.5px to -6.5px
+        const scale = 1.025 + (0.175 * factor); // Reduced scale to match
+        const dur = 2.66 - (1.33 * factor);    // 25% Slower: 2.66s to 1.33s
+
+        amtStyle = `style="--bounce-dist: ${dist}px; --bounce-scale: ${scale}; --bounce-dur: ${dur}s;"`;
+    }
+
     el.innerHTML = `
         <div class="loot-box ${boxClass}">
             <div class="loot-text">
-                <span class="loot-amount">${amount.toLocaleString()}</span>
+                <span class="loot-amount ${amtClass}" ${amtStyle}>${amount.toLocaleString()}</span>
                 <span class="loot-name ${flowClass}">${itemCfg.name}</span>
             </div>
         </div>
@@ -107,7 +168,22 @@ function addLootToHistory(itemKey, amount) {
     container.appendChild(el);
     lootHistory.push(el);
 
-    // Maintain max history (shift up / remove top)
+    // Record to the permanent Log (Build a simplified data object for the log)
+    const now = new Date();
+    const logData = {
+        itemKey,
+        amount,
+        boxClass,
+        flowClass,
+        amtClass,
+        amtStyle,
+        tier,
+        timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+        hourLabel: now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00"
+    };
+    lootLogHistory.unshift(logData); // Newest first
+    if (lootLogHistory.length > MAX_LOG_HISTORY) lootLogHistory.pop();
+
     // Maintain max history (shift up / remove top)
     if (lootHistory.length > LOOT_CONFIG.MAX_HISTORY) {
         const oldest = lootHistory.shift();
@@ -132,6 +208,138 @@ function addLootToHistory(itemKey, amount) {
             }, 300);
         }
     }, 3000);
+}
+
+/**
+ * Logic for opening/closing and rendering the log
+ */
+function openLootLog() {
+    const modal = document.getElementById('loot-log-modal');
+    if (!modal) return;
+
+    // Always reset to hours index when opening
+    logViewState.currentView = 'hours';
+    logViewState.selectedHour = null;
+
+    renderLootLog();
+    modal.classList.remove('hidden');
+    modal.classList.add('visible');
+}
+
+function closeLootLog() {
+    const modal = document.getElementById('loot-log-modal');
+    if (!modal) return;
+    modal.classList.remove('visible');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+function viewHourLog(hour) {
+    logViewState.currentView = 'detail';
+    logViewState.selectedHour = hour;
+    renderLootLog();
+}
+
+function viewHoursIndex() {
+    logViewState.currentView = 'hours';
+    logViewState.selectedHour = null;
+    renderLootLog();
+}
+
+function renderLootLog() {
+    const content = document.getElementById('loot-log-content');
+    const headerTitle = document.querySelector('.modal-header h2');
+    if (!content) return;
+
+    content.innerHTML = '';
+
+    if (lootLogHistory.length === 0) {
+        headerTitle.innerHTML = "God's Loot Ledger";
+        content.innerHTML = `<div class="empty-log-msg">Your ledger is empty, God. Go forth and claim your prizes.</div>`;
+        return;
+    }
+
+    if (logViewState.currentView === 'hours') {
+        renderHoursIndex(content, headerTitle);
+    } else {
+        renderDetailLog(content, headerTitle);
+    }
+}
+
+function renderHoursIndex(content, headerTitle) {
+    headerTitle.innerHTML = "God's Loot Ledger";
+
+    // Group logs by hourLabel for count mapping
+    const hoursMap = {};
+    lootLogHistory.forEach(item => {
+        if (!hoursMap[item.hourLabel]) hoursMap[item.hourLabel] = 0;
+        hoursMap[item.hourLabel]++;
+    });
+
+    // Generate last 24 hours of window
+    const now = new Date();
+    const displayHours = [];
+    for (let i = 0; i < 24; i++) {
+        const d = new Date(now);
+        d.setHours(now.getHours() - i);
+        const label = d.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
+        displayHours.push(label);
+    }
+
+    displayHours.forEach((hour, i) => {
+        const count = hoursMap[hour] || 0;
+        const btn = document.createElement('div');
+        const isDisabled = count === 0;
+
+        btn.className = `loot-log-hour-btn ${isDisabled ? 'disabled' : ''}`;
+        btn.innerHTML = `
+            <span class="hour-text">${hour} ${i === 0 ? '<small>(Current)</small>' : ''}</span>
+            <span class="hour-count">${isDisabled ? 'No History' : count + ' Drops Recorded'}</span>
+            <div class="fleur-de-lis">📜</div>
+        `;
+
+        if (!isDisabled) {
+            btn.onclick = () => viewHourLog(hour);
+        }
+        content.appendChild(btn);
+    });
+}
+
+function renderDetailLog(content, headerTitle) {
+    headerTitle.innerHTML = `Loot Log: ${logViewState.selectedHour}`;
+
+    // Add Back Button
+    const backBtn = document.createElement('div');
+    backBtn.className = 'log-back-btn';
+    backBtn.innerHTML = '← Back to Ledger Index';
+    backBtn.onclick = viewHoursIndex;
+    content.appendChild(backBtn);
+
+    const filtered = lootLogHistory.filter(item => item.hourLabel === logViewState.selectedHour);
+
+    filtered.forEach(data => {
+        const itemCfg = LOOT_CONFIG.ITEMS[data.itemKey];
+        if (!itemCfg) return;
+
+        const row = document.createElement('div');
+        row.className = `loot-log-row loot-tier-${data.tier}`;
+
+        row.innerHTML = `
+            <div class="log-timestamp">${data.timestamp}</div>
+            <div class="loot-item in-log">
+                <div class="loot-box ${data.boxClass}">
+                    <div class="loot-text">
+                        <span class="loot-amount ${data.amtClass}" ${data.amtStyle}>${data.amount.toLocaleString()}</span>
+                        <span class="loot-name ${data.flowClass}">${itemCfg.name}</span>
+                    </div>
+                </div>
+                <div class="loot-icon-wrapper">
+                    <div class="loot-icon-bg"></div>
+                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
+                </div>
+            </div>
+        `;
+        content.appendChild(row);
+    });
 }
 
 /**
