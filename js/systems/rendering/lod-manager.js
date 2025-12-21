@@ -202,7 +202,7 @@ function startAsyncLODPipeline(tiers, aggressive, onComplete) {
                 enemyAssets[typeKey].caches[animType][t.id] = frames;
             });
         }
-        if (typeof conversionCt !== 'undefined') conversionCt++;
+        if (typeof window.conversionCt !== 'undefined') window.conversionCt++;
         if (typeof window.updateLoadingProgress === 'function') window.updateLoadingProgress();
         taskIndex++;
         requestAnimationFrame(runConversion);
