@@ -119,12 +119,6 @@ function renderDetailLog(content, headerTitle, data) {
         $content.append('<div id="loot-log-scroll-area" class="clusterize-scroll"><div id="loot-log-content-area" class="clusterize-content"></div></div>');
     }
 
-    // DESTROY OLD VIRTUAL LIST INSTANCE
-    if (logViewState.clusterize) {
-        logViewState.clusterize.destroy();
-        logViewState.clusterize = null;
-    }
-
     // GRID MODE ROUTING (Triggered by Zoom Slider in loot-filters.js)
     if (logViewState.zoom < 0.4) {
         const gridRows = [];
@@ -134,23 +128,35 @@ function renderDetailLog(content, headerTitle, data) {
             rowHtml += `</div>`;
             gridRows.push(rowHtml);
         }
-        logViewState.clusterize = new Clusterize({
-            rows: gridRows,
-            scrollId: 'loot-log-scroll-area',
-            contentId: 'loot-log-content-area',
-            rows_in_block: 20
-        });
+
+        // PERFORMANCE: Use update() instead of destroy/recreate
+        if (logViewState.clusterize) {
+            logViewState.clusterize.update(gridRows);
+        } else {
+            logViewState.clusterize = new Clusterize({
+                rows: gridRows,
+                scrollId: 'loot-log-scroll-area',
+                contentId: 'loot-log-content-area',
+                rows_in_block: 20
+            });
+        }
         return;
     }
 
     // STANDARD LIST MODE
     const listRows = filteredHistory.map(item => renderDetailRow(item));
-    logViewState.clusterize = new Clusterize({
-        rows: listRows,
-        scrollId: 'loot-log-scroll-area',
-        contentId: 'loot-log-content-area',
-        rows_in_block: 50
-    });
+
+    // PERFORMANCE: Use update() instead of destroy/recreate
+    if (logViewState.clusterize) {
+        logViewState.clusterize.update(listRows);
+    } else {
+        logViewState.clusterize = new Clusterize({
+            rows: listRows,
+            scrollId: 'loot-log-scroll-area',
+            contentId: 'loot-log-content-area',
+            rows_in_block: 50
+        });
+    }
 }
 
 /**
