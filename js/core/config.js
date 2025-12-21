@@ -3,15 +3,15 @@
  */
 const PERFORMANCE = {
     LOD_TIERS: [
-        { id: 'Ultra', size: 1024, max: 150, priority: false },
-        { id: 'High', size: 1024, max: 400, priority: false },
-        { id: 'MidHigh', size: 768, max: 800, priority: false },
+        { id: 'Ultra', size: 512, max: 150, priority: false },
+        { id: 'High', size: 512, max: 400, priority: false },
+        { id: 'MidHigh', size: 512, max: 800, priority: false },
         { id: 'Med', size: 512, max: 1200, priority: false },
-        { id: 'MedLow', size: 256, max: 2000, priority: true },
-        { id: 'Low', size: 128, max: 2500, priority: true },
-        { id: 'VLow', size: 64, max: 7000, priority: true },
-        { id: 'Tiny', size: 32, max: 10000, priority: true },
-        { id: 'Micro', size: 16, max: 15000, priority: true }
+        { id: 'MedLow', size: 512, max: 2000, priority: true },
+        { id: 'Low', size: 512, max: 2500, priority: true },
+        { id: 'VLow', size: 512, max: 7000, priority: true },
+        { id: 'Tiny', size: 512, max: 10000, priority: true },
+        { id: 'Micro', size: 512, max: 15000, priority: true }
     ],
     LOD_INIT_TIME_SLICE: 1,
     SPAWNS_PER_FRAME: 500,
@@ -184,8 +184,8 @@ const STAGE_CONFIG = {
     ],
     STAGES: {
         1: {
-            kills: 3500,
-            enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500, BlackRedButterfly: 500, BlueWhiteButterfly: 500, GoldButterfly: 500, GreenBlackButterfly: 500, GalaxyButterfly: 500 },
+            kills: 20000,
+            enemies: { BlueDragon: 2500, GalaxyDragon: 2500, PhoenixSurrender: 5000, BlackRedButterfly: 2500, BlueWhiteButterfly: 2500, GoldButterfly: 2500, GreenBlackButterfly: 2500, GalaxyButterfly: 2500 },
             tierChances: { Arch: 0.02, God: 0.001, Alpha: 0.0, Omega: 0.0 }
         },
         2: {
