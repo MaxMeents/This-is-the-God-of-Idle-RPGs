@@ -86,7 +86,7 @@ let weaponRechargeMode = {
 
 // Damage Numbers Pool (Prevents Garbage Collection lag)
 const DAMAGE_POOL_SIZE = 100;
-const damageNumbers = Array.from({ length: DAMAGE_POOL_SIZE }, () => ({ x: 0, y: 0, val: 0, life: 0, vx: 0, vy: 0, active: false }));
+const damageNumbers = Array.from({ length: DAMAGE_POOL_SIZE }, () => ({ x: 0, y: 0, val: 0, life: 0, vx: 0, vy: 0, active: false, isLucky: false }));
 const activeDamageIndices = new Int32Array(DAMAGE_POOL_SIZE);
 let activeDamageCount = 0;
 

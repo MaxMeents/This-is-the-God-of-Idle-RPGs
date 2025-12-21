@@ -381,6 +381,51 @@
     transition: all 0.3s ease-out;
 }
 
+/* LOOT LOG NAVIGATION */
+.loot-log-hour-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 32px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.loot-log-hour-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: #ffd700;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.loot-log-hour-btn:hover:not(.disabled) {
+    background: rgba(255, 215, 0, 0.04);
+    border-color: rgba(255, 215, 0, 0.3);
+    transform: translateX(10px);
+    box-shadow: -10px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.loot-log-hour-btn:hover:not(.disabled)::before {
+    opacity: 1;
+}
+
+.loot-log-hour-btn.disabled {
+    opacity: 0.2;
+    cursor: default;
+    filter: grayscale(1);
+    pointer-events: none;
+}
+
 /* LOOT LOG TRIGGER BUTTON (Bottom Left) */
 #loot-log-trigger {
     position: fixed;
@@ -497,6 +542,94 @@
     font-size: 24px;
 }
 
+/* FILTER BAR */
+.ledger-filter-bar {
+    padding: 20px 32px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.time-filters {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-btn {
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+.filter-btn.active {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.tier-filters {
+    display: flex;
+    gap: 12px;
+}
+
+.tier-circle {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.tier-circle.active {
+    opacity: 1;
+    filter: none;
+    transform: scale(1.2);
+    box-shadow: 0 0 15px currentColor;
+}
+
+.tier-circle.tier-normal {
+    background: #fff;
+    color: #fff;
+}
+
+.tier-circle.tier-epic {
+    background: linear-gradient(135deg, #fff, #ffd700);
+    color: #ffd700;
+}
+
+.tier-circle.tier-god {
+    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+    color: #ff00ff;
+}
+
+.tier-circle.tier-alpha {
+    background: linear-gradient(45deg, #00ffff, #fff, #00ffff);
+    color: #00ffff;
+}
+
+.tier-circle.tier-omega {
+    background: linear-gradient(135deg, #fff, #ff00ff);
+    color: #ff00ff;
+}
+
 .close-btn {
     font-size: 32px;
     color: #888;
@@ -556,6 +689,28 @@
     right: 20px;
     width: 50px;
     height: 50px;
+}
+
+/* Inherit Tier Gradients for Icon BG in Log */
+.loot-log-row.loot-tier-god .loot-icon-bg {
+    background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
+}
+
+.loot-log-row.loot-tier-alpha .loot-icon-bg {
+    background: conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff);
+}
+
+.loot-log-row.loot-tier-omega .loot-icon-bg {
+    background: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
+}
+
+.loot-log-row.loot-tier-epic .loot-icon-bg {
+    background: conic-gradient(from 0deg, #ffd700, #fff, #ffd700, #fff, #ffd700);
+}
+
+.loot-log-row.loot-tier-normal .loot-icon-bg {
+    background: radial-gradient(circle, #333, #111);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .in-log .loot-icon-bg {

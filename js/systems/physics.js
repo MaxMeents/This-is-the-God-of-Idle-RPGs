@@ -751,8 +751,9 @@ function processAOEDamage() {
                     const dx = data[idx] - player.x, dy = data[idx + 1] - player.y;
                     const dSq = dx * dx + dy * dy;
                     if (dSq < rSq) {
+                        const isLucky = Math.random() < LUCKY_HIT_CHANCE;
                         data[idx + 8] -= DAMAGE_PER_POP;
-                        spawnDamageNumber(data[idx], data[idx + 1] - 50, DAMAGE_PER_POP);
+                        spawnDamageNumber(data[idx], data[idx + 1] - 50, DAMAGE_PER_POP, isLucky);
 
                         if (data[idx + 8] <= 0) {
                             killCount++;
@@ -760,7 +761,7 @@ function processAOEDamage() {
                             data[idx + 8] = 0;
                             data[idx + 9] = 0.001;
                             spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 80);
-                            handleEnemyDrop(enemyKeys[data[idx + 11] | 0], data[idx + 12] | 0);
+                            handleEnemyDrop(enemyKeys[data[idx + 11] | 0], data[idx + 12] | 0, isLucky);
                         }
                     }
                 }
@@ -818,19 +819,18 @@ function processSkillDamage() {
                 while (ptr !== -1) {
                     const eIdx = ptr * STRIDE;
                     if (data[eIdx + 8] > 0) {
-                        const dx = data[eIdx] - sx, dy = data[eIdx + 1] - sy;
-                        const dSq = dx * dx + dy * dy;
+                        const ex = data[eIdx], ey = data[eIdx + 1];
+                        const dSq = (sx - ex) ** 2 + (sy - ey) ** 2;
                         if (dSq < rSq) {
+                            const isLucky = Math.random() < LUCKY_HIT_CHANCE;
                             data[eIdx + 8] -= dmg;
-                            spawnDamageNumber(data[eIdx], data[eIdx + 1] - 50, Math.floor(dmg));
+                            spawnDamageNumber(ex, ey - 50, Math.floor(dmg), isLucky);
 
                             if (data[eIdx + 8] <= 0) {
-                                killCount++;
-                                stageKillCount++;
-                                data[eIdx + 8] = 0;
-                                data[eIdx + 9] = 0.001; // Trigger death animation
-                                spawnFX(data[eIdx], data[eIdx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 100);
-                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0);
+                                killCount++; stageKillCount++;
+                                data[eIdx + 8] = 0; data[eIdx + 9] = 0.001;
+                                spawnFX(ex, ey, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0, isLucky);
                             }
                         }
                     }
@@ -1000,13 +1000,14 @@ function updateBullets(dt) {
                         const dSq = (bx - ex) ** 2 + (by - ey) ** 2;
                         const r = cfg.size * 0.4;
                         if (dSq < r * r) {
+                            const isLucky = Math.random() < LUCKY_HIT_CHANCE;
                             data[eIdx + 8] -= dmg;
-                            spawnDamageNumber(bx, by - 50, dmg);
+                            spawnDamageNumber(bx, by - 50, dmg, isLucky);
                             if (data[eIdx + 8] <= 0) {
                                 killCount++; stageKillCount++;
                                 data[eIdx + 8] = 0; data[eIdx + 9] = 0.001;
                                 spawnFX(bx, by, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
-                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0);
+                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0, isLucky);
                                 for (let k = 0; k < 5; k++) spawnFX(bx, by, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
                             }
 
@@ -1034,12 +1035,13 @@ function updateBullets(dt) {
 /**
  * DAMAGE SYSTEM (Floating Numbers)
  */
-function spawnDamageNumber(x, y, val) {
+function spawnDamageNumber(x, y, val, lucky = false) {
     if (activeDamageCount >= DAMAGE_POOL_SIZE) return;
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         if (!damageNumbers[i].active) {
             const dn = damageNumbers[i];
             dn.active = true; dn.x = x; dn.y = y; dn.val = val;
+            dn.isLucky = lucky;
             dn.life = 1.0;
             dn.vx = (Math.random() - 0.5) * 5;
             dn.vy = -5 - Math.random() * 2;

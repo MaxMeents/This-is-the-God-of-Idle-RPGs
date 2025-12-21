@@ -92,7 +92,22 @@ function initRendererPools() {
 
     // 7. Damage Numbers
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
-        const t = new PIXI.Text({ text: '', style: { fill: 0xff0000, fontWeight: 'bold', fontSize: 24 } });
+        const t = new PIXI.Text({
+            text: '',
+            style: {
+                fill: 0xffffff,
+                fontWeight: '900',
+                fontSize: 24,
+                fontFamily: 'Orbitron',
+                stroke: 0x000000,
+                strokeThickness: 3,
+                dropShadow: true,
+                dropShadowColor: '#000000',
+                dropShadowBlur: 2,
+                dropShadowAngle: Math.PI / 6,
+                dropShadowDistance: 2
+            }
+        });
         t.anchor.set(0.5);
         t.visible = false;
         uiContainer.addChild(t);
@@ -299,14 +314,27 @@ function draw() {
         t.visible = true;
         t.alpha = dn.life;
         t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy);
-        t.scale.set(zoom * 2);
 
-        // Optimization: Only update text if it actually changed
-        // This prevents expensive texture re-generation in PixiJS
         const valStr = String(dn.val);
-        if (t.text !== valStr) {
-            t.text = valStr;
+        const textContent = dn.isLucky ? "LUCKY! " + valStr : valStr;
+
+        if (t.text !== textContent) {
+            t.text = textContent;
+
+            // SEXY STYLING SWITCH
+            if (dn.isLucky) {
+                t.style.fill = 0xffd700; // Gold
+                t.style.stroke = 0xff0000; // Red stroke for impact
+                t.style.fontSize = 32;
+            } else {
+                t.style.fill = 0xffffff;
+                t.style.stroke = 0x000000;
+                t.style.fontSize = 24;
+            }
         }
+
+        const baseScale = dn.isLucky ? 2.5 : 1.8;
+        t.scale.set(zoom * baseScale);
     }
 
     // 7. SKILLS

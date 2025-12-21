@@ -5,12 +5,15 @@
 
 const lootHistory = [];
 const lootLogHistory = [];
-const MAX_LOG_HISTORY = 100;
+const MAX_LOG_HISTORY = 1000;
+const sessionStartTime = Date.now();
 
 // Log UI State
 let logViewState = {
     currentView: 'hours', // 'hours' or 'detail'
-    selectedHour: null    // e.g. "13:00"
+    selectedHour: null,   // e.g. "13:00"
+    timeScope: 'session',  // 'session', 'today', 'all'
+    activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega'])
 };
 
 /**
@@ -58,6 +61,20 @@ function initLootLogUI() {
                 <h2>God\'s Loot Ledger</h2>
                 <div class="close-btn" onclick="closeLootLog()">×</div>
             </div>
+            <div id="ledger-filter-bar" class="ledger-filter-bar">
+                <div class="time-filters">
+                    <button class="filter-btn active" data-scope="session" onclick="setLogTimeScope(\'session\')">Session</button>
+                    <button class="filter-btn" data-scope="today" onclick="setLogTimeScope(\'today\')">Today</button>
+                    <button class="filter-btn" data-scope="all" onclick="setLogTimeScope(\'all\')">All Time</button>
+                </div>
+                <div class="tier-filters">
+                    <div class="tier-circle tier-normal active" onclick="toggleLogTier(\'normal\')"></div>
+                    <div class="tier-circle tier-epic active" onclick="toggleLogTier(\'epic\')"></div>
+                    <div class="tier-circle tier-god active" onclick="toggleLogTier(\'god\')"></div>
+                    <div class="tier-circle tier-alpha active" onclick="toggleLogTier(\'alpha\')"></div>
+                    <div class="tier-circle tier-omega active" onclick="toggleLogTier(\'omega\')"></div>
+                </div>
+            </div>
             <div id="loot-log-content" class="modal-body custom-scrollbar">
                 <!-- Items built on the fly -->
             </div>
@@ -70,21 +87,22 @@ function initLootLogUI() {
  * Processes a potential drop from a defeated enemy
  * @param {string} enemyType - e.g. 'Dragon'
  * @param {number} tierIndex - 0: Standard, 1: Arch, 2: God, 3: Alpha, 4: Omega
+ * @param {boolean} isLucky - Whether it was a lucky hit
  */
-function handleEnemyDrop(enemyType, tierIndex = 0) {
+function handleEnemyDrop(enemyType, tierIndex = 0, isLucky = false) {
     // Access tier via array index
     const tierCfg = LOOT_CONFIG.TIERS[tierIndex] || LOOT_CONFIG.TIERS[0];
 
     // 1. Roll for Global Drops (Currency, rare Crystals, etc.)
     LOOT_CONFIG.GLOBAL_DROPS.forEach(itemKey => {
-        rollForItem(itemKey, tierCfg);
+        rollForItem(itemKey, tierCfg, isLucky);
     });
 
     // 2. Roll for Enemy-Specific Drops
     const possibleDrops = LOOT_CONFIG.ENEMY_DROPS[enemyType];
     if (possibleDrops) {
         possibleDrops.forEach(itemKey => {
-            rollForItem(itemKey, tierCfg);
+            rollForItem(itemKey, tierCfg, isLucky);
         });
     }
 }
@@ -92,7 +110,7 @@ function handleEnemyDrop(enemyType, tierIndex = 0) {
 /**
  * Rolls for an individual item drop based on tier multipliers
  */
-function rollForItem(itemKey, tierCfg) {
+function rollForItem(itemKey, tierCfg, isLucky = false) {
     const itemCfg = LOOT_CONFIG.ITEMS[itemKey];
     if (!itemCfg) return;
 
@@ -100,10 +118,17 @@ function rollForItem(itemKey, tierCfg) {
     if (Math.random() < finalChance) {
         const baseMin = itemCfg.min;
         const baseMax = itemCfg.max;
+
         // Calculate amount: random(min, max) * multiplier
-        const amount = Math.floor((baseMin + Math.random() * (baseMax - baseMin + 1)) * tierCfg.amountMult);
+        let amount = Math.floor((baseMin + Math.random() * (baseMax - baseMin + 1)) * tierCfg.amountMult);
+
+        // LITERALLY LUCKY: Double loot
+        if (isLucky) {
+            amount *= 2;
+        }
+
         if (amount > 0) {
-            addLootToHistory(itemKey, amount);
+            addLootToHistory(itemKey, amount, isLucky);
         }
     }
 }
@@ -111,7 +136,7 @@ function rollForItem(itemKey, tierCfg) {
 /**
  * Adds an item to the history UI with specific amount
  */
-function addLootToHistory(itemKey, amount) {
+function addLootToHistory(itemKey, amount, isLucky = false) {
     const itemCfg = LOOT_CONFIG.ITEMS[itemKey];
     if (!itemCfg) return;
 
@@ -144,9 +169,9 @@ function addLootToHistory(itemKey, amount) {
         // factor 0.0 at 10, 1.0 at 100+
         const factor = Math.min(1, (amount - 10) / 90);
 
-        const dist = -1.5 - (5 * factor);      // Halved height: -1.5px to -6.5px
-        const scale = 1.025 + (0.175 * factor); // Reduced scale to match
-        const dur = 2.66 - (1.33 * factor);    // 25% Slower: 2.66s to 1.33s
+        const dist = -0.75 - (2.5 * factor);    // Halved again: -0.75px to -3.25px
+        const scale = 1.0125 + (0.0875 * factor); // Reduced scale match
+        const dur = 2.66 - (1.33 * factor);    // Maintain slow speed
 
         amtStyle = `style="--bounce-dist: ${dist}px; --bounce-scale: ${scale}; --bounce-dur: ${dur}s;"`;
     }
@@ -179,7 +204,10 @@ function addLootToHistory(itemKey, amount) {
         amtStyle,
         tier,
         timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        hourLabel: now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00"
+        hourLabel: now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00",
+        rawTime: now.getTime(),
+        dateLabel: now.toLocaleDateString(),
+        isLucky: isLucky
     };
     lootLogHistory.unshift(logData); // Newest first
     if (lootLogHistory.length > MAX_LOG_HISTORY) lootLogHistory.pop();
@@ -252,30 +280,44 @@ function renderLootLog() {
 
     content.innerHTML = '';
 
-    if (lootLogHistory.length === 0) {
+    // 1. Get Base Data Filtered by Time Scope
+    let filteredHistory = lootLogHistory;
+    const now = new Date();
+
+    if (logViewState.timeScope === 'session') {
+        filteredHistory = filteredHistory.filter(item => item.rawTime >= sessionStartTime);
+    } else if (logViewState.timeScope === 'today') {
+        const todayStr = now.toLocaleDateString();
+        filteredHistory = filteredHistory.filter(item => item.dateLabel === todayStr);
+    }
+
+    // 2. Filter by Active Tiers
+    filteredHistory = filteredHistory.filter(item => logViewState.activeTiers.has(item.tier));
+
+    if (filteredHistory.length === 0) {
         headerTitle.innerHTML = "God's Loot Ledger";
-        content.innerHTML = `<div class="empty-log-msg">Your ledger is empty, God. Go forth and claim your prizes.</div>`;
+        content.innerHTML = `<div class="empty-log-msg">Your ledger is empty for these filters, God.</div>`;
         return;
     }
 
     if (logViewState.currentView === 'hours') {
-        renderHoursIndex(content, headerTitle);
+        renderHoursIndex(content, headerTitle, filteredHistory);
     } else {
-        renderDetailLog(content, headerTitle);
+        renderDetailLog(content, headerTitle, filteredHistory);
     }
 }
 
-function renderHoursIndex(content, headerTitle) {
+function renderHoursIndex(content, headerTitle, data) {
     headerTitle.innerHTML = "God's Loot Ledger";
 
     // Group logs by hourLabel for count mapping
     const hoursMap = {};
-    lootLogHistory.forEach(item => {
+    data.forEach(item => {
         if (!hoursMap[item.hourLabel]) hoursMap[item.hourLabel] = 0;
         hoursMap[item.hourLabel]++;
     });
 
-    // Generate last 24 hours of window
+    // Generate last 24 hours window for logical display
     const now = new Date();
     const displayHours = [];
     for (let i = 0; i < 24; i++) {
@@ -304,7 +346,7 @@ function renderHoursIndex(content, headerTitle) {
     });
 }
 
-function renderDetailLog(content, headerTitle) {
+function renderDetailLog(content, headerTitle, data) {
     headerTitle.innerHTML = `Loot Log: ${logViewState.selectedHour}`;
 
     // Add Back Button
@@ -314,7 +356,7 @@ function renderDetailLog(content, headerTitle) {
     backBtn.onclick = viewHoursIndex;
     content.appendChild(backBtn);
 
-    const filtered = lootLogHistory.filter(item => item.hourLabel === logViewState.selectedHour);
+    const filtered = data.filter(item => item.hourLabel === logViewState.selectedHour);
 
     filtered.forEach(data => {
         const itemCfg = LOOT_CONFIG.ITEMS[data.itemKey];

@@ -247,6 +247,7 @@ const DAMAGE_INTERVAL = 100;
 const AOE_RADIUS = 900;
 const PLAYER_SPEED = 80;
 const FLOOR_TILE_SIZE = 46000;
+const LUCKY_HIT_CHANCE = 0.1; // 10% chance for a lucky hit
 
 /**
  * LOOT & DROPS CONFIGURATION
