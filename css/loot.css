@@ -119,11 +119,18 @@
     content: '';
     position: absolute;
     inset: 4px;
-    /* Creates the 4px border thickness */
+    /* Creates the 4px border */
+    --loot-zoom: 1.0;
+    /* Default zoom level */
     background: #000;
     border-radius: 6px;
     /* Inner radius */
     z-index: -1;
+}
+
+/* Base Styles */
+body {
+    background-color: #050505;
 }
 
 /**
@@ -829,12 +836,58 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
 .loot-item.in-log {
     width: 100%;
     max-width: 800px;
-    /* Height is now dynamic via inline style, default 110px */
+    /* Dynamic Height Calculation based on --loot-zoom */
+    /* Base: 110px at zoom 1.0, Min: 60px at zoom 0.4 */
+    /* Formula: 60px + (50px * ((--loot-zoom - 0.4) / 0.6)) */
+    height: calc(60px + (50px * ((var(--loot-zoom) - 0.4) / 0.6))) !important;
     animation: none;
     pointer-events: auto;
     display: flex;
     align-items: center;
-    transition: height 0.2s ease;
+    /* Remove transition for instant performance during slide */
+    transition: none;
+}
+
+.in-log .loot-icon-wrapper {
+    position: relative;
+    right: 0;
+    /* Dynamic Icon Size */
+    /* Base: 90px at zoom 1.0, Min: 40px at zoom 0.4 */
+    /* Formula: 40px + (50px * ((--loot-zoom - 0.4) / 0.6)) */
+    width: calc(40px + (50px * ((var(--loot-zoom) - 0.4) / 0.6))) !important;
+    height: calc(40px + (50px * ((var(--loot-zoom) - 0.4) / 0.6))) !important;
+    flex-shrink: 0;
+    margin-left: auto;
+    margin-right: 40px;
+}
+
+/* Inherit Tier Gradients and Animations for Icon BG in Log */
+.in-log .loot-icon-bg {
+    animation: rotate 2s linear infinite;
+    /* Re-enable rotation */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: none;
+    width: 100%;
+    height: 100%;
+}
+
+.in-log .loot-icon-bg::before {
+    content: '';
+    position: absolute;
+    /* Scale white center: 86% of wrapper */
+    width: 86% !important;
+    height: 86% !important;
+    background: #fff;
+    border-radius: 50%;
+}
+
+/* Dynamic Image Size */
+.in-log .loot-icon {
+    /* Scale image: 77% of wrapper */
+    width: 77% !important;
+    height: 77% !important;
 }
 
 /* GRID LAYOUT STYLES */
@@ -844,6 +897,8 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     gap: 10px;
     width: 100%;
     max-width: 800px;
+    height: 80px;
+    /* Fixed height for grid rows */
     margin: 0 auto;
 }
 
@@ -854,9 +909,11 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     border-radius: 8px;
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 5px 10px;
+    /* Reduced vertical padding */
     position: relative;
     overflow: hidden;
+    height: 100%;
 }
 
 /* Grid item tier colors */
@@ -882,18 +939,25 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
 
 /* Compact Grid Icons */
 .loot-grid-item .loot-icon-wrapper {
-    width: 60px !important;
-    height: 60px !important;
-    margin-right: 15px;
+    width: 50px !important;
+    /* Slightly smaller */
+    height: 50px !important;
+    margin-right: 10px;
+    flex-shrink: 0;
 }
 
 .loot-grid-item .loot-icon-bg::before {
-    width: 52px !important;
-    height: 52px !important;
+    width: 44px !important;
+    height: 44px !important;
 }
 
 .loot-grid-item .loot-text {
     padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    /* Prevent text overflow */
 }
 
 /* Reset staircase margins for log items */
@@ -905,16 +969,6 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     align-items: center;
 }
 
-.in-log .loot-icon-wrapper {
-    position: relative;
-    right: 0;
-    width: 90px !important;
-    /* Balanced Premium Icon */
-    height: 90px !important;
-    flex-shrink: 0;
-    margin-left: auto;
-    margin-right: 40px;
-}
 
 /* Inherit Tier Gradients and Animations for Icon BG in Log */
 .in-log .loot-icon-bg {
@@ -928,15 +982,6 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     height: 100%;
 }
 
-.in-log .loot-icon-bg::before {
-    content: '';
-    position: absolute;
-    width: 78px !important;
-    /* Scaled white center */
-    height: 78px !important;
-    background: #fff;
-    border-radius: 50%;
-}
 
 .loot-log-row.loot-tier-god .loot-icon-bg {
     background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);

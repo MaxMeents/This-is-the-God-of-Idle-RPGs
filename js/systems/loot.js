@@ -346,15 +346,28 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
 // --- Zoom & Category Logic ---
 
 function handleLogZoom(val) {
+    const prevZoom = logViewState.zoom;
     const zoomLevel = parseInt(val) / 100;
     logViewState.zoom = zoomLevel;
 
-    // Re-render to apply new scale/grid mode immediately
-    // If in detail view, we likely want to re-render the detail log
-    if (logViewState.currentView === 'detail') {
-        // We need to re-render the detail log with the current data
-        // renderLootLog handles all filtering and view logic
-        renderLootLog();
+    // Performance: Update CSS Variable for instant scaling (Lazy Loading/No Repaint)
+    const modal = document.getElementById('loot-log-modal');
+    if (modal) {
+        modal.style.setProperty('--loot-zoom', zoomLevel);
+    }
+
+    // Only Re-render if switching modes (Grid <-> List)
+    const GRID_THRESHOLD = 0.4;
+    const wasGrid = prevZoom < GRID_THRESHOLD;
+    const isGrid = zoomLevel < GRID_THRESHOLD;
+
+    if (wasGrid !== isGrid) {
+        // Mode change detected: Force re-render
+        if (logViewState.currentView === 'detail') {
+            const listContent = document.getElementById('loot-log-content-area');
+            if (listContent) listContent.innerHTML = ''; // Clear for fresh mode
+            renderLootLog();
+        }
     }
 }
 
@@ -616,26 +629,20 @@ function renderDetailLog(content, headerTitle, data) {
     }
 
     // Standard List Mode
-    // Calculate dynamic sizes based on Zoom (1.0 = 110px row, 90px icon)
-    // Min Size (at zoom 0.4): ~60px row, 40px icon
-    const baseHeight = 110;
-    const minHeight = 60;
-    const rowHeight = Math.max(minHeight, minHeight + (baseHeight - minHeight) * ((logViewState.zoom - 0.4) / 0.6));
-
-    // Pass scale info to renderDetailLogRows
-    const listRows = filteredHistory.map(item => renderDetailRow(item, rowHeight, logViewState.zoom));
+    // CSS handles dynamic sizing via --loot-zoom
+    const listRows = filteredHistory.map(item => renderDetailRow(item));
 
     // 4. Init Clusterize
     logViewState.clusterize = new Clusterize({
         rows: listRows,
         scrollId: 'loot-log-scroll-area',
         contentId: 'loot-log-content-area',
-        rows_in_block: 50 // Render more rows since they might be smaller
+        rows_in_block: 50
     });
 }
 
 function renderGridItem(itemData) {
-    const itemCfg = LOOT_CONFIG.ITEMS[itemData.id];
+    const itemCfg = LOOT_CONFIG.ITEMS[itemData.itemKey];
     if (!itemCfg) return '';
 
     return `
@@ -652,35 +659,25 @@ function renderGridItem(itemData) {
     `;
 }
 
-function renderDetailRow(itemData, height, zoom) {
-    const itemCfg = LOOT_CONFIG.ITEMS[itemData.id];
+function renderDetailRow(itemData) {
+    const itemCfg = LOOT_CONFIG.ITEMS[itemData.itemKey];
     if (!itemCfg) return '';
 
-    // Calculate dynamic icon sizes
-    // Base Icon Wrapper: 90px, Min: 40px
-    const baseWrapper = 90;
-    const minWrapper = 40;
-    const wrapperSize = Math.floor(minWrapper + (baseWrapper - minWrapper) * ((zoom - 0.4) / 0.6));
-
-    // Scale white center (ratio ~0.86)
-    const whiteCenter = Math.floor(wrapperSize * 0.86);
-
-    // Scale image (ratio ~0.77)
-    const imgSize = Math.floor(wrapperSize * 0.77);
-
+    // Height and sizes are now handled by CSS Variables for performance
     return `
         <div class="loot-log-row loot-tier-${itemData.tier}">
-            <div class="log-timestamp" style="line-height: ${height}px;">${itemData.timestamp}</div>
-            <div class="loot-item in-log" style="height: ${height}px !important;">
+            <div class="log-timestamp">${itemData.timestamp}</div>
+            <div class="loot-item in-log">
                 <div class="loot-box">
                     <div class="loot-text">
                         <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
                         <span class="loot-name shimmer-text">${itemCfg.name}</span>
                     </div>
                 </div>
-                <div class="loot-icon-wrapper" style="width: ${wrapperSize}px !important; height: ${wrapperSize}px !important;">
-                    <div class="loot-icon-bg"><style>.in-log .loot-icon-wrapper[style*="width: ${wrapperSize}px"] .loot-icon-bg::before { width: ${whiteCenter}px !important; height: ${whiteCenter}px !important; }</style></div>
-                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: ${imgSize}px !important; height: ${imgSize}px !important;">
+                <!-- Icon sizes controlled by CSS var -->
+                <div class="loot-icon-wrapper">
+                    <div class="loot-icon-bg"></div>
+                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
                 </div>
             </div>
         </div>
