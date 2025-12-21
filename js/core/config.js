@@ -107,17 +107,16 @@ const SKILLS = {
         rings: 3
     },
     SwordOfLight: {
-        // We use the same sheet for both button and skill
         skillSheet: 'img/Skills/Sword of Light/Spritesheet/1024x1024/Sword of Light_1024x1024_sheet.png',
         skillFrames: 16, skillCols: 4, skillSize: 1024,
-        visualSize: 7000,   // "Enormous"
-        orbitRadius: 5000,   // "Fair distance from the ship"
+        visualSize: 7000,
+        orbitRadius: 5000,
         animSpeedSkill: 1.2,
-        cooldownTime: 5000, // 5 seconds
-        duration: 2000,     // 2 seconds
-        damageMult: 500.0,  // "Massive damage"
+        cooldownTime: 5000,
+        duration: 2000,
+        damageMult: 500.0,
         aoeMult: 5.0,
-        skillRange: 9000    // Area around the sword
+        skillRange: 9000
     }
 };
 
@@ -137,9 +136,9 @@ const WEAPON_CONFIG = {
         penetration: 5,
         visualStretch: 1.0,
         maxAmmo: 50,
-        recoveryRate: 5,     // Lowered so it actually goes down
+        recoveryRate: 5,
         tint: 0x00ffff,
-        minAmmoToFire: 10    // Must recover to 200 before firing again after depletion
+        minAmmoToFire: 10
     },
     bullet_right_side: {
         path: 'img/Laser Sprites/01.png',
@@ -169,9 +168,9 @@ const WEAPON_CONFIG = {
         offsetFront: 80,
         penetration: 25,
         maxAmmo: 200,
-        recoveryRate: 1,    // Lowered so it actually goes down
+        recoveryRate: 1,
         tint: 0xff00ff,
-        minAmmoToFire: 50     // Must recover to 50 before firing again
+        minAmmoToFire: 50
     }
 };
 
@@ -186,53 +185,53 @@ const STAGE_CONFIG = {
     STAGES: {
         1: {
             kills: 3500,
-            enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500 },
-            archChance: { ArchBlueDragon: 0.02, ArchGalaxyDragon: 0.02, ArchPhoenixSurrender: 0.02 }
+            enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500, BlackRedButterfly: 500, BlueWhiteButterfly: 500, GoldButterfly: 500, GreenBlackButterfly: 500, GalaxyButterfly: 500 },
+            tierChances: { Arch: 0.02, God: 0.001, Alpha: 0.0, Omega: 0.0 }
         },
         2: {
             kills: 500,
-            enemies: { PhoenixSurrender: 200, GalaxyDragon: 300 },
-            archChance: { ArchPhoenixSurrender: 0.03, ArchGalaxyDragon: 0.03 }
+            enemies: { PhoenixSurrender: 200, GalaxyDragon: 300, BlackRedButterfly: 100, BlueWhiteButterfly: 100 },
+            tierChances: { Arch: 0.03, God: 0.002, Alpha: 0.0, Omega: 0.0 }
         },
         3: {
             kills: 700,
-            enemies: { GalaxyDragon: 500, BlueDragon: 100 },
-            archChance: { ArchGalaxyDragon: 0.04, ArchBlueDragon: 0.04 }
+            enemies: { GalaxyDragon: 500, BlueDragon: 100, GoldButterfly: 150, GreenBlackButterfly: 150 },
+            tierChances: { Arch: 0.04, God: 0.003, Alpha: 0.0, Omega: 0.0 }
         },
         4: {
             kills: 900,
-            enemies: { GalaxyDragon: 600, PhoenixSurrender: 200 },
-            archChance: { ArchGalaxyDragon: 0.05, ArchPhoenixSurrender: 0.05 }
+            enemies: { GalaxyDragon: 600, PhoenixSurrender: 200, GalaxyButterfly: 200 },
+            tierChances: { Arch: 0.05, God: 0.004, Alpha: 0.0, Omega: 0.0 }
         },
         5: {
             kills: 1100,
-            enemies: { BlueDragon: 400, PhoenixSurrender: 400 },
-            archChance: { ArchBlueDragon: 0.06, ArchPhoenixSurrender: 0.06 }
+            enemies: { BlueDragon: 400, PhoenixSurrender: 400, BlackRedButterfly: 300, BlueWhiteButterfly: 300 },
+            tierChances: { Arch: 0.06, God: 0.005, Alpha: 0.0, Omega: 0.0 }
         },
         6: {
             kills: 1300,
-            enemies: { BlueDragon: 600, PhoenixSurrender: 400 },
-            archChance: { ArchBlueDragon: 0.07, ArchPhoenixSurrender: 0.07 }
+            enemies: { BlueDragon: 600, PhoenixSurrender: 400, GoldButterfly: 400, GreenBlackButterfly: 400 },
+            tierChances: { Arch: 0.07, God: 0.007, Alpha: 0.0, Omega: 0.0 }
         },
         7: {
             kills: 1500,
-            enemies: { GalaxyDragon: 800, PhoenixSurrender: 500 },
-            archChance: { ArchGalaxyDragon: 0.08, ArchPhoenixSurrender: 0.08 }
+            enemies: { GalaxyDragon: 800, PhoenixSurrender: 500, GalaxyButterfly: 500 },
+            tierChances: { Arch: 0.08, God: 0.01, Alpha: 0.0, Omega: 0.0 }
         },
         8: {
             kills: 1700,
-            enemies: { BlueDragon: 800, GalaxyDragon: 500 },
-            archChance: { ArchBlueDragon: 0.09, ArchGalaxyDragon: 0.09 }
+            enemies: { BlueDragon: 800, GalaxyDragon: 500, BlackRedButterfly: 400, BlueWhiteButterfly: 400 },
+            tierChances: { Arch: 0.09, God: 0.012, Alpha: 0.0, Omega: 0.0 }
         },
         9: {
             kills: 2000,
-            enemies: { PhoenixSurrender: 800, BlueDragon: 1000 },
-            archChance: { ArchPhoenixSurrender: 0.10, ArchBlueDragon: 0.10 }
+            enemies: { PhoenixSurrender: 800, BlueDragon: 1000, GoldButterfly: 500, GreenBlackButterfly: 500 },
+            tierChances: { Arch: 0.10, God: 0.015, Alpha: 0.0, Omega: 0.0 }
         },
         10: {
             kills: 1,
-            enemies: { PhoenixSurrender: 1500, BlueDragon: 1500 },
-            archChance: { ArchPhoenixSurrender: 0.15, ArchBlueDragon: 0.15 }
+            enemies: { PhoenixSurrender: 1500, BlueDragon: 1500, GalaxyButterfly: 1000 },
+            tierChances: { Arch: 0.15, God: 0.05, Alpha: 0.0, Omega: 0.0 }
         }
     }
 };
@@ -249,6 +248,36 @@ const PLAYER_SPEED = 80;
 const FLOOR_TILE_SIZE = 46000;
 
 /**
+ * LOOT & DROPS CONFIGURATION
+ */
+const LOOT_CONFIG = {
+    MAX_HISTORY: 5,
+    ITEMS: {
+        'Dragon Claw': { name: 'Dragon Claw', icon: 'img/Enemy Drops/Dragon Claw.png', baseChance: 0.15, min: 1, max: 2 },
+        'Dragon Heart': { name: 'Dragon Heart', icon: 'img/Enemy Drops/Dragon Heart.png', baseChance: 0.05, min: 1, max: 1 },
+        'Dragon Horn': { name: 'Dragon Horn', icon: 'img/Enemy Drops/Dragon Horn.png', baseChance: 0.10, min: 1, max: 2 },
+        'Phoenix Feather': { name: 'Phoenix Feather', icon: 'img/Enemy Drops/Phoenix Feather.png', baseChance: 0.15, min: 1, max: 3 },
+        'Butterfly Wing': { name: 'Butterfly Wing', icon: 'img/Enemy Drops/Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5 },
+        'Main Game Currency': { name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.png', baseChance: 1.0, min: 10, max: 50 },
+        'Crystal': { name: 'Crystal', icon: 'img/Enemy Drops/Crystal.png', baseChance: 0.01, min: 1, max: 1 }
+    },
+    // Tier multipliers (Standard < Arch < God < Alpha < Omega)
+    TIERS: [
+        { id: 'Standard', chanceMult: 1.0, amountMult: 1.0, healthMult: 1, sizeMult: 1 },
+        { id: 'Arch', chanceMult: 2.5, amountMult: 10.0, healthMult: 30, sizeMult: 5 },
+        { id: 'God', chanceMult: 5.0, amountMult: 100.0, healthMult: 200, sizeMult: 8 },
+        { id: 'Alpha', chanceMult: 10.0, amountMult: 1000.0, healthMult: 1000, sizeMult: 12 },
+        { id: 'Omega', chanceMult: 25.0, amountMult: 10000.0, healthMult: 10000, sizeMult: 20 }
+    ],
+    ENEMY_DROPS: {
+        'Dragon': ['Dragon Claw', 'Dragon Heart', 'Dragon Horn'],
+        'Phoenix': ['Phoenix Feather'],
+        'Butterfly': ['Butterfly Wing']
+    },
+    GLOBAL_DROPS: ['Main Game Currency', 'Crystal']
+};
+
+/**
  * SPATIAL PARTITIONING
  */
 const GRID_CELL = 4800;
@@ -257,19 +286,7 @@ const GRID_WORLD_OFFSET = (GRID_DIM * GRID_CELL) / 2;
 
 /**
  * DATA STRIDE
- * Each enemy uses 17 floats:
- * 0-1: x, y position
- * 2-3: velocity x, y
- * 4: rotation
- * 5: animation frame
- * 6: move speed
- * 7: look direction
- * 8: health
- * 9: death frame
- * 10: attack frame
- * 11: enemy type index
- * 12: isArch flag (1.0 = Arch, 0.0 = normal)
- * 13-14: charge direction x, y (stored when attack starts)
- * 15-16: charge start position x, y (to calculate distance traveled)
+ * 0-1: x, y | 2-3: vx, vy | 4: rotation | 5: frame | 6: speed | 7: look | 8: health | 9: death | 10: attack
+ * 11: type | 12: tier (0-4) | 13-14: chargeDir | 15-16: chargeStart
  */
 const STRIDE = 17;

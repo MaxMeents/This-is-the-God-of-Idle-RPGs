@@ -57,7 +57,12 @@ const player = {
 };
 
 // Ability State
-const activeSkills = []; // Tracks live particle systems
+// Ability State (High Performance)
+const SKILL_STRIDE = 10; // [angle, frame, radius, size, orbitSpd, tier, type, elapsed, duration, active]
+const totalSkillParticles = 4000;
+const skillData = new Float32Array(totalSkillParticles * SKILL_STRIDE);
+const activeSkillIndices = new Uint16Array(totalSkillParticles);
+let activeSkillCount = 0;
 let skillCooldowns = [0, 0, 0, 0]; // Cooldowns for Tier 1, 2, 3, 4
 let autoSkills = true;  // If true, skills fire automatically when ready
 

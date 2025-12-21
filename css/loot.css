@@ -1,0 +1,200 @@
+/**
+ * LOOT HISTORY UI - FINAL PREMIUM OVERHAUL
+ * White/Black chasing box, RGB chasing icon, and precision docking.
+ */
+#loot-history-container {
+    position: fixed;
+    bottom: 250px;
+    right: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 35px;
+    /* Space for large icons */
+    z-index: 1500;
+    pointer-events: none;
+}
+
+.loot-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 240px;
+    height: 70px;
+    /* Container height to fit icon */
+    overflow: visible;
+    animation: lootSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* STAIRCASE LAYOUT */
+.loot-item:nth-last-child(1) {
+    margin-right: 120px;
+}
+
+.loot-item:nth-last-child(2) {
+    margin-right: 90px;
+}
+
+.loot-item:nth-last-child(3) {
+    margin-right: 60px;
+}
+
+.loot-item:nth-last-child(4) {
+    margin-right: 30px;
+}
+
+.loot-item:nth-last-child(5) {
+    margin-right: 0px;
+}
+
+/**
+ * THE LOOT BOX: 30px high, white/black chasing border
+ */
+.loot-box {
+    position: absolute;
+    right: 0;
+    width: 200px;
+    height: 32px;
+    /* Sleek Thinner Height */
+    background: #000;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+    /* Clip the left edge so it docks into the circle seamlessly */
+    clip-path: polygon(12% 0%, 100% 0%, 100% 100%, 12% 100%);
+}
+
+/* BOX BORDER: White chasing black */
+.loot-box::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
+    border-radius: 6px;
+    z-index: -2;
+    animation: rotate 3s linear infinite;
+}
+
+/* Inner cover to keep border thin */
+.loot-box::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #000;
+    border-radius: 4px;
+    z-index: -1;
+}
+
+/**
+ * THE ICON: 70px high, RGB chasing border, white center
+ */
+.loot-icon-wrapper {
+    position: absolute;
+    left: 10px;
+    /* Positioned to overlap the box dock */
+    width: 70px;
+    height: 70px;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loot-icon-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: conic-gradient(from 0deg,
+            #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+    border-radius: 50%;
+    animation: rotate 2s linear infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+.loot-icon-bg::before {
+    content: '';
+    position: absolute;
+    width: 62px;
+    /* Leaves thin border */
+    height: 62px;
+    background: #fff;
+    border-radius: 50%;
+}
+
+.loot-icon {
+    position: relative;
+    width: 55px;
+    height: 55px;
+    object-fit: contain;
+    z-index: 11;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+/**
+ * TEXT STYLING
+ */
+.loot-text {
+    padding-left: 55px;
+    /* Offset to clear the docked icon */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+    width: 100%;
+}
+
+.loot-amount {
+    color: #ffcc00;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 19px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+}
+
+.loot-name {
+    font-size: 10px;
+    color: #ffffff;
+    opacity: 0.7;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes lootSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(80px) scale(0.7);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.loot-item.removing {
+    opacity: 0;
+    transform: translateY(-30px);
+    transition: all 0.3s ease-out;
+}

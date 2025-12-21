@@ -29,6 +29,8 @@ function initUICache() {
     elLaserBar = document.getElementById('laser-ammo-bar');
     elBulletBar = document.getElementById('bullet-ammo-bar');
 
+    if (typeof initLootSystem === 'function') initLootSystem();
+
     uiInitialized = true;
 }
 

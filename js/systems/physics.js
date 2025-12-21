@@ -23,14 +23,27 @@ function activateSupernova(tier = 1) {
     const spawnRing = (count, radius, size, delay) => {
         setTimeout(() => {
             for (let i = 0; i < count; i++) {
-                activeSkills.push({
-                    angle: (i / count) * Math.PI * 2,
-                    frame: 0,
-                    radius: radius,
-                    size: size,
-                    orbitSpd: 0.02 + (Math.random() * 0.02),
-                    tier: tier
-                });
+                if (activeSkillCount >= totalSkillParticles) return;
+
+                // Find inactive slot
+                for (let j = 0; j < totalSkillParticles; j++) {
+                    const idx = j * SKILL_STRIDE;
+                    if (skillData[idx + 9] === 0) {
+                        skillData[idx] = (i / count) * Math.PI * 2; // angle
+                        skillData[idx + 1] = 0; // frame
+                        skillData[idx + 2] = radius;
+                        skillData[idx + 3] = size;
+                        skillData[idx + 4] = 0.02 + (Math.random() * 0.02); // orbitSpd
+                        skillData[idx + 5] = tier;
+                        skillData[idx + 6] = 0; // type (Supernova)
+                        skillData[idx + 7] = 0; // elapsed
+                        skillData[idx + 8] = 0; // duration (not used for SN)
+                        skillData[idx + 9] = 1; // active
+
+                        activeSkillIndices[activeSkillCount++] = j;
+                        break;
+                    }
+                }
             }
         }, delay);
     };
@@ -61,17 +74,27 @@ function activateSwordOfLight() {
     const dirs = [-Math.PI / 2, -Math.PI / 4, 0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, -3 * Math.PI / 4];
 
     dirs.forEach(angle => {
-        activeSkills.push({
-            type: 'SwordOfLight',
-            angle: angle, // Fixed angle relative to ship
-            frame: 0,
-            radius: cfg.orbitRadius,
-            size: cfg.visualSize,
-            orbitSpd: 0,
-            tier: 4,
-            duration: cfg.duration,
-            maxFrames: cfg.skillFrames
-        });
+        if (activeSkillCount >= totalSkillParticles) return;
+
+        // Find inactive slot
+        for (let j = 0; j < totalSkillParticles; j++) {
+            const idx = j * SKILL_STRIDE;
+            if (skillData[idx + 9] === 0) {
+                skillData[idx] = angle;
+                skillData[idx + 1] = 0;
+                skillData[idx + 2] = cfg.orbitRadius;
+                skillData[idx + 3] = cfg.visualSize;
+                skillData[idx + 4] = 0; // orbitSpd
+                skillData[idx + 5] = 4; // tier
+                skillData[idx + 6] = 1; // type (SwordOfLight)
+                skillData[idx + 7] = 0; // elapsed
+                skillData[idx + 8] = cfg.duration;
+                skillData[idx + 9] = 1; // active
+
+                activeSkillIndices[activeSkillCount++] = j;
+                break;
+            }
+        }
     });
 }
 
@@ -156,30 +179,39 @@ function update(dt, now, isFirstStep, s) {
     }
 
     // 5. SKILL INSTANCE UPDATES (Animation & Lifespan)
-    for (let i = activeSkills.length - 1; i >= 0; i--) {
-        const s = activeSkills[i];
+    const spd = PERFORMANCE.GAME_SPEED;
+    for (let i = activeSkillCount - 1; i >= 0; i--) {
+        const poolIdx = activeSkillIndices[i];
+        const idx = poolIdx * SKILL_STRIDE;
 
-        if (s.type === 'SwordOfLight') {
+        const type = skillData[idx + 6];
+        const tier = skillData[idx + 5];
+
+        if (type === 1) { // SwordOfLight
             const cfg = SKILLS.SwordOfLight;
-            s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-            s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+            skillData[idx + 1] += cfg.animSpeedSkill * (dt / 16.6) * spd;
+            skillData[idx] += skillData[idx + 4] * (dt / 16.6) * spd; // orbit (usually 0)
 
             // Loop animation
-            if (s.frame >= cfg.skillFrames) s.frame = s.frame % cfg.skillFrames;
+            if (skillData[idx + 1] >= cfg.skillFrames) skillData[idx + 1] %= cfg.skillFrames;
 
             // Check duration
-            s.elapsed = (s.elapsed || 0) + dt * PERFORMANCE.GAME_SPEED;
-            if (s.elapsed >= cfg.duration) {
-                activeSkills.splice(i, 1);
+            skillData[idx + 7] += dt * spd;
+            if (skillData[idx + 7] >= skillData[idx + 8]) {
+                skillData[idx + 9] = 0;
+                activeSkillIndices[i] = activeSkillIndices[activeSkillCount - 1];
+                activeSkillCount--;
             }
         } else {
             // Standard Supernova
-            const cfg = SKILLS['Tier' + (s.tier || 3)] || SKILLS.Tier3;
-            s.frame += cfg.animSpeedSkill * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
-            s.angle += s.orbitSpd * (dt / 16.6) * PERFORMANCE.GAME_SPEED;
+            const cfg = SKILLS['Tier' + (tier || 3)] || SKILLS.Tier3;
+            skillData[idx + 1] += cfg.animSpeedSkill * (dt / 16.6) * spd;
+            skillData[idx] += skillData[idx + 4] * (dt / 16.6) * spd;
 
-            if (s.frame >= cfg.skillFrames) {
-                activeSkills.splice(i, 1);
+            if (skillData[idx + 1] >= cfg.skillFrames) {
+                skillData[idx + 9] = 0;
+                activeSkillIndices[i] = activeSkillIndices[activeSkillCount - 1];
+                activeSkillCount--;
             }
         }
     }
@@ -454,16 +486,22 @@ function updateEnemies(dt, now, isFirstStep) {
 
         const lookX = dx * invD, lookY = dy * invD;
 
-        // Use attackRange as stopping distance, archAttackRange for Arch enemies
-        const isArch = data[idx + 12] > 0.5;
-        const targetRadius = isArch ? cfg.archAttackRange : cfg.attackRange;
+        // Multi-Tier Stats Lookup
+        const tierIndex = data[idx + 12] | 0;
+        let targetRadius = cfg.attackRange;
+        let mvSpd = data[idx + 6];
 
-        const pSpace = (cfg.size * sizeMult) + cfg.spacing;
+        if (tierIndex === 1) targetRadius = cfg.archAttackRange || targetRadius;
+        else if (tierIndex === 2) targetRadius = cfg.godAttackRange || targetRadius;
+        else if (tierIndex === 3) targetRadius = cfg.alphaAttackRange || targetRadius;
+        else if (tierIndex === 4) targetRadius = cfg.omegaAttackRange || targetRadius;
+
+        const pSpace = (cfg.size * sizeMult * (LOOT_CONFIG.TIERS[tierIndex].sizeMult || 1)) + cfg.spacing;
         const pSpaceSq = pSpace * pSpace;
 
         // Check if currently attacking (charge state)
         // Only Dragon and Phoenix types have charge attacks
-        const hasChargeAttack = cfg.enemyType === 'Dragon' || cfg.enemyType === 'Phoenix';
+        const hasChargeAttack = cfg.enemyType === 'Dragon' || cfg.enemyType === 'Phoenix' || cfg.enemyType === 'Butterfly';
         // isCharging already declared above - reuse it
 
         let distDiff, pullFactor;
@@ -490,16 +528,16 @@ function updateEnemies(dt, now, isFirstStep) {
             const chargeDirX = data[idx + 13];
             const chargeDirY = data[idx + 14];
 
-            // Use Arch charge speed if Arch enemy
-            const chargeSpd = isArch ? cfg.archChargeSpeed : cfg.chargeSpeed;
+            // Tiered Charge Speed
+            let chargeSpd = cfg.chargeSpeed;
+            if (tierIndex === 1) chargeSpd = cfg.archChargeSpeed || chargeSpd;
+            else if (tierIndex === 2) chargeSpd = cfg.godChargeSpeed || chargeSpd;
+            else if (tierIndex === 3) chargeSpd = cfg.alphaChargeSpeed || chargeSpd;
+            else if (tierIndex === 4) chargeSpd = cfg.omegaChargeSpeed || chargeSpd;
 
             // Move in the stored direction at charge speed
             steerX = chargeDirX * chargeSpd;
             steerY = chargeDirY * chargeSpd;
-
-            if (Math.random() < 0.01) {
-                console.log(`[CHARGE] Using stored dir: (${chargeDirX.toFixed(2)}, ${chargeDirY.toFixed(2)}), speed=${chargeSpd}, isArch=${isArch}`);
-            }
         } else {
             // Normal movement: use player-relative direction
             steerX = lookX * pullFactor;
@@ -551,8 +589,15 @@ function updateEnemies(dt, now, isFirstStep) {
         const magSq = steerX * steerX + steerY * steerY;
         if (magSq > 0.01) {
             const mag = Math.sqrt(magSq);
-            // Use charge speed cap when attacking, normal speed otherwise
-            const speedCap = isCharging ? cfg.chargeSpeed : data[idx + 6] * 2;
+            // Use current velocity or charge speed as cap
+            let speedCap = data[idx + 6] * 2;
+            if (isCharging) {
+                speedCap = cfg.chargeSpeed;
+                if (tierIndex === 1) speedCap = cfg.archChargeSpeed || speedCap;
+                else if (tierIndex === 2) speedCap = cfg.godChargeSpeed || speedCap;
+                else if (tierIndex === 3) speedCap = cfg.alphaChargeSpeed || speedCap;
+                else if (tierIndex === 4) speedCap = cfg.omegaChargeSpeed || speedCap;
+            }
             const speed = Math.min(speedCap, mag * 20);
             const moveFactor = speed / mag;
 
@@ -576,15 +621,22 @@ function updateEnemies(dt, now, isFirstStep) {
             }
 
             const moveDist = Math.sqrt(moveX * moveX + moveY * moveY);
+            // Tiered Walk Animation Speed
+            let walkAnimSpd = cfg.walkAnimSpeed;
+            if (tierIndex === 1) walkAnimSpd = cfg.archWalkAnimSpeed || walkAnimSpd;
+            else if (tierIndex === 2) walkAnimSpd = cfg.godWalkAnimSpeed || walkAnimSpd;
+            else if (tierIndex === 3) walkAnimSpd = cfg.alphaWalkAnimSpeed || walkAnimSpd;
+            else if (tierIndex === 4) walkAnimSpd = cfg.omegaWalkAnimSpeed || walkAnimSpd;
+
             // Apply randomized skip: stride * jitter factor
             const jitter = 0.8 + Math.random() * 0.4;
-            data[idx + 5] = (data[idx + 5] + moveDist * cfg.walkAnimSpeed * animStride * jitter) % cfg.walkFrames;
+            data[idx + 5] = (data[idx + 5] + moveDist * walkAnimSpd * animStride * jitter) % cfg.walkFrames;
         }
 
         // Progress attack animation for Dragon/Phoenix types
         // Start new attack when at stopping distance, OR continue existing attack
         if (!objectiveMet && hasChargeAttack && (isCharging || d <= targetRadius * 1.2)) {
-            processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadius);
+            processEnemyAttack(idx, cfg, dmgMult, d, animStride, tierIndex, targetRadius);
         }
     }
 }
@@ -593,7 +645,7 @@ function updateEnemies(dt, now, isFirstStep) {
  * ATTACK LOGIC (Charge Attack)
  * Enemies charge through the ship when attacking
  */
-function processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadius) {
+function processEnemyAttack(idx, cfg, dmgMult, d, animStride, tierIndex, targetRadius) {
     // Start attack if not already attacking
     if (data[idx + 10] === 0) {
         data[idx + 10] = 0.1;
@@ -618,8 +670,12 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadi
     } else {
         const prevF = Math.floor(data[idx + 10]);
 
-        // Use faster attack speed for Arch enemies
-        const attackSpeed = isArch ? cfg.archAttackAnimSpeed : cfg.attackAnimSpeed;
+        // Tiered Attack Animation Speed
+        let attackSpeed = cfg.attackAnimSpeed;
+        if (tierIndex === 1) attackSpeed = cfg.archAttackAnimSpeed || attackSpeed;
+        else if (tierIndex === 2) attackSpeed = cfg.godAttackAnimSpeed || attackSpeed;
+        else if (tierIndex === 3) attackSpeed = cfg.alphaAttackAnimSpeed || attackSpeed;
+        else if (tierIndex === 4) attackSpeed = cfg.omegaAttackAnimSpeed || attackSpeed;
 
         // Apply stride + jitter to attack progress
         const jitter = 0.8 + Math.random() * 0.4;
@@ -644,8 +700,13 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadi
         const traveledDy = currentY - startY;
         const distanceTraveled = Math.sqrt(traveledDx * traveledDx + traveledDy * traveledDy);
 
-        // Calculate how far enemy should charge (Arch enemies charge farther)
-        const chargeMult = isArch ? cfg.archChargeDistanceMult : cfg.chargeDistanceMult;
+        // Calculate how far enemy should charge
+        let chargeMult = cfg.chargeDistanceMult;
+        if (tierIndex === 1) chargeMult = cfg.archChargeDistanceMult || chargeMult;
+        else if (tierIndex === 2) chargeMult = cfg.godChargeDistanceMult || chargeMult;
+        else if (tierIndex === 3) chargeMult = cfg.alphaChargeDistanceMult || chargeMult;
+        else if (tierIndex === 4) chargeMult = cfg.omegaChargeDistanceMult || chargeMult;
+
         const chargeTargetDist = targetRadius * chargeMult;
 
         // Reset attack ONLY when traveled far enough (not when animation completes)
@@ -658,7 +719,7 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, isArch, targetRadi
             data[idx + 16] = 0;
 
             if (Math.random() < 0.05) {
-                console.log(`[CHARGE] Attack ended! Traveled: ${distanceTraveled.toFixed(0)}, Target: ${chargeTargetDist.toFixed(0)}, isArch: ${isArch}`);
+                console.log(`[CHARGE] Attack ended! Traveled: ${distanceTraveled.toFixed(0)}, Target: ${chargeTargetDist.toFixed(0)}, Tier: ${tierIndex}`);
             }
         }
     }
@@ -699,6 +760,12 @@ function processAOEDamage() {
                             data[idx + 8] = 0;
                             data[idx + 9] = 0.001;
                             spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+
+                            // Trigger Loot Drop
+                            const typeKey = enemyKeys[data[idx + 11] | 0];
+                            const eCfg = Enemy[typeKey];
+                            const tierIndex = data[idx + 12] | 0;
+                            if (typeof handleEnemyDrop === 'function') handleEnemyDrop(eCfg.enemyType, tierIndex);
                         }
                     }
                 }
@@ -712,22 +779,29 @@ function processAOEDamage() {
  * SKILL COMBAT ENGINE (Triple Ring Hits)
  */
 function processSkillDamage() {
-    if (activeSkills.length === 0) return;
+    if (activeSkillCount === 0) return;
 
     // We iterate through each active flame instance
-    for (const skill of activeSkills) {
+    for (let i = 0; i < activeSkillCount; i++) {
+        const poolIdx = activeSkillIndices[i];
+        const idx = poolIdx * SKILL_STRIDE;
+
+        const type = skillData[idx + 6];
+        const tier = skillData[idx + 5];
+
         let tierCfg;
-        if (skill.type === 'SwordOfLight') tierCfg = SKILLS.SwordOfLight;
-        else tierCfg = SKILLS['Tier' + (skill.tier || 3)];
+        if (type === 1) tierCfg = SKILLS.SwordOfLight;
+        else tierCfg = SKILLS['Tier' + (tier || 3)];
 
         if (!tierCfg) continue;
         const dmg = tierCfg.damageMult * (typeof DAMAGE_PER_POP !== 'undefined' ? DAMAGE_PER_POP : 1);
+
         // Calculate world position of this flame
-        const sx = player.x + Math.cos(skill.angle) * skill.radius;
-        const sy = player.y + Math.sin(skill.angle) * skill.radius;
+        const sx = player.x + Math.cos(skillData[idx]) * skillData[idx + 2];
+        const sy = player.y + Math.sin(skillData[idx]) * skillData[idx + 2];
 
         // Define hit radius for this specific flame
-        const hitRadius = skill.size * 0.4;
+        const hitRadius = skillData[idx + 3] * 0.4;
         const rSq = hitRadius * hitRadius;
 
         // Efficient Grid Search
@@ -747,20 +821,26 @@ function processSkillDamage() {
                 const cell = cellRow + col;
                 let ptr = heads[cell];
                 while (ptr !== -1) {
-                    const idx = ptr * STRIDE;
-                    if (data[idx + 8] > 0) {
-                        const dx = data[idx] - sx, dy = data[idx + 1] - sy;
+                    const eIdx = ptr * STRIDE;
+                    if (data[eIdx + 8] > 0) {
+                        const dx = data[eIdx] - sx, dy = data[eIdx + 1] - sy;
                         const dSq = dx * dx + dy * dy;
                         if (dSq < rSq) {
-                            data[idx + 8] -= dmg;
-                            spawnDamageNumber(data[idx], data[idx + 1] - 50, Math.floor(dmg));
+                            data[eIdx + 8] -= dmg;
+                            spawnDamageNumber(data[eIdx], data[eIdx + 1] - 50, Math.floor(dmg));
 
-                            if (data[idx + 8] <= 0) {
+                            if (data[eIdx + 8] <= 0) {
                                 killCount++;
                                 stageKillCount++;
-                                data[idx + 8] = 0;
-                                data[idx + 9] = 0.001; // Trigger death animation
-                                spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 100);
+                                data[eIdx + 8] = 0;
+                                data[eIdx + 9] = 0.001; // Trigger death animation
+                                spawnFX(data[eIdx], data[eIdx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 100);
+
+                                // Trigger Loot Drop
+                                const typeKey = enemyKeys[data[eIdx + 11] | 0];
+                                const eCfg = Enemy[typeKey];
+                                const tierIndex = data[eIdx + 12] | 0;
+                                if (typeof handleEnemyDrop === 'function') handleEnemyDrop(eCfg.enemyType, tierIndex);
                             }
                         }
                     }
@@ -805,30 +885,43 @@ function spawnEnemy(i, typeKey, far = false) {
     const angle = Math.random() * Math.PI * 2;
     const dist = (cfg.startDist + (Math.random() * cfg.startDist * 0.5)) * (far ? 1.5 : 1);
     const stageCoords = STAGE_CONFIG?.CLOCKWISE_GRID?.[currentStage - 1];
-    if (!stageCoords) return; // Guard against initialization race conditions
+    if (!stageCoords) return;
 
     const [gx, gy] = stageCoords;
     const centerX = (gx - 1) * STAGE_CONFIG.GRID_SIZE, centerY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
 
-
-    // Arch enemy logic: Use stage-specific chance if available, otherwise use enemy default
+    // Multi-Tier Logic (Standard, Arch, God, Alpha, Omega)
     const stageCfg = STAGE_CONFIG.STAGES[currentStage];
-    const archKey = `Arch${typeKey}`;
-    const archChance = stageCfg?.archChance?.[archKey] ?? cfg.archChance;
+    const chances = stageCfg?.tierChances || { Arch: 0.02, God: 0.0, Alpha: 0.0, Omega: 0.0 };
 
-    const isArch = Math.random() < archChance;
-    const healthMult = isArch ? 30 : 1;
-    const sizeMult = isArch ? 5 : 1;
+    let tierIndex = 0; // Standard
+    const roll = Math.random();
+
+    // Check from rarest to most common
+    if (roll < chances.Omega) tierIndex = 4;
+    else if (roll < (chances.Omega + chances.Alpha)) tierIndex = 3;
+    else if (roll < (chances.Omega + chances.Alpha + chances.God)) tierIndex = 2;
+    else if (roll < (chances.Omega + chances.Alpha + chances.God + chances.Arch)) tierIndex = 1;
+
+    // Stat Scaling from config
+    const tierCfg = LOOT_CONFIG.TIERS[tierIndex];
 
     data[idx] = centerX + Math.cos(angle) * dist;
     data[idx + 1] = centerY + Math.sin(angle) * dist;
-    data[idx + 6] = cfg.moveSpeed * (0.8 + Math.random() * 0.4);
-    data[idx + 8] = cfg.healthMax * healthMult;
+    data[idx + 6] = cfg.moveSpeed * (0.8 + Math.random() * 0.4); // Base
+
+    // Scale moveSpeed if tier specific exists
+    if (tierIndex === 1) data[idx + 6] = cfg.archMoveSpeed || data[idx + 6];
+    else if (tierIndex === 2) data[idx + 6] = cfg.godMoveSpeed || data[idx + 6];
+    else if (tierIndex === 3) data[idx + 6] = cfg.alphaMoveSpeed || data[idx + 6];
+    else if (tierIndex === 4) data[idx + 6] = cfg.omegaMoveSpeed || data[idx + 6];
+
+    data[idx + 8] = cfg.healthMax * tierCfg.healthMult;
     data[idx + 9] = 0;
     data[idx + 5] = Math.random() * cfg.walkFrames;
     data[idx + 10] = 0;
     data[idx + 11] = enemyKeys.indexOf(typeKey);
-    data[idx + 12] = isArch ? 1.0 : 0.0; // Arch flag
+    data[idx + 12] = tierIndex; // Store Tier Index
 }
 /**
  * WEAPON SPAWNING (Single Shot)
@@ -924,6 +1017,12 @@ function updateBullets(dt) {
                                 data[eIdx + 8] = 0; data[eIdx + 9] = 0.001;
                                 spawnFX(bx, by, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
                                 for (let k = 0; k < 5; k++) spawnFX(bx, by, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
+
+                                // Trigger Loot Drop
+                                const typeKey = enemyKeys[data[eIdx + 11] | 0];
+                                const eCfg = Enemy[typeKey];
+                                const tierIndex = data[eIdx + 12] | 0;
+                                if (typeof handleEnemyDrop === 'function') handleEnemyDrop(eCfg.enemyType, tierIndex);
                             }
 
                             // Penetration Logic

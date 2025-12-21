@@ -57,14 +57,29 @@ function getSheetPath(enemyName, animationType, size) {
     const folder = LOD_SIZE_TO_FOLDER[size];
     if (!folder) return null;
     const cfg = Enemy[enemyName];
-    if (!cfg) return null;
-    const folderName = cfg.folderName || enemyName;
-    const animFolderMap = { 'walk': 'Flying Forward', 'death': 'Death', 'attack': 'Attack' };
-    const animFolder = animFolderMap[animationType];
-    const subfolderPrefix = enemyName === 'PhoenixSurrender' ? 'Surrender' : folderName;
-    const basePath = `img/Enemies/${folderName}/${subfolderPrefix} ${animFolder}/Spritesheet/${folder}`;
-    const fileName = `${subfolderPrefix} ${animFolder}_${folder}_sheet.png`;
-    return `${basePath}/${fileName}`;
+    if (!cfg || !cfg[animationType + 'Path']) return null;
+
+    // USE TEMPLATE-BASED PATH RECONSTRUCTION
+    // This is much more robust as it uses the path defined in enemies.js as a base.
+    const templatePath = cfg[animationType + 'Path'];
+
+    // The pattern is always ".../Spritesheet/ORIGINAL_SIZE/FILENAME_ORIGINAL_SIZE_sheet.png"
+    const splitKey = '/Spritesheet/';
+    const parts = templatePath.split(splitKey);
+    if (parts.length < 2) return null;
+
+    const basePath = parts[0];
+    const pathAfterSpritesheet = parts[1]; // e.g. "512x512/Galaxy Dragon Death_512x512_sheet.png"
+
+    const pathParts = pathAfterSpritesheet.split('/');
+    if (pathParts.length < 2) return null;
+
+    const originalSizeFolder = pathParts[0]; // "512x512"
+    const originalFilename = pathParts[1]; // "Galaxy Dragon Death_512x512_sheet.png"
+
+    // Construct the new path by replacing the size folder and the size suffix in the filename
+    const newFilename = originalFilename.replace(`_${originalSizeFolder}_`, `_${folder}_`);
+    return `${basePath}${splitKey}${folder}/${newFilename}`;
 }
 
 const enemyLODAssets = {};

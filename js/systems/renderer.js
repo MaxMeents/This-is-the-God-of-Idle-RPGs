@@ -81,7 +81,8 @@ function initRendererPools() {
     playerContainer.addChild(shieldSprite);
 
     // 6. Skills - Expanded pool for 25-ring Supernova (~1300 flames)
-    for (let i = 0; i < 2000; i++) {
+    // Refactored to set pool to 4000 to prevent OOM
+    for (let i = 0; i < totalSkillParticles; i++) {
         const s = new PIXI.Sprite();
         s.anchor.set(0.5);
         s.visible = false;
@@ -194,9 +195,10 @@ function draw() {
                     if (fallback && fallback[frameIdx]) s.texture = fallback[frameIdx];
                 }
 
-                const isArch = data[idx + 12] > 0.5;
-                const archMult = isArch ? 5 : 1;
-                const baseSize = cfg.size * growth * archMult;
+                const tierIndex = data[idx + 12] | 0;
+                const tierCfg = LOOT_CONFIG.TIERS[tierIndex] || LOOT_CONFIG.TIERS[0];
+                const sizeMult = tierCfg.sizeMult || 1;
+                const baseSize = cfg.size * growth * sizeMult;
                 s.width = s.height = baseSize;
                 s.alpha = (h <= 0) ? Math.max(0, Math.min(1, 1 - (currentDeathF / 145 - 0.7) * 3.3)) : 1.0;
 
@@ -254,11 +256,18 @@ function draw() {
         if (rawSheet.complete && rawSheet.naturalWidth > 0) {
             const cols = isFull ? sc.fullCols : sc.onCols;
             const size = isFull ? sc.fullSize : sc.onSize;
-            const baseTexture = PIXI.Texture.from(rawSheet);
-            playerSprite.texture = new PIXI.Texture({
-                source: baseTexture.source,
-                frame: new PIXI.Rectangle((curFrame % cols) * size, Math.floor(curFrame / cols) * size, size, size)
-            });
+            const cacheKey = `player_${isFull}_${curFrame}`;
+
+            // Use PIXI.Assets.cache or a simple local map if Assets is too complex
+            if (!PIXI.Cache.has(cacheKey)) {
+                const baseTexture = PIXI.Texture.from(rawSheet);
+                const tex = new PIXI.Texture({
+                    source: baseTexture.source,
+                    frame: new PIXI.Rectangle((curFrame % cols) * size, Math.floor(curFrame / cols) * size, size, size)
+                });
+                PIXI.Cache.set(cacheKey, tex);
+            }
+            playerSprite.texture = PIXI.Cache.get(cacheKey);
         }
     }
 
@@ -283,36 +292,54 @@ function draw() {
         const poolIdx = activeDamageIndices[i];
         const t = damageTextPool[poolIdx];
         const dn = damageNumbers[poolIdx];
-        t.visible = true; t.text = dn.val; t.alpha = dn.life;
+
+        t.visible = true;
+        t.alpha = dn.life;
         t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy);
         t.scale.set(zoom * 2);
+
+        // Optimization: Only update text if it actually changed
+        // This prevents expensive texture re-generation in PixiJS
+        const valStr = String(dn.val);
+        if (t.text !== valStr) {
+            t.text = valStr;
+        }
     }
 
     // 7. SKILLS
     for (let i = 0; i < skillSpritePool.length; i++) skillSpritePool[i].visible = false;
     if (!skillAssets.baked) return;
 
-    for (let i = 0; i < activeSkills.length; i++) {
+    for (let i = 0; i < activeSkillCount; i++) {
         if (i >= skillSpritePool.length) break;
-        const sData = activeSkills[i], spr = skillSpritePool[i];
+        const poolIdx = activeSkillIndices[i];
+        const idx = poolIdx * SKILL_STRIDE;
+        const spr = skillSpritePool[i];
+
+        const type = skillData[idx + 6];
+        const tier = skillData[idx + 5];
+        const angle = skillData[idx];
+        const radius = skillData[idx + 2];
+        const size = skillData[idx + 3];
+        const frame = skillData[idx + 1];
 
         let skCfg, texs;
-        if (sData.type === 'SwordOfLight') {
+        if (type === 1) { // SwordOfLight
             skCfg = SKILLS.SwordOfLight;
             texs = skillAssets.pixiSwordOfLight;
         } else {
-            skCfg = SKILLS['Tier' + (sData.tier || 3)] || SKILLS.Tier3;
+            skCfg = SKILLS['Tier' + (tier || 3)] || SKILLS.Tier3;
             texs = skillAssets.pixiSkill;
         }
 
-        const offX = Math.cos(sData.angle) * sData.radius, offY = Math.sin(sData.angle) * sData.radius;
+        const offX = Math.cos(angle) * radius, offY = Math.sin(angle) * radius;
         spr.visible = true;
         // Position relative to world origin (worldContainer handles camera/zoom)
         spr.position.set(player.x + offX, player.y + offY);
-        spr.width = spr.height = sData.size;
-        spr.rotation = sData.angle + Math.PI / 2;
+        spr.width = spr.height = size;
+        spr.rotation = angle + Math.PI / 2;
 
-        const fIdx = Math.floor(sData.frame) % (skCfg.skillFrames || 1);
+        const fIdx = Math.floor(frame) % (skCfg.skillFrames || 1);
         if (texs && texs[fIdx]) spr.texture = texs[fIdx];
     }
 

@@ -35,6 +35,13 @@ const bakerWorker = (() => {
 if (bakerWorker) {
     bakerWorker.onmessage = (e) => {
         const { typeKey, animType, tierID, results } = e.data;
+        // Optimization: Cleanup old textures if they exist to free GPU memory
+        const oldCaches = enemyAssets[typeKey].caches[animType][tierID];
+        if (oldCaches && Array.isArray(oldCaches)) {
+            oldCaches.forEach(tex => {
+                if (tex && typeof tex.destroy === 'function') tex.destroy(true);
+            });
+        }
         // Convert to PIXI textures for WebGL rendering
         enemyAssets[typeKey].caches[animType][tierID] = results.map(r => PIXI.Texture.from(r));
         workerTasksCount--;
