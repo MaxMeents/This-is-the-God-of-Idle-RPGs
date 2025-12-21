@@ -34,15 +34,55 @@ body {
 
 #game-title {
     font-family: 'Tektur', sans-serif;
-    font-size: 4rem;
+    font-size: 6rem;
     font-weight: 900;
-    letter-spacing: 0.5rem;
+    letter-spacing: -2px;
     margin-bottom: 3rem;
-    background: linear-gradient(to bottom, #fff 0%, #ffcc00 100%);
+    text-transform: uppercase;
+
+    /* THE FILL COMPOSITION - LAYERS MUST BE PRECISE */
+    background-image:
+        /* 1. Diagonal Tech Cuts - SHARP WHITE LINES */
+        repeating-linear-gradient(45deg,
+            transparent,
+            transparent 10px,
+            rgba(255, 255, 255, 0.9) 10px,
+            rgba(255, 255, 255, 0.9) 11px),
+
+        /* 2. Vertical Grid Lines - SHARP & BRIGHT */
+        linear-gradient(90deg, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+
+        /* 3. Horizontal Grid Lines - SHARP & BRIGHT */
+        linear-gradient(0deg, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+
+        /* 4. The Base Gradient - VIBRANT CYAN/GREEN */
+        /* Top: #1afebe (Vivid Spring Green), Bottom: #0aa (Teal) */
+        linear-gradient(180deg, #1afebe 0%, #00ccaa 100%);
+
+    /* Sizing the Patterns - 30px blocks matching the reference bulky feel */
+    background-size:
+        30px 30px,
+        /* Diagonals */
+        30px 30px,
+        /* Vertical Grid */
+        30px 30px,
+        /* Horizontal Grid */
+        100% 100%;
+    /* Base Gradient */
+
+    /* Clip Background to Text */
     -webkit-background-clip: text;
     background-clip: text;
+    color: transparent;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 20px rgba(255, 204, 0, 0.3));
+
+    /* HEAVY BLACK STROKE */
+    -webkit-text-stroke: 5px black;
+
+    /* HARD BLOCK SHADOW */
+    filter: drop-shadow(6px 6px 0px #000);
+
+    animation: none;
 }
 
 #progress-container {
@@ -78,7 +118,6 @@ body {
     color: #000;
     border: none;
     padding: 18px 60px;
-    font-family: 'Tektur', sans-serif;
     font-size: 1.25rem;
     font-weight: 900;
     letter-spacing: 2px;
@@ -636,6 +675,7 @@ input[type=range]::-webkit-slider-thumb {
     border-radius: 12px;
     font-weight: 900;
     font-size: 18px;
+    font-family: 'Tektur', sans-serif;
     text-transform: uppercase;
     cursor: pointer;
     z-index: 1000;

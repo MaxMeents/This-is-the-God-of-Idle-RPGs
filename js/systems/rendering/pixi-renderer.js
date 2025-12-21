@@ -266,12 +266,19 @@ function renderDamageNumbers(cx, cy) {
     // -------------------------------------------------------------------------
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
 
+    // FONT VISUAL SETTING
+    const targetFont = (typeof SettingsState !== 'undefined') ? SettingsState.get('damageFont') : 'Orbitron';
+
     for (let poolIdx of activeDamageIndices.slice(0, activeDamageCount)) {
         const t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
         t.visible = true; t.alpha = dn.life; t.zIndex = dn.critTier;
         t.position.set((dn.x - player.x) * window.zoom + cx, (dn.y - player.y) * window.zoom + cy - (dn.critTier * 15));
         const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
         t.text = prefix ? `${prefix} ${dn.val}` : dn.val;
+
+        // Dynamic Font Switching
+        if (t.style.fontFamily !== targetFont) t.style.fontFamily = targetFont;
+
         t.style.fill = dn.isLucky ? 0xffd700 : CRIT_CONFIG.TIER_COLORS[dn.critTier];
         t.scale.set((1 + dn.critTier * 0.2) * (0.8 + window.zoom * 0.2));
     }

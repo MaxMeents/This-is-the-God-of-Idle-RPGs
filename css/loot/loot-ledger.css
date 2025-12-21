@@ -41,7 +41,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     color: #888;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Tektur', sans-serif;
     font-size: 9px;
     text-transform: uppercase;
     cursor: pointer;
@@ -63,6 +63,8 @@
 
 input[type=range].zoom-slider {
     -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
     width: 200px;
     height: 4px;
     background: rgba(255, 255, 255, 0.1);
@@ -76,7 +78,7 @@ input[type=range].zoom-slider {
     border-radius: 8px;
     color: #ffd700;
     cursor: pointer;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Tektur', sans-serif;
     text-transform: uppercase;
     animation: pulseBorder 2s infinite;
 }
@@ -92,7 +94,7 @@ input[type=range].zoom-slider {
     border: 1px solid rgba(255, 215, 0, 0.3);
     border-radius: 4px;
     color: #ffd700;
-    font-family: 'Orbitron', sans-serif;
+    font-family: 'Tektur', sans-serif;
 }
 
 /* REWARD FILTERS (Left Aligned, Super Sexy) */
