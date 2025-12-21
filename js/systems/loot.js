@@ -160,6 +160,8 @@ function createLootLogModal() {
     const modal = document.createElement('div');
     modal.id = 'loot-log-modal';
     modal.className = 'modal-backdrop hidden';
+    // Init with current zoom state to prevent size jumping
+    modal.style.setProperty('--loot-zoom', logViewState.zoom);
     modal.onclick = (e) => { if (e.target === modal) closeLootLog(); };
 
     modal.innerHTML = `
@@ -191,7 +193,7 @@ function createLootLogModal() {
             <!-- Zoom Controls -->
             <div class="zoom-controls">
                 <span class="zoom-label">View Size</span>
-                <input type="range" min="0" max="100" value="100" class="zoom-slider" oninput="handleLogZoom(this.value)">
+                <input type="range" min="0" max="100" value="${logViewState.zoom * 100}" class="zoom-slider" oninput="handleLogZoom(this.value)">
                 <span class="zoom-label">Grid Mode</span>
             </div>
             <div id="loot-log-content" class="modal-body custom-scrollbar">
@@ -304,10 +306,10 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
                 <span class="loot-name ${flowClass}">${itemCfg.name}</span>
             </div>
         </div>
-        <div class="loot-icon-wrapper">
-            <div class="loot-icon-bg"></div>
-            <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
-        </div>
+            <div class="loot-icon-wrapper">
+                <div class="loot-icon-bg"></div>
+                <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}">
+            </div>
     `;
 
     // Add to bottom
@@ -622,8 +624,30 @@ function renderDetailLog(content, headerTitle, data) {
             rows: gridRows,
             scrollId: 'loot-log-scroll-area',
             contentId: 'loot-log-content-area',
-            rows_in_block: 20
+            rows_in_block: 20,
+            callbacks: {
+                clusterChanged: function () {
+                    const scrollArea = document.getElementById('loot-log-scroll-area');
+                    const observer = lozad('.lozad', {
+                        root: scrollArea,
+                        rootMargin: '200px 0px',
+                        threshold: 0.1,
+                        loaded: function (el) { el.classList.add('loaded'); }
+                    });
+                    observer.observe();
+                }
+            }
         });
+
+        // Initial Observation
+        const scrollArea = document.getElementById('loot-log-scroll-area');
+        const observer = lozad('.lozad', {
+            root: scrollArea,
+            rootMargin: '200px 0px',
+            threshold: 0.1,
+            loaded: function (el) { el.classList.add('loaded'); }
+        });
+        observer.observe();
         return;
 
     }
@@ -637,8 +661,35 @@ function renderDetailLog(content, headerTitle, data) {
         rows: listRows,
         scrollId: 'loot-log-scroll-area',
         contentId: 'loot-log-content-area',
-        rows_in_block: 50
+        rows_in_block: 50,
+        callbacks: {
+            clusterChanged: function () {
+                // Re-observe newly injected/swapped elements
+                const scrollArea = document.getElementById('loot-log-scroll-area');
+                const observer = lozad('.lozad', {
+                    root: scrollArea,
+                    rootMargin: '200px 0px', // Pre-load slightly before view
+                    threshold: 0.1,
+                    loaded: function (el) {
+                        el.classList.add('loaded'); // Add class for CSS fade-in
+                    }
+                });
+                observer.observe();
+            }
+        }
     });
+
+    // Initial Observation for first render
+    const scrollArea = document.getElementById('loot-log-scroll-area');
+    const observer = lozad('.lozad', {
+        root: scrollArea,
+        rootMargin: '200px 0px',
+        threshold: 0.1,
+        loaded: function (el) {
+            el.classList.add('loaded');
+        }
+    });
+    observer.observe();
 }
 
 function renderGridItem(itemData) {
@@ -647,13 +698,13 @@ function renderGridItem(itemData) {
 
     return `
         <div class="loot-grid-item loot-tier-${itemData.tier}">
-             <div class="loot-icon-wrapper">
-                <div class="loot-icon-bg"></div>
-                <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 40px; height: 40px;">
-            </div>
             <div class="loot-text">
                 <span class="loot-amount" style="font-size: 14px;">${itemData.amount.toLocaleString()}</span>
                 <span class="loot-name shimmer-text" style="font-size: 11px;">${itemCfg.name}</span>
+            </div>
+             <div class="loot-icon-wrapper">
+                <div class="loot-icon-bg"></div>
+                <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}" style="width: 40px; height: 40px;">
             </div>
         </div>
     `;
@@ -677,7 +728,7 @@ function renderDetailRow(itemData) {
                 <!-- Icon sizes controlled by CSS var -->
                 <div class="loot-icon-wrapper">
                     <div class="loot-icon-bg"></div>
-                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
+                    <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}">
                 </div>
             </div>
         </div>
