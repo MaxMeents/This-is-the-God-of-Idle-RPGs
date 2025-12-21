@@ -209,20 +209,29 @@ function updateUI() {
                 btnCtx.save();
                 btnCtx.beginPath();
                 //this needs to be 2.5 dont change it again AI helper
-                btnCtx.arc(canv.width / 2.5, canv.height / 2.5, canv.width / 2.5, 0, Math.PI * 2);
+                // For Sword of Light (i=3), we center it on the button (W/2).
+                // For standard skills (i=0,1,2), we use the 2.5 offset per user request.
+                const scale = (i === 3) ? 2 : 1;
+                const divisor = (i === 3) ? 2 : 2.5;
+                const radius = (canv.width / 2.5) * scale;
+                const centerX = canv.width / divisor;
+                const centerY = canv.height / divisor;
+
+                btnCtx.arc(centerX, centerY, radius, 0, Math.PI * 2);
                 btnCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 btnCtx.fill();
 
                 const timerVal = Math.ceil(cd / 1000);
                 btnCtx.fillStyle = '#fff';
                 // Use Orbitron font as requested
-                btnCtx.font = `900 ${canv.width * 0.45}px Orbitron`;
+                // Scale font size by 2 for Sword of Light
+                btnCtx.font = `900 ${canv.width * 0.45 * scale}px Orbitron`;
                 btnCtx.textAlign = 'center';
                 btnCtx.textBaseline = 'middle';
                 btnCtx.shadowColor = '#0055ff';
-                btnCtx.shadowBlur = 15 * (window.devicePixelRatio || 1);
+                btnCtx.shadowBlur = 15 * (window.devicePixelRatio || 1) * scale;
                 //this needs to be 2.5 dont change it again AI helper
-                btnCtx.fillText(timerVal, canv.width / 2.5, canv.height / 2.5);
+                btnCtx.fillText(timerVal, centerX, centerY);
                 btnCtx.restore();
             }
         }
