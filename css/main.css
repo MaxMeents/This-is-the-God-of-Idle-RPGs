@@ -33,56 +33,65 @@ body {
 }
 
 #game-title {
-    font-family: 'Tektur', sans-serif;
-    font-size: 6rem;
+    font-size: 4rem;
+    font-weight: 900;
+    letter-spacing: 0.5rem;
+    margin-bottom: 3rem;
+    /* Reverting to original Gold Gradient style */
+    background: linear-gradient(to bottom, #fff 0%, #ffcc00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 20px rgba(255, 204, 0, 0.3));
+    animation: none;
+}
+
+/* --- REUSABLE TECH GRID FONT STYLE --- */
+/* Usage: Add class="text-tech-grid" to any text element */
+.text-tech-grid {
+    font-family: 'Tektur', sans-serif !important;
+    text-transform: uppercase;
     font-weight: 900;
     letter-spacing: -2px;
-    margin-bottom: 3rem;
-    text-transform: uppercase;
 
-    /* THE FILL COMPOSITION - LAYERS MUST BE PRECISE */
+    /* TECH GRID FILL COMPOSITION */
     background-image:
-        /* 1. Diagonal Tech Cuts - SHARP WHITE LINES */
+        /* 1. Diagonal Tech Cuts - SPACED OUT (Less lines) */
         repeating-linear-gradient(45deg,
             transparent,
-            transparent 10px,
-            rgba(255, 255, 255, 0.9) 10px,
-            rgba(255, 255, 255, 0.9) 11px),
+            transparent 20px,
+            rgba(255, 255, 255, 0.9) 20px,
+            rgba(255, 255, 255, 0.9) 21px),
 
-        /* 2. Vertical Grid Lines - SHARP & BRIGHT */
+        /* 2. Vertical Grid Lines - SPACED OUT */
         linear-gradient(90deg, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
 
-        /* 3. Horizontal Grid Lines - SHARP & BRIGHT */
+        /* 3. Horizontal Grid Lines - SPACED OUT */
         linear-gradient(0deg, rgba(255, 255, 255, 0.8) 1px, transparent 1px),
 
-        /* 4. The Base Gradient - VIBRANT CYAN/GREEN */
-        /* Top: #1afebe (Vivid Spring Green), Bottom: #0aa (Teal) */
+        /* 4. Base Gradient (Vivid Cyan/Green) */
         linear-gradient(180deg, #1afebe 0%, #00ccaa 100%);
 
-    /* Sizing the Patterns - 30px blocks matching the reference bulky feel */
+    /* Sizing: Increased to 60px for much fewer lines */
     background-size:
-        30px 30px,
+        60px 60px,
         /* Diagonals */
-        30px 30px,
+        60px 60px,
         /* Vertical Grid */
-        30px 30px,
+        60px 60px,
         /* Horizontal Grid */
         100% 100%;
     /* Base Gradient */
 
-    /* Clip Background to Text */
+    /* Clip */
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
 
-    /* HEAVY BLACK STROKE */
-    -webkit-text-stroke: 5px black;
-
-    /* HARD BLOCK SHADOW */
+    /* Decoration */
+    -webkit-text-stroke: 4px black;
     filter: drop-shadow(6px 6px 0px #000);
-
-    animation: none;
 }
 
 #progress-container {
