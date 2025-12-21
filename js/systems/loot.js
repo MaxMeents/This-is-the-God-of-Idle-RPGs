@@ -408,7 +408,12 @@ function setLogTimeScope(scope) {
         $(this).toggleClass('active', $(this).data('scope') === scope);
     });
 
-    renderLootLog();
+    // If they click a time scope while in detail view, return to index
+    if (logViewState.currentView === 'detail') {
+        viewHoursIndex();
+    } else {
+        renderLootLog();
+    }
 }
 
 function toggleLogTier(tier) {
@@ -451,6 +456,12 @@ function renderLootLog() {
     if (filteredHistory.length === 0) {
         headerTitle.innerHTML = "God's Loot Ledger";
         content.innerHTML = `<div class="empty-log-msg">Your ledger is empty for these filters, God.</div>`;
+
+        // Clean up Clusterize if items are gone, so it re-inits correctly later
+        if (logViewState.clusterize) {
+            logViewState.clusterize.destroy();
+            logViewState.clusterize = null;
+        }
         return;
     }
 
@@ -535,12 +546,12 @@ function renderDetailLog(content, headerTitle, data) {
                     <div class="loot-box">
                         <div class="loot-text">
                             <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
-                            <span class="loot-name">${itemCfg.name}</span>
+                            <span class="loot-name shimmer-text">${itemCfg.name}</span>
                         </div>
                     </div>
                     <div class="loot-icon-wrapper">
                         <div class="loot-icon-bg"></div>
-                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}">
+                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 38px; height: 38px;">
                     </div>
                 </div>
             </div>

@@ -570,6 +570,50 @@
     transition: all 0.2s;
 }
 
+.log-back-btn {
+    padding: 12px 24px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    color: #ffd700;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    width: fit-content;
+    margin-bottom: 20px;
+    transition: all 0.3s;
+    animation: pulseBorder 2s infinite;
+    position: relative;
+    z-index: 100;
+    /* Ensure clickable over any layering */
+}
+
+.log-back-btn:hover {
+    background: #ffd700;
+    color: #000;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    transform: translateX(-5px);
+}
+
+@keyframes pulseBorder {
+    0% {
+        border-color: rgba(255, 215, 0, 0.5);
+        box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+    }
+
+    50% {
+        border-color: rgba(255, 215, 0, 1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    }
+
+    100% {
+        border-color: rgba(255, 215, 0, 0.5);
+        box-shadow: 0 0 5px rgba(255, 215, 0, 0.2);
+    }
+}
+
 .filter-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     color: #ccc;
@@ -686,12 +730,38 @@
 }
 
 .in-log .loot-icon-wrapper {
-    right: 20px;
+    position: relative;
+    right: 0;
     width: 50px;
     height: 50px;
 }
 
-/* Inherit Tier Gradients for Icon BG in Log */
+.in-log .loot-icon-bg::before {
+    width: 44px;
+    /* Scaled for 50px wrapper */
+    height: 44px;
+}
+
+/* Inherit Tier Gradients and Animations for Icon BG in Log */
+.in-log .loot-icon-bg {
+    animation: rotate 2s linear infinite;
+    /* Re-enable rotation */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: none;
+}
+
+.in-log .loot-icon-bg::before {
+    content: '';
+    position: absolute;
+    width: 44px;
+    /* Scaled for 50px log icons */
+    height: 44px;
+    background: #fff;
+    border-radius: 50%;
+}
+
 .loot-log-row.loot-tier-god .loot-icon-bg {
     background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
 }
@@ -713,10 +783,6 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.in-log .loot-icon-bg {
-    box-shadow: none;
-}
-
 /* Tier Specific Left Accents */
 .loot-tier-god.loot-log-row {
     border-left-color: #ff00ff;
@@ -732,6 +798,38 @@
 
 .loot-tier-epic.loot-log-row {
     border-left-color: #ffd700;
+}
+
+/* BLACK SHIMMER EFFECT */
+.shimmer-text {
+    position: relative;
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(255, 255, 255, 1) 40%,
+            rgba(0, 0, 0, 1) 50%,
+            rgba(255, 255, 255, 1) 60%,
+            rgba(255, 255, 255, 1) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: blackShimmer 3s ease-in-out infinite;
+    /* Slightly faster, smoother easing */
+}
+
+@keyframes blackShimmer {
+    0% {
+        background-position: -100% center;
+    }
+
+    30% {
+        background-position: -100% center;
+    }
+
+    /* Wait a bit */
+    100% {
+        background-position: 200% center;
+    }
 }
 
 .empty-log-msg {
