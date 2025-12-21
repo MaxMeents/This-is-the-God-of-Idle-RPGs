@@ -26,12 +26,13 @@ const LootPersistence = {
      * @param {number} id - Item ID
      * @param {number} amount - Quantity
      * @param {boolean} isLucky - Lucky hit flag
+     * @param {string} tier - Tier ID (normal, epic, etc)
      */
-    add(id, amount, isLucky = false) {
+    add(id, amount, isLucky = false, tier = 'normal') {
         const timeBase36 = Date.now().toString(36);
         const amtBase36 = amount.toString(36);
         const luckyFlag = isLucky ? '1' : '0';
-        const entry = `${id}:${timeBase36}:${amtBase36}:${luckyFlag}`;
+        const entry = `${id}:${timeBase36}:${amtBase36}:${luckyFlag}:${tier}`;
 
         if (this.BUFFER) this.BUFFER += ',';
         this.BUFFER += entry;
@@ -42,7 +43,7 @@ const LootPersistence = {
         // LIVE UI UPDATE (Only if open)
         const modal = document.getElementById('loot-log-modal');
         if (modal) {
-            this.syncEntry(id, Date.now(), amount, isLucky);
+            this.syncEntry(id, Date.now(), amount, isLucky, tier);
 
             const now = new Date();
             const hourLabel = now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
@@ -61,9 +62,8 @@ const LootPersistence = {
                     }
                 }
             } else if (logViewState.currentView === 'detail' && logViewState.selectedHour === hourLabel) {
-                const content = document.getElementById('loot-log-content');
-                const headerTitle = document.querySelector('.modal-header h2');
-                renderDetailLog(content, headerTitle, lootLogHistory);
+                // IMPORTANT: Go through renderLootLog to respect current Filters
+                renderLootLog();
             }
         }
     },
@@ -80,19 +80,20 @@ const LootPersistence = {
             const parts = e.split(':');
             if (parts.length < 3) return;
 
-            const [idStr, timeBase36, amtBase36, luckyFlag] = parts;
+            const [idStr, timeBase36, amtBase36, luckyFlag, tier] = parts;
             const id = parseInt(idStr);
             const time = parseInt(timeBase36, 36);
             const amt = parseInt(amtBase36, 36);
             const lucky = luckyFlag === '1'; // Handles old 3-part format as false
+            const finalTier = tier || 'normal';
 
-            this.syncEntry(id, time, amt, lucky, false);
+            this.syncEntry(id, time, amt, lucky, finalTier, false);
         });
         lootLogHistory.sort((a, b) => b.rawTime - a.rawTime);
         console.log(`[LOOT] Memory synced: ${lootLogHistory.length} items parsed`);
     },
 
-    syncEntry(id, time, amt, isLucky = false, sort = true) {
+    syncEntry(id, time, amt, isLucky = false, tier = 'normal', sort = true) {
         // Reverse lookup itemKey from ID
         const itemKey = Object.keys(LOOT_CONFIG.ITEMS).find(k => LOOT_CONFIG.ITEMS[k].id === id);
         if (!itemKey) return;
@@ -103,7 +104,7 @@ const LootPersistence = {
         lootLogHistory.push({
             itemKey,
             amount: amt,
-            tier: itemCfg.tier || 'normal',
+            tier: tier,
             rawTime: time,
             timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
             hourLabel: date.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00",
@@ -231,7 +232,7 @@ function rollForItem(itemKey, tierCfg, isLucky = false) {
         }
 
         if (amount > 0) {
-            addLootToHistory(itemKey, amount, isLucky);
+            addLootToHistory(itemKey, amount, isLucky, tierCfg.id);
         }
     }
 }
@@ -239,16 +240,17 @@ function rollForItem(itemKey, tierCfg, isLucky = false) {
 /**
  * Adds an item to the history UI with specific amount
  */
-function addLootToHistory(itemKey, amount, isLucky = false) {
+function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     const itemCfg = LOOT_CONFIG.ITEMS[itemKey];
     if (!itemCfg) return;
 
     const container = document.getElementById('loot-history-container');
     if (!container) return;
 
+    const tier = forcedTier || itemCfg.tier || 'epic';
+
     // Create element
     const el = document.createElement('div');
-    const tier = itemCfg.tier || 'epic';
     el.className = `loot-item loot-tier-${tier}`;
 
     // Direction Randomization
@@ -297,7 +299,7 @@ function addLootToHistory(itemKey, amount, isLucky = false) {
     lootHistory.push(el);
 
     // Save to persistence
-    LootPersistence.add(itemCfg.id, amount, isLucky);
+    LootPersistence.add(itemCfg.id, amount, isLucky, tier);
 
     // Maintain max history (shift up / remove top)
     if (lootHistory.length > LOOT_CONFIG.MAX_HISTORY) {
@@ -427,8 +429,6 @@ function renderLootLog() {
     const headerTitle = document.querySelector('.modal-header h2');
     if (!content) return;
 
-    content.innerHTML = '';
-
     // 1. Get Base Data Filtered by Time Scope
     let filteredHistory = lootLogHistory;
     const now = new Date();
@@ -441,7 +441,12 @@ function renderLootLog() {
     }
 
     // 2. Filter by Active Tiers
-    filteredHistory = filteredHistory.filter(item => logViewState.activeTiers.has(item.tier));
+    filteredHistory = filteredHistory.filter(item => {
+        const has = logViewState.activeTiers.has(item.tier);
+        return has;
+    });
+
+    console.log(`[LOOT] Rendering Log: ${filteredHistory.length} items (Tiers: ${Array.from(logViewState.activeTiers).join(',')})`);
 
     if (filteredHistory.length === 0) {
         headerTitle.innerHTML = "God's Loot Ledger";
@@ -458,6 +463,7 @@ function renderLootLog() {
 
 function renderHoursIndex(content, headerTitle, data) {
     headerTitle.innerHTML = "God's Loot Ledger";
+    content.innerHTML = ''; // Explicit clear for hours index
 
     // Group logs by hourLabel for count mapping
     const hoursMap = {};
