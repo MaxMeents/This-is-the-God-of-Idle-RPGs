@@ -76,6 +76,7 @@ function prepareStagePool(stageId) {
 function updateDamageNumbers(dt) {
     const gameSpd = PERFORMANCE.GAME_SPEED;
     const dtMult = (dt / 16.6) * gameSpd;
+
     for (let i = activeDamageCount - 1; i >= 0; i--) {
         const idx = activeDamageIndices[i];
         const dn = damageNumbers[idx];

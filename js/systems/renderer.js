@@ -110,7 +110,7 @@ function initRendererPools() {
         });
         t.anchor.set(0.5);
         t.visible = false;
-        uiContainer.addChild(t);
+        uiContainer.addChild(t); // Back to UI container (Screen Space)
         damageTextPool.push(t);
     }
 }
@@ -306,6 +306,7 @@ function draw() {
 
     // 6. DAMAGE NUMBERS
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
+
     for (let i = 0; i < activeDamageCount; i++) {
         const poolIdx = activeDamageIndices[i];
         const t = damageTextPool[poolIdx];
@@ -313,7 +314,12 @@ function draw() {
 
         t.visible = true;
         t.alpha = dn.life;
-        t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy);
+
+        // SCREEN SPACE CALCULATION
+        // We track the world position but draw in screen space so they stay sharp and visible
+        const screenX = (dn.x - player.x) * zoom + cx;
+        const screenY = (dn.y - player.y) * zoom + cy;
+        t.position.set(screenX, screenY);
 
         const valStr = String(dn.val);
         const textContent = dn.isLucky ? "LUCKY! " + valStr : valStr;
@@ -325,16 +331,17 @@ function draw() {
             if (dn.isLucky) {
                 t.style.fill = 0xffd700; // Gold
                 t.style.stroke = 0xff0000; // Red stroke for impact
-                t.style.fontSize = 32;
+                t.style.fontSize = 42;
             } else {
                 t.style.fill = 0xffffff;
                 t.style.stroke = 0x000000;
-                t.style.fontSize = 24;
+                t.style.fontSize = 28;
             }
         }
 
-        const baseScale = dn.isLucky ? 2.5 : 1.8;
-        t.scale.set(zoom * baseScale);
+        // In screen space, we keep the scale mostly stable but slightly reactive to zoom
+        const baseScale = dn.isLucky ? 1.4 : 1.0;
+        t.scale.set(baseScale * (0.8 + zoom * 0.2));
     }
 
     // 7. SKILLS
