@@ -229,6 +229,41 @@
     text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
 }
 
+/* Bounce Classes */
+.amount-bounce-slight {
+    display: inline-block;
+    animation: bounceSlight 1s ease-in-out infinite;
+}
+
+.amount-bounce-noticeable {
+    display: inline-block;
+    animation: bounceNoticeable 0.6s ease-in-out infinite;
+}
+
+@keyframes bounceSlight {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-3px) scale(1.05);
+    }
+}
+
+@keyframes bounceNoticeable {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-8px) scale(1.25);
+    }
+}
+
 .loot-name {
     font-size: 15px;
     font-family: 'Outfit', sans-serif;
