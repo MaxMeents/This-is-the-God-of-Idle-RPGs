@@ -33,12 +33,25 @@ function initLootSystem() {
     if (typeof LootPersistence !== 'undefined') LootPersistence.init();
 
     // Create the "God's Loot Ledger" trigger button
-    const btn = document.createElement('div');
-    btn.id = 'loot-log-trigger';
-    btn.className = 'premium-hud-btn';
-    btn.innerHTML = '<span>Loot Log</span>';
-    btn.onclick = openLootLog; // Logic defined in loot-filters.js
-    ui.appendChild(btn);
+    // PLACED INSIDE SPEED CONTROLS (Requested by User)
+    const speedControls = document.getElementById('speed-ctrl-container');
+    if (speedControls) {
+        // Add a separator/container if needed, or just append since flex-gap handles it
+        const btn = document.createElement('div');
+        btn.id = 'loot-log-trigger';
+        // We set the text directly, CSS will handle the rest
+        btn.innerText = "GOD'S LOOT LEDGER";
+        btn.onclick = openLootLog;
+        speedControls.appendChild(btn);
+    } else {
+        // Fallback to main UI if speed controls missing
+        const btn = document.createElement('div');
+        btn.id = 'loot-log-trigger';
+        btn.className = 'premium-hud-btn';
+        btn.innerText = "GOD'S LOOT LEDGER";
+        btn.onclick = openLootLog;
+        ui.appendChild(btn);
+    }
 }
 
 /**

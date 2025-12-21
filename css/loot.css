@@ -532,55 +532,100 @@ body {
 }
 
 /* LOOT LOG TRIGGER BUTTON (Bottom Left) */
-#loot-log-trigger {
-    position: fixed;
-    bottom: 30px;
-    left: 20px;
-    z-index: 2000;
-    padding: 12px 24px;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: 'Orbitron', sans-serif;
-    color: #ffd700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
+/* KEYFRAMES FOR GOLD ROTATION */
+@keyframes goldRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
+/* LOOT LOG TRIGGER - INTEGRATED INTO SPEED CONTROLS */
+/* LOOT LOG TRIGGER - INTEGRATED INTO SPEED CONTROLS */
+#loot-log-trigger {
+    position: relative;
+    width: 100%;
+    height: 45px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    /* Changed from #000 to transparent */
+    color: #ffd700;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    border-radius: 10px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    text-transform: uppercase;
+    /* PERMANENT ACTIVE GLOW */
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    margin-top: 15px;
+    /* Gap from Auto Button */
+}
+
+/* GOLD BORDER EFFECT */
 #loot-log-trigger::before {
     content: '';
     position: absolute;
+    width: 400px;
+    height: 400px;
     top: 50%;
     left: 50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
-    transform: translate(-50%, -50%) scale(0);
-    transition: transform 0.5s ease;
+    margin-top: -200px;
+    margin-left: -200px;
+    background: conic-gradient(from 0deg, #ffd700, #ffaa00, #b8860b, #ffd700);
+    animation: goldRotate 4s linear infinite;
+    z-index: -2;
 }
 
+/* INNER BG (Black default, Gold on hover) */
+#loot-log-trigger::after {
+    content: '';
+    position: absolute;
+    background: #000;
+    inset: 2px;
+    border-radius: 8px;
+    z-index: -1;
+    transition: background 0.2s ease, inset 0.2s ease;
+}
+
+/* HOVER STATE: INVERSE COLORS */
 #loot-log-trigger:hover {
-    border-color: #ffd700;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
     transform: translateY(-2px);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+    color: #000;
+    /* Black Text */
+    font-size: 20px;
+    /* Bigger Text */
+    letter-spacing: 0px;
+    /* Wider Spacing */
+    font-weight: 900;
+    /* Max Boldness */
 }
 
-#loot-log-trigger:hover::before {
-    transform: translate(-50%, -50%) scale(1);
+#loot-log-trigger:hover::after {
+    background: #ffd700;
+    /* Solid Gold Background */
 }
 
 #loot-log-trigger span {
     position: relative;
     z-index: 1;
-    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    transition: text-shadow 0.2s ease;
+}
+
+#loot-log-trigger:hover span {
+    text-shadow: none;
+    /* No shadow on black text */
 }
 
 /* MODAL STYLES */
