@@ -53,6 +53,7 @@ const SettingsUI = {
                     <!-- VISUALS TAB -->
                     <div id="tab-visuals" class="settings-section active">
                         ${this.createToggle('mouseEffects', 'Cursor Effects', 'Enable the Poly-Art Stream trail and click bursts.')}
+                        ${this.createSlider('trailLength', 'Trail Length', 'Adjust the length of the cursor stream.', 2, 10, 1)}
                         ${this.createToggle('damageNumbers', 'Damage Numbers', 'Show floating damage values on hit.')}
                         ${this.createSelector('damageFont', 'Damage Font', 'Choose the typeface for floating damage.', ['Orbitron', 'Tektur'])}
                         ${this.createToggle('lootStairs', 'Loot Notification', 'Show the scrolling loot log on the right side.')}
@@ -62,6 +63,8 @@ const SettingsUI = {
                     <div id="tab-interface" class="settings-section">
                         ${this.createToggle('healthBar', 'Player Health Bar', 'Display the main health pillar (Bottom Left).')}
                         ${this.createToggle('shieldBar', 'Player Shield Bar', 'Display the shield overlay on health bar.')}
+                        ${this.createToggle('laserBar', 'Laser Ammo', 'Display the laser energy bar.')}
+                        ${this.createToggle('bulletBar', 'Bullet Ammo', 'Display the bullet count bar.')}
                         ${this.createToggle('enemyHp', 'Enemy Health Bars', 'Show health bars above enemies (Performance Heavy).')}
                     </div>
 
@@ -85,6 +88,25 @@ const SettingsUI = {
                     <div class="setting-desc">${desc}</div>
                 </div>
                 <div class="setting-switch" data-key="${key}" onclick="SettingsUI.toggle('${key}')"></div>
+            </div>
+        `;
+    },
+
+    createSlider(key, label, desc, min, max, step) {
+        const current = SettingsState.get(key) || min;
+        return `
+            <div class="setting-row">
+                <div>
+                    <div class="setting-label">${label}</div>
+                    <div class="setting-desc">${desc}</div>
+                </div>
+                <div class="setting-slider-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="range" class="setting-slider" data-key="${key}" 
+                        min="${min}" max="${max}" step="${step}" value="${current}"
+                        oninput="SettingsUI.updateSlider('${key}', this.value)"
+                        style="width: 100px; accent-color: #ffd700;">
+                    <span class="slider-value" id="val-${key}" style="width: 30px; text-align: right; color: #ffd700; font-family: 'Orbitron';">${current}</span>
+                </div>
             </div>
         `;
     },
@@ -161,6 +183,12 @@ const SettingsUI = {
         this.updateTogglesFromState();
     },
 
+    updateSlider(key, value) {
+        SettingsState.set(key, parseInt(value));
+        const valDisplay = document.getElementById(`val-${key}`);
+        if (valDisplay) valDisplay.innerText = value;
+    },
+
     /**
      * CYCLE OPTION HANDLER
      */
@@ -196,6 +224,16 @@ const SettingsUI = {
             const key = sel.dataset.key;
             const val = SettingsState.get(key);
             sel.innerText = val;
+        });
+
+        // Sync Sliders
+        const sliders = document.querySelectorAll('.setting-slider');
+        sliders.forEach(sl => {
+            const key = sl.dataset.key;
+            const val = SettingsState.get(key);
+            sl.value = val;
+            const valDisplay = document.getElementById(`val-${key}`);
+            if (valDisplay) valDisplay.innerText = val;
         });
     }
 };

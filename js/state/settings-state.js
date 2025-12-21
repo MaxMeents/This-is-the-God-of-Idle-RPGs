@@ -14,9 +14,14 @@ const SettingsState = {
         mouseEffects: true,
         lootStairs: true,
         healthBar: true,
+        healthBar: true,
+        healthBar: true,
         shieldBar: true,
+        laserBar: true,
+        bulletBar: true,
         enemyHp: true,
-        damageFont: 'Orbitron' // 'Orbitron' or 'Tektur'
+        damageFont: 'Orbitron', // 'Orbitron' or 'Tektur'
+        trailLength: 6 // Range 2-10
     },
 
     // Current Active Settings

@@ -86,24 +86,31 @@ function updateVitalsUI() {
     }
 
     // SHIELD BAR SETTING
-    const showShield = (typeof SettingsState !== 'undefined') ? SettingsState.get('shieldBar') : true;
-    if (!showShield) {
-        elShieldBar.style.display = 'none';
-    } else {
-        elShieldBar.style.display = 'block';
-        const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
-        if (targetShieldHeight !== lastShield) {
-            elShieldBar.style.height = targetShieldHeight + '%';
-            lastShield = targetShieldHeight;
-        }
+    // SHIELD BAR OVERLAY (Always active based on gameplay, user wants setting to control the skinny ticker)
+    // Removed setting check for the main overlap bar per user request
+    elShieldBar.style.display = 'block';
+    const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
+    if (targetShieldHeight !== lastShield) {
+        elShieldBar.style.height = targetShieldHeight + '%';
+        lastShield = targetShieldHeight;
     }
 
-    // SHIELD RECHARGE (Ticker)
-    const isRecharging = player.shieldCooldownRemaining > 0;
-    const chgPct = isRecharging ? (1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown)) : 1.0;
-    if (chgPct !== lastCharge) {
-        elChargeBar.style.height = (Math.max(0, Math.min(1, chgPct)) * 100) + '%';
-        lastCharge = chgPct;
+    // SHIELD RECHARGE (The "Skinny Bar" - Controlled by Setting)
+    const showShieldTicker = (typeof SettingsState !== 'undefined') ? SettingsState.get('shieldBar') : true;
+    let isRecharging = false;
+
+    if (!showShieldTicker) {
+        elChargeBar.parentElement.style.display = 'none';
+        isRecharging = player.shieldCooldownRemaining > 0; // Still track state potentially, or default to false
+    } else {
+        elChargeBar.parentElement.style.display = 'block';
+
+        isRecharging = player.shieldCooldownRemaining > 0;
+        const chgPct = isRecharging ? (1 - (player.shieldCooldownRemaining / SHIP_CONFIG.shieldCooldown)) : 1.0;
+        if (chgPct !== lastCharge) {
+            elChargeBar.style.height = (Math.max(0, Math.min(1, chgPct)) * 100) + '%';
+            lastCharge = chgPct;
+        }
     }
     if (isRecharging !== lastShieldRecharge) {
         elChargeBar.classList.toggle('recharging', isRecharging);
@@ -115,20 +122,32 @@ function updateVitalsUI() {
  * AMMO & SKILLS HANDLER
  */
 function updateAmmoAndSkillsUI() {
-    // LASER AMMO
-    const laserPct = weaponAmmo.laser / WEAPON_CONFIG.laser.maxAmmo;
-    if (laserPct !== lastLaserAmmo) { elLaserBar.style.height = (laserPct * 100) + '%'; lastLaserAmmo = laserPct; }
-    if (weaponRechargeMode.laser !== lastLaserRecharge) {
-        elLaserBar.classList.toggle('recharging', weaponRechargeMode.laser);
-        lastLaserRecharge = weaponRechargeMode.laser;
+    // LASER AMMO SETTING
+    const showLaser = (typeof SettingsState !== 'undefined') ? SettingsState.get('laserBar') : true;
+    if (!showLaser) {
+        elLaserBar.parentElement.style.display = 'none';
+    } else {
+        elLaserBar.parentElement.style.display = 'block';
+        const laserPct = weaponAmmo.laser / WEAPON_CONFIG.laser.maxAmmo;
+        if (laserPct !== lastLaserAmmo) { elLaserBar.style.height = (laserPct * 100) + '%'; lastLaserAmmo = laserPct; }
+        if (weaponRechargeMode.laser !== lastLaserRecharge) {
+            elLaserBar.classList.toggle('recharging', weaponRechargeMode.laser);
+            lastLaserRecharge = weaponRechargeMode.laser;
+        }
     }
 
-    // BULLET AMMO
-    const bullPct = weaponAmmo.bullet_left_side / WEAPON_CONFIG.bullet_left_side.maxAmmo;
-    if (bullPct !== lastBulletAmmo) { elBulletBar.style.height = (bullPct * 100) + '%'; lastBulletAmmo = bullPct; }
-    if (weaponRechargeMode.bullet_left_side !== lastBulletRecharge) {
-        elBulletBar.classList.toggle('recharging', weaponRechargeMode.bullet_left_side);
-        lastBulletRecharge = weaponRechargeMode.bullet_left_side;
+    // BULLET AMMO SETTING
+    const showBullet = (typeof SettingsState !== 'undefined') ? SettingsState.get('bulletBar') : true;
+    if (!showBullet) {
+        elBulletBar.parentElement.style.display = 'none';
+    } else {
+        elBulletBar.parentElement.style.display = 'block';
+        const bullPct = weaponAmmo.bullet_left_side / WEAPON_CONFIG.bullet_left_side.maxAmmo;
+        if (bullPct !== lastBulletAmmo) { elBulletBar.style.height = (bullPct * 100) + '%'; lastBulletAmmo = bullPct; }
+        if (weaponRechargeMode.bullet_left_side !== lastBulletRecharge) {
+            elBulletBar.classList.toggle('recharging', weaponRechargeMode.bullet_left_side);
+            lastBulletRecharge = weaponRechargeMode.bullet_left_side;
+        }
     }
 
     // SKILL CANVASES (Animation Rendering)

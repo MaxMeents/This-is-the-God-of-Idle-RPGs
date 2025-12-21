@@ -219,6 +219,9 @@ function loop(now) {
 let canvas;
 
 (async () => {
+    // New AAA Overlay System - INIT FIRST for instant feedback
+    if (typeof CursorOverlaySystem !== 'undefined') CursorOverlaySystem.init();
+
     app = new PIXI.Application();
     await app.init({
         resizeTo: window,
@@ -251,8 +254,6 @@ let canvas;
 
     initUIListeners();
     if (typeof initLootSystem === 'function') initLootSystem();
-    // New AAA Overlay System
-    if (typeof CursorOverlaySystem !== 'undefined') CursorOverlaySystem.init();
 
     // SETTINGS SYSTEM
     if (typeof SettingsState !== 'undefined') SettingsState.init();
