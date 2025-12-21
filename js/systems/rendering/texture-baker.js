@@ -94,7 +94,7 @@ function bakeSkills() {
 }
 
 // BAKER WORKER (Parallel)
-const bakerWorker = (() => {
+window.BAKER_WORKER = (() => {
     try {
         const blob = new Blob([`
             self.onmessage = (e) => {
@@ -115,17 +115,23 @@ const bakerWorker = (() => {
     } catch (e) { return null; }
 })();
 
-if (bakerWorker) {
-    bakerWorker.onmessage = (e) => {
+if (window.BAKER_WORKER) {
+    window.BAKER_WORKER.onmessage = (e) => {
         const { typeKey, animType, tierID, results } = e.data;
+        if (!enemyAssets[typeKey] || !enemyAssets[typeKey].caches) {
+            console.warn("[BAKER] Dropping result for invalid entity:", typeKey);
+            return;
+        }
         const oldCaches = enemyAssets[typeKey].caches[animType][tierID];
         if (oldCaches && Array.isArray(oldCaches)) {
             oldCaches.forEach(tex => { if (tex && tex.destroy) tex.destroy(true); });
         }
         enemyAssets[typeKey].caches[animType][tierID] = results.map(r => PIXI.Texture.from(r));
-        if (typeof workerTasksCount !== 'undefined') workerTasksCount--;
-        if (typeof bakesCt !== 'undefined') bakesCt++;
-        if (typeof updateLoadingProgress === 'function') updateLoadingProgress();
+
+        workerTasksCount--;
+        bakesCt++;
+
+        if (typeof window.updateLoadingProgress === 'function') window.updateLoadingProgress();
     };
 }
 
@@ -133,16 +139,20 @@ if (bakerWorker) {
  * ENSURE TIER BAKING
  * Bumps specific enemy/tier pairs to the front of the line (Used during camera zooms).
  */
-async function ensureTierBaking(typeKey, tierID) {
+window.ensureTierBaking = async function (typeKey, tierID) {
     const tier = PERFORMANCE.LOD_TIERS.find(t => t.id === tierID);
-    if (!tier || !bakerWorker) return;
+    if (!tier || !window.BAKER_WORKER) return;
 
     for (const anim of ['walk', 'death', 'attack']) {
         const sheetImg = enemyAssets[typeKey][anim];
         let bitmap = sheetImg._bitmap;
-        if (!bitmap) { bitmap = await createImageBitmap(sheetImg); sheetImg._bitmap = bitmap; }
+        if (!bitmap) {
+            if (!sheetImg.complete || sheetImg.naturalWidth === 0) continue;
+            bitmap = await createImageBitmap(sheetImg); sheetImg._bitmap = bitmap;
+        }
+        workerTasksCount++;
 
-        bakerWorker.postMessage({
+        window.BAKER_WORKER.postMessage({
             typeKey, animType: anim, tier,
             frameCount: Enemy[typeKey][anim + 'Frames'],
             cols: Enemy[typeKey][anim + 'Cols'],

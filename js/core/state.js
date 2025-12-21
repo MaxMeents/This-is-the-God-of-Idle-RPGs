@@ -13,10 +13,44 @@ let bossMode = false;          // True if the current stage is a boss stage
 let gamePaused = true;         // Simulation state controller
 
 /**
- * ENTITY DATA (HIGH PERFORMANCE)
- * We use typed arrays (Float32Array) instead of objects to store enemy data.
- * This is crucial for performance because modern CPUs can process unified arrays
- * much faster than thousands of separate JavaScript objects.
+ * GLOBAL GAME STATE (Explicitly Exposed via window)
+ * -------------------------------------------------------------------------
+ * To ensure absolute modular stability, we attach these variables to the 
+ * window object. This fulfills the requirement of making data accessible 
+ * across boundaries without changing function logic.
+ * -------------------------------------------------------------------------
+ */
+window.autoSkills = true;      // Controls automated skill activation
+window.workerTasksCount = 0;   // Active worker threads
+window.loadedCt = 0;           // Assets downloaded
+window.conversionCt = 0;       // Images converted to bitmaps
+window.prewarmCt = 0;          // Textures uploaded to GPU
+window.bakesCt = 0;            // Total successful bakes
+window.isPriorityDone = false; // Loading threshold flag
+
+/**
+ * CAMERA & ZOOM STATE (Shared via window)
+ * -------------------------------------------------------------------------
+ * CRITICAL ARCHITECTURAL NOTE:
+ * These variables MUST be pinned to the 'window' object. 
+ * 
+ * WHY? 
+ * The project uses a modular script loading pattern (index.html). If these are 
+ * declared as local 'let' variables, they become shadowed or inaccessible 
+ * across boundaries. 
+ * 
+ * 1. window.targetZoom is updated by index.js in the 'wheel' listener.
+ * 2. window.zoom is interpolated in combat-core.js.
+ * 3. window.zoom is consumed by pixi-renderer.js for camera scaling.
+ * 
+ * IF YOU CHANGE THESE TO LOCAL VARIABLES, THE MOUSE WHEEL WILL BREAK.
+ * -------------------------------------------------------------------------
+ */
+window.zoom = 0.05;
+window.targetZoom = 0.05;
+
+/**
+ * ENTITY DATA (HIGH PERFORMANCE FLAT BUFFERS)
  */
 const enemyKeys = Object.keys(Enemy);
 const allConfigs = enemyKeys.map(k => Enemy[k]); // Cache configs for direct indexing
@@ -64,7 +98,6 @@ const skillData = new Float32Array(totalSkillParticles * SKILL_STRIDE);
 const activeSkillIndices = new Uint16Array(totalSkillParticles);
 let activeSkillCount = 0;
 let skillCooldowns = [0, 0, 0, 0]; // Cooldowns for Tier 1, 2, 3, 4
-let autoSkills = true;  // If true, skills fire automatically when ready
 
 // Bullet State (High Performance)
 const BULLET_STRIDE = 8; // [x, y, vx, vy, life, active, type, penetration]
@@ -115,18 +148,11 @@ let occupiedCount = 0;
  */
 let app;
 let worldContainer, enemyContainer, bulletContainer, fxContainer, playerContainer, uiContainer;
-let zoom = 0.05;
-let targetZoom = 0.05;
 let smoothedEnemies = 0;  // Lag-capping value to smoothly transition LOD levels
 let onScreenCount = 0;    // Number of enemies currently within the camera view
 let readyMapDirty = true; // Flag for rebuilding the sprite caches if assets change
 
 /**
  * PERFORMANCE MONITORING & LOADING STATE
+ * initialized in index.html head
  */
-let workerTasksCount = 0; // Tracks active background image-baking tasks
-let loadedCt = 0;         // Tracks file loading progress for the splash screen
-let conversionCt = 0;     // Tracks off-thread bitmap conversions
-let prewarmCt = 0;        // Tracks GPU texture warming progress
-let bakesCt = 0;          // Tracks how many image-bakes have been completed
-let isPriorityDone = false; // Flag for minimum playability threshold

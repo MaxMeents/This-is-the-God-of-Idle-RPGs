@@ -100,21 +100,32 @@ function initRendererPools() {
  */
 function draw() {
     if (!app || !app.renderer) return;
+
+    /**
+     * RENDERER RESCUE LOGIC (Lazy Init)
+     * -------------------------------------------------------------------------
+     * REGRESSION WARNING:
+     * If for any reason the bootstrap sequence (asset-loader.js) stalls or 
+     * executes out of order, this check ensures the first render frame 
+     * triggers the mandatory pool and texture initialization.
+     * -------------------------------------------------------------------------
+     */
     if (enemySpritePool.length === 0) initRendererPools();
 
     const cx = app.screen.width / 2, cy = app.screen.height / 2;
 
     // 1. CAMERA & BACKGROUND
-    worldContainer.scale.set(zoom);
-    worldContainer.position.set(cx - player.x * zoom, cy - player.y * zoom);
+    // Use window.zoom for camera scaling, as it's updated by input in index.js
+    worldContainer.scale.set(window.zoom);
+    worldContainer.position.set(cx - player.x * window.zoom, cy - player.y * window.zoom);
 
-    const bgSize = FLOOR_TILE_SIZE * zoom;
+    const bgSize = FLOOR_TILE_SIZE * window.zoom;
     document.body.style.backgroundSize = `${bgSize}px ${bgSize}px`;
-    document.body.style.backgroundPosition = `${cx - player.x * zoom}px ${cy - player.y * zoom}px`;
+    document.body.style.backgroundPosition = `${cx - player.x * window.zoom}px ${cy - player.y * window.zoom}px`;
 
     // 2. LOD CALCULATION
     smoothedEnemies += (onScreenCount - smoothedEnemies) * 0.15;
-    let activeTierIdx = PERFORMANCE.LOD_TIERS.length - 1;
+    let activeTierIdx = PERFORMANCE.LOD_TIERS.length - 1; // Recalculate activeTierIdx each frame
     for (let i = 0; i < PERFORMANCE.LOD_TIERS.length; i++) {
         if (smoothedEnemies <= PERFORMANCE.LOD_TIERS[i].max) { activeTierIdx = i; break; }
     }
@@ -153,9 +164,9 @@ function buildReadyMap() {
 
 function renderEnemies(activeTierIdx, cx, cy) {
     onScreenCount = 0;
-    const margin = 100 + (3200 * 2) * zoom;
-    const left = player.x - (cx / zoom) - margin, right = player.x + (cx / zoom) + margin;
-    const top = player.y - (cy / zoom) - margin, bottom = player.y + (cy / zoom) + margin;
+    const margin = 100 + (3200 * 2) * window.zoom;
+    const left = player.x - (cx / window.zoom) - margin, right = player.x + (cx / window.zoom) + margin;
+    const top = player.y - (cy / window.zoom) - margin, bottom = player.y + (cy / window.zoom) + margin;
 
     for (let i = 0; i < totalEnemies; i++) {
         const s = enemySpritePool[i];
@@ -181,13 +192,29 @@ function renderEnemies(activeTierIdx, cx, cy) {
 }
 
 function renderBullets() {
+    /**
+     * SPRITE SANITATION (Cleanup)
+     * -------------------------------------------------------------------------
+     * REGRESSION WARNING:
+     * We MUST hide the entire pool every frame (visible = false).
+     * 
+     * WHY? 
+     * Because the bulletData array is sparse. When a bullet expires, its 
+     * 'active' flag is set to 0, but the PIXI Sprite associated with that 
+     * pool index might still be visible on screen from the PREVIOUS frame.
+     * 
+     * If this loop is removed, bullets will "stick" on screen forever.
+     * -------------------------------------------------------------------------
+     */
+    for (let i = 0; i < totalBullets; i++) bulletSpritePool[i].visible = false;
+
     for (let poolIdx of activeBulletIndices.slice(0, activeBulletCount)) {
         const bIdx = poolIdx * BULLET_STRIDE, s = bulletSpritePool[poolIdx];
         s.visible = true; s.position.set(bulletData[bIdx], bulletData[bIdx + 1]);
         s.rotation = Math.atan2(bulletData[bIdx + 3], bulletData[bIdx + 2]);
         const type = bulletData[bIdx + 6], wcfg = [WEAPON_CONFIG.bullet_left_side, WEAPON_CONFIG.bullet_right_side, WEAPON_CONFIG.laser][type];
         s.texture = [leftBulletTex, rightBulletTex, laserTex][type];
-        s.height = Math.max(wcfg.size || 980, 5 / zoom); s.width = s.height * (wcfg.visualStretch || 1); s.tint = wcfg.tint || 0xffffff;
+        s.height = Math.max(wcfg.size || 980, 5 / window.zoom); s.width = s.height * (wcfg.visualStretch || 1); s.tint = wcfg.tint || 0xffffff;
     }
 }
 
@@ -195,7 +222,7 @@ function renderPlayer(cx, cy) {
     const sc = SHIP_CONFIG, sf = Math.floor(player.shipFrame), isFull = player.shipState === 'FULL';
     const texs = isFull ? shipAssets.pixiFull : shipAssets.pixiOn;
     playerSprite.position.set(cx, cy); playerSprite.rotation = player.rotation;
-    playerSprite.width = playerSprite.height = sc.visualSize * zoom;
+    playerSprite.width = playerSprite.height = sc.visualSize * window.zoom;
     if (shipAssets.baked && texs[sf % (isFull ? sc.fullFrames : sc.onFrames)]) playerSprite.texture = texs[sf % (isFull ? sc.fullFrames : sc.onFrames)];
 
     if (player.shieldActive && player.shieldAnimState !== 'OFF') {
@@ -207,6 +234,17 @@ function renderPlayer(cx, cy) {
 }
 
 function renderSkills() {
+    /**
+     * SPRITE SANITATION (Cleanup)
+     * -------------------------------------------------------------------------
+     * REGRESSION WARNING:
+     * Similar to bullets, skill particles are high-volume and frequently 
+     * expire. We must force-hide the pool to prevent visual ghosts.
+     * If this loop is removed, skills will "stick" on screen forever.
+     * -------------------------------------------------------------------------
+     */
+    for (let i = 0; i < totalSkillParticles; i++) skillSpritePool[i].visible = false;
+
     if (!skillAssets.baked) return;
     for (let i = 0; i < activeSkillCount; i++) {
         const idx = activeSkillIndices[i] * SKILL_STRIDE, spr = skillSpritePool[i];
@@ -222,10 +260,10 @@ function renderDamageNumbers(cx, cy) {
     for (let poolIdx of activeDamageIndices.slice(0, activeDamageCount)) {
         const t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
         t.visible = true; t.alpha = dn.life; t.zIndex = dn.critTier;
-        t.position.set((dn.x - player.x) * zoom + cx, (dn.y - player.y) * zoom + cy - (dn.critTier * 15));
+        t.position.set((dn.x - player.x) * window.zoom + cx, (dn.y - player.y) * window.zoom + cy - (dn.critTier * 15));
         const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
         t.text = prefix ? `${prefix} ${dn.val}` : dn.val;
         t.style.fill = dn.isLucky ? 0xffd700 : CRIT_CONFIG.TIER_COLORS[dn.critTier];
-        t.scale.set((1 + dn.critTier * 0.2) * (0.8 + zoom * 0.2));
+        t.scale.set((1 + dn.critTier * 0.2) * (0.8 + window.zoom * 0.2));
     }
 }

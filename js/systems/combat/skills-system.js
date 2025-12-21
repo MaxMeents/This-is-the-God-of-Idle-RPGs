@@ -83,7 +83,7 @@ function activateSwordOfLight() {
 
         for (let j = 0; j < totalSkillParticles; j++) {
             const idx = j * SKILL_STRIDE;
-            if (skillData[idx + 9] === 0) {
+            if (skillData[idx + 9] === 0) { // Active flag check
                 skillData[idx] = angle;
                 skillData[idx + 1] = 0;
                 skillData[idx + 2] = cfg.orbitRadius;
@@ -93,7 +93,8 @@ function activateSwordOfLight() {
                 skillData[idx + 6] = 1;      // Type (1: SwordOfLight)
                 skillData[idx + 7] = 0;      // Elapsed
                 skillData[idx + 8] = cfg.duration;
-                skillData[idx + 9] = 1;      // ACTIVE
+                skillData[idx + 9] = 1;      // SET TO ACTIVE
+                // ...
 
                 activeSkillIndices[activeSkillCount++] = j;
                 break;

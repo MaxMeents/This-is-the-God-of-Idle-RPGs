@@ -111,6 +111,17 @@ function update(dt, now, isFirstStep, s) {
     updateEnemies(dt, now, isFirstStep); // Enemy AI
 
     /**
+     * CAMERA SMOOTHING (Interpolation)
+     * -------------------------------------------------------------------------
+     * We smoothly interpolate window.zoom towards window.targetZoom.
+     * This provides the premium "damping" feel to the mouse wheel.
+     * The interpolation factor (0.1) determines how quickly the zoom
+     * catches up to the target, creating a smooth, eased effect.
+     * -------------------------------------------------------------------------
+     */
+    window.zoom += (window.targetZoom - window.zoom) * 0.1;
+
+    /**
      * 6. COMBAT & WEAPON CLOCK
      */
     if (!isTraveling && now - lastCombatUpdate > DAMAGE_INTERVAL) {

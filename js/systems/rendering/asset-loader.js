@@ -21,8 +21,7 @@
  * -------------------------------------------------------------------------
  */
 
-// LOADING COUNTERS (Managed in state.js)
-// loadedCt, conversionCt, prewarmCt, isPriorityDone are global
+// LOADING COUNTERS (Managed in state.js via window.LOAD_STATE)
 
 // LOADING MATH (Determined in assets.js originally)
 const TOTAL_BASIC_ASSETS = (typeof enemyKeys !== 'undefined' ? enemyKeys.length * 3 : 0) + 1 + 4 + 3 + 3;
@@ -32,14 +31,14 @@ const BKGD_TIERS = PERFORMANCE.LOD_TIERS.filter(t => !t.priority).map(t => t.id)
 const PRIORITY_LOD_COUNT = (typeof enemyKeys !== 'undefined' ? enemyKeys.length * PRIORITY_TIERS.length * 3 : 0);
 const BKGD_LOD_COUNT = (typeof enemyKeys !== 'undefined' ? enemyKeys.length * BKGD_TIERS.length * 3 : 0);
 
-const MINIMUM_GOAL = TOTAL_BASIC_ASSETS + (typeof enemyKeys !== 'undefined' ? enemyKeys.length * 3 * 3 : 0);
-const GRAND_TOTAL = MINIMUM_GOAL;
+const MINIMUM_GOAL = TOTAL_BASIC_ASSETS + (typeof enemyKeys !== 'undefined' ? enemyKeys.length * 3 * 2 : 0);
+const GRAND_TOTAL = TOTAL_BASIC_ASSETS + (PRIORITY_LOD_COUNT * 2);
 
 /**
  * UPDATE LOADING UI
  * Updates the CSS width of the progress bar and the status text.
  */
-function updateLoadingProgress() {
+window.updateLoadingProgress = function () {
     const bar = document.getElementById('progress-bar');
     const status = document.getElementById('loading-status');
     const startBtn = document.getElementById('start-game-btn');
@@ -54,7 +53,7 @@ function updateLoadingProgress() {
 
     if (status) {
         if (!isPriorityDone) {
-            const phase = loadedCt < (TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT) ? "Synchronizing" : (conversionCt < PRIORITY_LOD_COUNT ? "Building" : "Warming");
+            const phase = loadedCt < (TOTAL_BASIC_ASSETS + PRIORITY_LOD_COUNT) ? "Synchronizing" : (conversionCt < (PRIORITY_LOD_COUNT) ? "Building" : "Warming");
             status.innerText = `${phase} Performance Tiers... (${currentTotal}/${totalPriorityWork})`;
         } else {
             const bkgdDone = (loadedCt - TOTAL_BASIC_ASSETS - PRIORITY_LOD_COUNT) + (conversionCt - PRIORITY_LOD_COUNT) + (prewarmCt - PRIORITY_LOD_COUNT);
@@ -88,15 +87,22 @@ function updateLoadingProgress() {
 
 /**
  * ASSET LOAD CALLBACK
+ * Called whenever ANY image (basic or LOD-priority) finishes loading.
  */
-function onAssetLoad() {
+window.reportAssetLoaded = function () {
     loadedCt++;
-    updateLoadingProgress();
+
+    if (typeof window.updateLoadingProgress === 'function') window.updateLoadingProgress();
+
     if (loadedCt >= TOTAL_BASIC_ASSETS && !finalizeAssets.triggered) {
+        console.log("[ASSETS] Basic asset threshold reached (", loadedCt, "/", TOTAL_BASIC_ASSETS, "). Triggering finalization.");
         finalizeAssets.triggered = true;
         finalizeAssets();
     }
 }
+
+// Internal alias for backward compatibility or direct img.onload use
+function onAssetLoad() { window.reportAssetLoaded(); }
 
 /**
  * FINALIZE BOOT Sequence
@@ -110,6 +116,11 @@ function finalizeAssets() {
     if (typeof bakeShip === 'function') bakeShip();
     if (typeof bakeSkills === 'function') bakeSkills();
 
+    // Trigger Remaining TIERS (MedLow to Micro)
+    if (typeof startPriorityLODPipeline === 'function') {
+        startPriorityLODPipeline();
+    }
+
     // Critical check: Ensure ship is ready before enabling combat
     if (typeof shipAssets !== 'undefined' && !shipAssets.baked) {
         console.warn('[SHIP] Ship not baked yet, retrying in 100ms...');
@@ -118,6 +129,22 @@ function finalizeAssets() {
     }
 
     console.log('[GAME] All assets ready, initializing game...');
+
+    /**
+     * INITIALIZE RENDERING SYSTEM
+     * -------------------------------------------------------------------------
+     * CRITICAL BOOT SEQUENCE:
+     * We MUST trigger initRendererPools() here. 
+     * 
+     * WHY?
+     * The renderer needs the raw Image objects from shipAssets and enemyAssets 
+     * to be 'complete' before it can generate PIXI.Texture sheets (fallback textures).
+     * If this call is missing or moved, the game will load but enemies will be 
+     * INVISIBLE because their renderer pools/textures were never initialized.
+     * -------------------------------------------------------------------------
+     */
+    if (typeof initRendererPools === 'function') initRendererPools();
+
     // init() is defined in index.js
     if (typeof init === 'function') init(true);
 }
