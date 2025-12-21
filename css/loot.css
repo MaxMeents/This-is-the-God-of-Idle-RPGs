@@ -780,6 +780,7 @@ input[type=range].zoom-slider {
 
 input[type=range].zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
     width: 16px;
     height: 16px;

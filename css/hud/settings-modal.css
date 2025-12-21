@@ -1,0 +1,310 @@
+/**
+ * SETTINGS MODAL STYLES (AAA THEME)
+ * 
+ * Theme: Royal Blue / White / Black
+ * Features: Glassmorphism, Neon Accents, Smooth Animations.
+ * 
+ * LOCATED IN: css/hud/settings-modal.css
+ */
+
+/* -------------------------------------------------------------------------
+   GEAR BUTTON (Top Right Trigger)
+   ------------------------------------------------------------------------- */
+#settings-gear-btn {
+    position: fixed;
+    top: 20px;
+    right: 320px;
+    /* Left of the Speed Control (which is ~280px wide + 20px padding) */
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 34, 68, 0.8);
+    /* Royal Blue Tint */
+    border: 1px solid rgba(0, 150, 255, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+#settings-gear-btn:hover {
+    transform: scale(1.1);
+    border-color: #00ffff;
+    background: rgba(0, 50, 100, 0.9);
+    box-shadow: 0 0 25px rgba(0, 150, 255, 0.6);
+}
+
+/* The Icon SVG itself */
+#settings-gear-icon {
+    width: 28px;
+    height: 28px;
+    fill: #fff;
+    animation: gearSpinSlow 10s linear infinite;
+}
+
+#settings-gear-btn:hover #settings-gear-icon {
+    animation: gearSpinFast 2s linear infinite;
+    fill: #00ffff;
+    /* Neon Cyan on hover */
+}
+
+@keyframes gearSpinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes gearSpinFast {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* -------------------------------------------------------------------------
+   MODAL OVERLAY
+   ------------------------------------------------------------------------- */
+#settings-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 11000;
+    /* Above everything except maybe very critical system alerts */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#settings-modal-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* -------------------------------------------------------------------------
+   MODAL PANEL
+   ------------------------------------------------------------------------- */
+.settings-panel {
+    width: 800px;
+    max-width: 90%;
+    background: linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 100, 255, 0.1);
+    transform: translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#settings-modal-overlay.active .settings-panel {
+    transform: translateY(0);
+}
+
+/* HEADER */
+.settings-header {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 20px 30px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+}
+
+.settings-close-btn {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.settings-close-btn:hover {
+    color: #fff;
+}
+
+/* TABS */
+.settings-tabs {
+    display: flex;
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settings-tab-btn {
+    flex: 1;
+    padding: 15px;
+    background: none;
+    border: none;
+    color: #888;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.settings-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.03);
+    color: #ccc;
+}
+
+.settings-tab-btn.active {
+    color: #00ffff;
+    border-bottom-color: #00ffff;
+    background: linear-gradient(to top, rgba(0, 255, 255, 0.05), transparent);
+}
+
+/* CONTENT AREA */
+.settings-content {
+    padding: 30px;
+    min-height: 300px;
+}
+
+.settings-section {
+    display: none;
+    /* Hidden by default, JS toggles */
+    animation: fadeIn 0.3s ease;
+}
+
+.settings-section.active {
+    display: flex;
+    /* Or block depending on layout */
+    flex-direction: column;
+    gap: 15px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* TOGGLE ROW */
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s;
+}
+
+.setting-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.setting-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 500;
+}
+
+.setting-desc {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 4px;
+}
+
+/* SWITCH COMPONENT */
+.setting-switch {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    background: #111;
+    border-radius: 20px;
+    cursor: pointer;
+    border: 1px solid #444;
+    transition: all 0.3s;
+}
+
+.setting-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: #666;
+    border-radius: 50%;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ACTIVE STATE */
+.setting-switch.active {
+    background: #004488;
+    /* Royal Blue highlight */
+    border-color: #0088ff;
+}
+
+.setting-switch.active::after {
+    left: 26px;
+    background: #fff;
+    box-shadow: 0 0 10px #00ffff;
+}
+
+/* SELECTOR COMPONENT (Cycle Button) */
+.setting-selector {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-family: 'Orbitron', 'Tektur', sans-serif;
+    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    min-width: 120px;
+    text-align: center;
+}
+
+.setting-selector:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #00ffff;
+    color: #00ffff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}

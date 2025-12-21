@@ -77,11 +77,22 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     const itemCfg = LOOT_CONFIG.ITEMS[itemKey];
     if (!itemCfg) return;
 
+    const tier = forcedTier || itemCfg.tier || 'normal';
+
+    // 1. PERSISTENCE SYNC (ALWAYS RUN THIS!)
+    // Saves to the Ledger even if visual notifications are disabled.
+    if (typeof LootPersistence !== 'undefined') {
+        LootPersistence.add(itemCfg.id, amount, isLucky, tier);
+    }
+
+    // 2. VISUAL SETTING CHECK
+    if (typeof SettingsState !== 'undefined' && !SettingsState.get('lootStairs')) {
+        return;
+    }
+
     // DOM placement (Container initialized in loot-ui.js)
     const container = document.getElementById('loot-history-container');
     if (!container) return;
-
-    const tier = forcedTier || itemCfg.tier || 'normal';
 
     // ELEMENT CREATION
     const el = document.createElement('div');
@@ -123,10 +134,7 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     container.appendChild(el);
     lootHistory.push(el);
 
-    // PERSISTENCE SYNC (Saves to ledger)
-    if (typeof LootPersistence !== 'undefined') {
-        LootPersistence.add(itemCfg.id, amount, isLucky, tier);
-    }
+    // LIST MAINTENANCE (Pop top if limit reached)
 
     // LIST MAINTENANCE (Pop top if limit reached)
     if (lootHistory.length > LOOT_CONFIG.MAX_HISTORY) {

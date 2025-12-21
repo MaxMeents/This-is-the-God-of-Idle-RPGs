@@ -112,6 +112,12 @@ const CursorOverlaySystem = {
         const now = performance.now();
         const dt = (now - this.startTime) / 1000;
 
+        // SETTINGS CHECK
+        if (typeof SettingsState !== 'undefined' && !SettingsState.get('mouseEffects')) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            return;
+        }
+
         // Detect Mode (Start Screen = Menu)
         const loadingScreen = document.getElementById('loading-screen');
         if (loadingScreen && getComputedStyle(loadingScreen).display !== 'none' && getComputedStyle(loadingScreen).opacity > 0.1) {

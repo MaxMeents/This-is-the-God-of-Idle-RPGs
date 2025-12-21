@@ -254,5 +254,9 @@ let canvas;
     // New AAA Overlay System
     if (typeof CursorOverlaySystem !== 'undefined') CursorOverlaySystem.init();
 
+    // SETTINGS SYSTEM
+    if (typeof SettingsState !== 'undefined') SettingsState.init();
+    if (typeof SettingsUI !== 'undefined') SettingsUI.init();
+
     requestAnimationFrame(loop);
 })();

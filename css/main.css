@@ -33,6 +33,7 @@ body {
 }
 
 #game-title {
+    font-family: 'Tektur', sans-serif;
     font-size: 4rem;
     font-weight: 900;
     letter-spacing: 0.5rem;
@@ -77,6 +78,7 @@ body {
     color: #000;
     border: none;
     padding: 18px 60px;
+    font-family: 'Tektur', sans-serif;
     font-size: 1.25rem;
     font-weight: 900;
     letter-spacing: 2px;

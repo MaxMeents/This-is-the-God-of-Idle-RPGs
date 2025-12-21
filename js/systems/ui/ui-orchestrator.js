@@ -43,43 +43,59 @@ function updateUI() {
  * Updates HP, Shield, and Ghost health bars.
  */
 function updateVitalsUI() {
-    const hpPct = player.health / PLAYER_HEALTH_MAX;
-    if (hpPct !== lastHP) {
-        elHPBar.style.height = (hpPct * 100) + '%';
+    // PLAYER HEALTH BAR SETTING
+    const showHealth = (typeof SettingsState !== 'undefined') ? SettingsState.get('healthBar') : true;
+    if (!showHealth) {
+        // If hidden, force height 0 or display none
+        elHPBar.parentElement.style.display = 'none';
+        // Note: parentElement is #player-health-container usually
+    } else {
+        elHPBar.parentElement.style.display = 'block';
 
-        // GHOST LOGIC: Lingering damage effect
-        if (hpPct < lastHP) {
-            setTimeout(() => {
+        const hpPct = player.health / PLAYER_HEALTH_MAX;
+        if (hpPct !== lastHP) {
+            elHPBar.style.height = (hpPct * 100) + '%';
+
+            // GHOST LOGIC: Lingering damage effect
+            if (hpPct < lastHP) {
+                setTimeout(() => {
+                    if (elHPGhost) elHPGhost.style.height = (hpPct * 100) + '%';
+                    lastHPGhost = hpPct;
+                }, 300);
+            } else {
                 if (elHPGhost) elHPGhost.style.height = (hpPct * 100) + '%';
                 lastHPGhost = hpPct;
-            }, 300);
-        } else {
-            if (elHPGhost) elHPGhost.style.height = (hpPct * 100) + '%';
-            lastHPGhost = hpPct;
-        }
+            }
 
-        // DYNAMIC COLOR: Blue (Good) -> Red (Danger)
-        let topR, topG, topB, botR, botG, botB;
-        if (hpPct > 0.7) {
-            const f = (hpPct - 0.7) / 0.3;
-            topR = 65 * f; topG = 105 * f; topB = 225 * f;
-            botR = 0; botG = 0; botB = 139 * f;
-        } else {
-            const f = hpPct / 0.7;
-            const inv = Math.pow(1 - f, 0.8);
-            topR = 200 * inv; topG = 0; topB = 0;
-            botR = 80 * inv; botG = 0; botB = 0;
+            // DYNAMIC COLOR: Blue (Good) -> Red (Danger)
+            let topR, topG, topB, botR, botG, botB;
+            if (hpPct > 0.7) {
+                const f = (hpPct - 0.7) / 0.3;
+                topR = 65 * f; topG = 105 * f; topB = 225 * f;
+                botR = 0; botG = 0; botB = 139 * f;
+            } else {
+                const f = hpPct / 0.7;
+                const inv = Math.pow(1 - f, 0.8);
+                topR = 200 * inv; topG = 0; topB = 0;
+                botR = 80 * inv; botG = 0; botB = 0;
+            }
+            elHPBar.style.setProperty('--hp-top', `rgb(${topR},${topG},${topB})`);
+            elHPBar.style.setProperty('--hp-bot', `rgb(${botR},${botG},${botB})`);
+            lastHP = hpPct;
         }
-        elHPBar.style.setProperty('--hp-top', `rgb(${topR},${topG},${topB})`);
-        elHPBar.style.setProperty('--hp-bot', `rgb(${botR},${botG},${botB})`);
-        lastHP = hpPct;
     }
 
-    // SHIELD BAR
-    const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
-    if (targetShieldHeight !== lastShield) {
-        elShieldBar.style.height = targetShieldHeight + '%';
-        lastShield = targetShieldHeight;
+    // SHIELD BAR SETTING
+    const showShield = (typeof SettingsState !== 'undefined') ? SettingsState.get('shieldBar') : true;
+    if (!showShield) {
+        elShieldBar.style.display = 'none';
+    } else {
+        elShieldBar.style.display = 'block';
+        const targetShieldHeight = player.shieldActive ? (player.shieldHP / player.shieldMaxHP * 100) : 0;
+        if (targetShieldHeight !== lastShield) {
+            elShieldBar.style.height = targetShieldHeight + '%';
+            lastShield = targetShieldHeight;
+        }
     }
 
     // SHIELD RECHARGE (Ticker)
@@ -194,6 +210,13 @@ function updateStageNavigationUI() {
  * TARGET HUD HANDLER (Enemy Vitals)
  */
 function updateTargetHUD() {
+    // ENEMY HP SETTING
+    const showEnemyHp = (typeof SettingsState !== 'undefined') ? SettingsState.get('enemyHp') : true;
+    if (!showEnemyHp) {
+        if (elTargetCont.style.display !== 'none') elTargetCont.style.display = 'none';
+        return;
+    }
+
     if (player.targetIdx !== -1) {
         const idx = player.targetIdx * STRIDE;
         if (idx < 0 || idx >= data.length) { player.targetIdx = -1; return; }

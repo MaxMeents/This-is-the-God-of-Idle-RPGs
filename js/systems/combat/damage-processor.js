@@ -134,6 +134,7 @@ function processSkillDamage() {
  * @param {boolean} lucky - Lucky hit flag
  */
 function spawnDamageNumber(x, y, val, lucky = false) {
+    if (typeof SettingsState !== 'undefined' && !SettingsState.get('damageNumbers')) return;
     if (activeDamageCount >= DAMAGE_POOL_SIZE) return;
 
     // RECURSIVE CRIT LOGIC
