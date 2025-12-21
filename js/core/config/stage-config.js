@@ -24,52 +24,52 @@ const STAGE_CONFIG = {
         1: {
             kills: 3500, // Total kills needed to clear
             enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500 },
-            tierChances: { epic: 0.02, god: 0.02, omega: 0.02, alpha: 0.02 } // Base % for elites
+            tierChances: { Arch: 0.02, God: 0.02, Omega: 0.02, Alpha: 0.02 } // Base % for elites
         },
         2: {
             kills: 500,
             enemies: { PhoenixSurrender: 200, GalaxyDragon: 300 },
-            tierChances: { epic: 0.03, god: 0.03, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.03, God: 0.03, Omega: 0.0, Alpha: 0.0 }
         },
         3: {
             kills: 700,
             enemies: { GalaxyDragon: 500, BlueDragon: 100 },
-            tierChances: { epic: 0.04, god: 0.04, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.04, God: 0.04, Omega: 0.0, Alpha: 0.0 }
         },
         4: {
             kills: 900,
             enemies: { GalaxyDragon: 600, PhoenixSurrender: 200, GalaxyButterfly: 200 },
-            tierChances: { epic: 0.05, god: 0.05, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.05, God: 0.05, Omega: 0.0, Alpha: 0.0 }
         },
         5: {
             kills: 1100,
             enemies: { BlueDragon: 400, PhoenixSurrender: 400, BlackRedButterfly: 300, BlueWhiteButterfly: 300 },
-            tierChances: { epic: 0.06, god: 0.06, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.06, God: 0.06, Omega: 0.0, Alpha: 0.0 }
         },
         6: {
             kills: 1300,
             enemies: { BlueDragon: 600, PhoenixSurrender: 400, GoldButterfly: 400, GreenBlackButterfly: 400 },
-            tierChances: { epic: 0.07, god: 0.07, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.07, God: 0.07, Omega: 0.0, Alpha: 0.0 }
         },
         7: {
             kills: 1500,
             enemies: { GalaxyDragon: 800, PhoenixSurrender: 500, GalaxyButterfly: 500 },
-            tierChances: { epic: 0.08, god: 0.08, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.08, God: 0.08, Omega: 0.0, Alpha: 0.0 }
         },
         8: {
             kills: 1700,
             enemies: { BlueDragon: 800, GalaxyDragon: 500, BlackRedButterfly: 400, BlueWhiteButterfly: 400 },
-            tierChances: { epic: 0.09, god: 0.09, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.09, God: 0.09, Omega: 0.0, Alpha: 0.0 }
         },
         9: {
             kills: 2000,
             enemies: { PhoenixSurrender: 800, BlueDragon: 1000, GoldButterfly: 500, GreenBlackButterfly: 500 },
-            tierChances: { epic: 0.10, god: 0.10, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.10, God: 0.10, Omega: 0.0, Alpha: 0.0 }
         },
         10: {
             kills: 1,
             enemies: { PhoenixSurrender: 1500, BlueDragon: 1500, GalaxyButterfly: 1000 },
-            tierChances: { epic: 0.15, god: 0.15, omega: 0.0, alpha: 0.0 }
+            tierChances: { Arch: 0.15, God: 0.15, Omega: 0.0, Alpha: 0.0 }
         }
     }
 };

@@ -1,0 +1,39 @@
+/**
+ * RADAR HUD STYLES
+ * 
+ * Styles the tactical map overlay at the bottom left.
+ * 
+ * LOCATED IN: css/hud/radar.css
+ */
+
+#radar-container {
+    position: fixed;
+    bottom: 20px;
+    left: 120px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: #000;
+    /* Sci-Fi Border */
+    border: 2px solid rgba(0, 255, 136, 0.5);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 136, 0.2);
+    z-index: 100;
+
+    /* Grid & Sweeper Effect */
+    background-image:
+        radial-gradient(circle, transparent 0%, transparent 69%, rgba(0, 255, 136, 0.3) 70%, transparent 71%),
+        linear-gradient(rgba(0, 255, 136, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px);
+    background-size: 100% 100%, 25px 25px, 25px 25px;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+}
+
+#radar-canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+}
+
+/* Optional: Radar sweeping animation could be added here if desired */
