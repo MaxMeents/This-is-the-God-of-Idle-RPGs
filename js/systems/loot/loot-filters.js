@@ -21,7 +21,7 @@
  */
 let logViewState = {
     currentView: 'index',   // 'index' (Hours List) or 'detail' (Item list for specific hour)
-    selectedHour: null,
+    currentHour: null,
     timeScope: 'all',       // 'session', 'today', 'all'
     activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega']),
     activeCategory: 'drops',
@@ -41,7 +41,7 @@ function openLootLog() {
     if (typeof LootPersistence !== 'undefined') LootPersistence.syncMemory();
 
     logViewState.currentView = 'index';
-    logViewState.selectedHour = null;
+    logViewState.currentHour = null;
 
     // Trigger router render (Defined in loot-renderer.js)
     if (typeof renderLootLog === 'function') renderLootLog();
@@ -110,14 +110,14 @@ function handleLogZoom(val) {
  */
 function viewHourLog(hour) {
     logViewState.currentView = 'detail';
-    logViewState.selectedHour = hour;
+    logViewState.currentHour = hour;
     if (logViewState.clusterize) logViewState.clusterize.destroy();
     if (typeof renderLootLog === 'function') renderLootLog();
 }
 
 function viewHoursIndex() {
     logViewState.currentView = 'index';
-    logViewState.selectedHour = null;
+    logViewState.currentHour = null;
     if (logViewState.clusterize) logViewState.clusterize.destroy();
     if (typeof renderLootLog === 'function') renderLootLog();
 }

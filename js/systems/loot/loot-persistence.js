@@ -68,7 +68,7 @@ const LootPersistence = {
             const hourLabel = now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
             const safeHour = hourLabel.replace(':', '-');
 
-            if (typeof logViewState !== 'undefined' && logViewState.currentView === 'hours') {
+            if (typeof logViewState !== 'undefined' && logViewState.currentView === 'index') {
                 const countEl = document.getElementById(`log-count-${safeHour}`);
                 if (countEl) {
                     const hourCount = lootLogHistory.filter(item => item.hourLabel === hourLabel).length;
@@ -81,7 +81,7 @@ const LootPersistence = {
                         if (typeof viewHourLog === 'function') btn.onclick = () => viewHourLog(hourLabel);
                     }
                 }
-            } else if (typeof logViewState !== 'undefined' && logViewState.currentView === 'detail' && logViewState.selectedHour === hourLabel) {
+            } else if (typeof logViewState !== 'undefined' && logViewState.currentView === 'detail' && logViewState.currentHour === hourLabel) {
                 // Refresh list if looking at the current hour (Defined in loot-renderer.js)
                 if (typeof renderLootLog === 'function') renderLootLog();
             }
