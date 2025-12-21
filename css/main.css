@@ -390,6 +390,11 @@ canvas {
     z-index: -2;
 }
 
+/* Direction Class */
+#auto-btn.rev::before {
+    animation: racingRotateCCW 2s linear infinite;
+}
+
 #auto-btn.active::after {
     content: 'AUTO';
     position: absolute;
@@ -417,6 +422,16 @@ canvas {
 
     100% {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes racingRotateCCW {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(-360deg);
     }
 }
 
@@ -797,9 +812,15 @@ input[type=range]::-webkit-slider-thumb {
     background: linear-gradient(45deg, #660000 0%, #ff0000 25%, #ff4444 50%, #ff0000 75%, #660000 100%);
     background-size: 200% 200%;
     animation: liquidEnergy 2s linear infinite;
+    z-index: 2;
     box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
     border-radius: 2px;
     transition: width 0.1s linear;
+}
+
+/* Direction Class */
+#target-hud-container.rev #target-health-bar {
+    animation: liquidEnergyRev 2s linear infinite;
 }
 
 @keyframes liquidEnergy {
@@ -809,5 +830,15 @@ input[type=range]::-webkit-slider-thumb {
 
     100% {
         background-position: 100% 50%;
+    }
+}
+
+@keyframes liquidEnergyRev {
+    0% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
     }
 }

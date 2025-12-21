@@ -80,7 +80,41 @@
     height: 500px;
     background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
     z-index: -2;
+}
+
+/* BOX Direction & Tier Styles */
+.loot-box.box-cw::before {
     animation: rotateCentered 3s linear infinite;
+}
+
+.loot-box.box-ccw::before {
+    animation: rotateCenteredCCW 3s linear infinite;
+}
+
+/* God/Omega Tier: Silver/Black Chasing */
+.loot-tier-god .loot-box::before,
+.loot-tier-omega .loot-box::before {
+    background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
+}
+
+/* Alpha Tier: White Chasing + White Box Body */
+.loot-tier-alpha .loot-box::before {
+    background: conic-gradient(from 0deg, #fff, #ccc, #fff, #ccc, #fff);
+}
+
+.loot-tier-alpha .loot-box::after {
+    background: #fff;
+}
+
+/* Lower Tiers: No Chasing */
+.loot-tier-normal .loot-box::before,
+.loot-tier-epic .loot-box::before {
+    display: none;
+}
+
+.loot-tier-normal .loot-box,
+.loot-tier-epic .loot-box {
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Inner cover to keep border thick */
@@ -117,14 +151,32 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background: conic-gradient(from 0deg,
-            #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+    /* Gradient handled by tiers */
+    background: #444;
     border-radius: 50%;
     animation: rotate 2s linear infinite;
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+/* TIER ICON BACKGROUNDS */
+.loot-tier-god .loot-icon-bg,
+.loot-tier-alpha .loot-icon-bg {
+    background: conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+}
+
+.loot-tier-omega .loot-icon-bg {
+    background: conic-gradient(from 0deg, #ff00ff, #ffffff, #ff00ff, #ffffff, #ff00ff);
+}
+
+.loot-tier-epic .loot-icon-bg {
+    background: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
+}
+
+.loot-tier-normal .loot-icon-bg {
+    background: #888;
 }
 
 .loot-icon-bg::before {
@@ -186,17 +238,64 @@
     font-weight: bold;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 260px;
+    display: block;
+    /* Ensure clipping works reliably */
+    line-height: 1.5;
 
-    /* Premium Pulsating Gradient */
-    background: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
-    background-size: 100% 200%;
+    /* Clipping Base - DO NOT USE SHORTHAND 'background' in overrides */
+    background-image: none;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: textFlowVertical 0.8s linear infinite;
-
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+/* Normal Tier: Flat White (No clipping needed) */
+.loot-tier-normal .loot-name {
+    background-image: none;
+    -webkit-text-fill-color: #fff;
+    color: #fff;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+}
+
+/* Epic Tier: White & Gold Pulsating */
+.loot-tier-epic .loot-name {
+    background-image: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+    background-size: 100% 200%;
+}
+
+/* God Tier: RGB Rainbow */
+.loot-tier-god .loot-name {
+    background-image: linear-gradient(0deg,
+            #ff0000 0%, #ffff00 15%, #00ff00 30%,
+            #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    background-size: 100% 200%;
+}
+
+/* Alpha Tier: RGB Rainbow on White Box (Needs stronger shadow) */
+.loot-tier-alpha .loot-name {
+    background-image: linear-gradient(0deg,
+            #ff0000 0%, #ffff00 15%, #00ff00 30%,
+            #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    background-size: 100% 200%;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 1));
+    /* Stronger shadow for white BG */
+}
+
+/* Omega Tier: White & Magenta Pulsating */
+.loot-tier-omega .loot-name {
+    background-image: linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%);
+    background-size: 100% 200%;
+}
+
+/* Direction Classes */
+.loot-name.flow-up {
+    animation: textFlowVertical 0.8s linear infinite;
+}
+
+.loot-name.flow-down {
+    animation: textFlowVerticalDown 0.8s linear infinite;
 }
 
 @keyframes textFlowVertical {
@@ -206,6 +305,16 @@
 
     100% {
         background-position: 0% -200%;
+    }
+}
+
+@keyframes textFlowVerticalDown {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% 200%;
     }
 }
 
@@ -226,6 +335,16 @@
 
     to {
         transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes rotateCenteredCCW {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(-360deg);
     }
 }
 

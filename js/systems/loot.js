@@ -74,12 +74,27 @@ function addLootToHistory(itemKey, amount) {
 
     // Create element
     const el = document.createElement('div');
-    el.className = 'loot-item';
+    const tier = itemCfg.tier || 'epic';
+    el.className = `loot-item loot-tier-${tier}`;
+
+    // Direction Randomization
+    let boxClass = '';
+    let flowClass = '';
+
+    if (tier === 'god' || tier === 'alpha' || tier === 'omega') {
+        // High Tiers: Opposite Directions
+        boxClass = Math.random() > 0.5 ? 'box-cw' : 'box-ccw';
+        flowClass = (boxClass === 'box-cw') ? 'flow-down' : 'flow-up';
+    } else if (tier === 'epic') {
+        // Mid Tier: Random Flow (No box animation)
+        flowClass = Math.random() > 0.5 ? 'flow-up' : 'flow-down';
+    }
+
     el.innerHTML = `
-        <div class="loot-box">
+        <div class="loot-box ${boxClass}">
             <div class="loot-text">
                 <span class="loot-amount">${amount.toLocaleString()}</span>
-                <span class="loot-name">${itemCfg.name}</span>
+                <span class="loot-name ${flowClass}">${itemCfg.name}</span>
             </div>
         </div>
         <div class="loot-icon-wrapper">

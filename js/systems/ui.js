@@ -259,6 +259,8 @@ function updateUI() {
                 // Reset tracking so we don't animate from previous enemy
                 lastTargetWidth = -1;
                 lastTargetWidthGhost = -1;
+                // Randomize direction for "chasing colors" on spawn
+                elTargetCont.classList.toggle('rev', Math.random() > 0.5);
             }
 
             const typeIdx = data[idx + 11] | 0;
@@ -372,6 +374,12 @@ function initUIListeners() {
     autoBtn.addEventListener('click', () => {
         autoSkills = !autoSkills;
         autoBtn.classList.toggle('active', autoSkills);
+        // Randomize direction when activated
+        if (autoSkills) {
+            autoBtn.classList.toggle('rev', Math.random() > 0.5);
+        } else {
+            autoBtn.classList.remove('rev');
+        }
     });
 
     // NAVIGATION SYSTEM
