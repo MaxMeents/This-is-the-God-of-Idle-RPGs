@@ -594,7 +594,7 @@ body {
     inset: 2px;
     border-radius: 8px;
     z-index: -1;
-    transition: background 0.2s ease, inset 0.2s ease;
+    transition: background 0.19s ease, inset 0.2s ease;
 }
 
 /* HOVER STATE: INVERSE COLORS */
