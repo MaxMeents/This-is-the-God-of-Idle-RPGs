@@ -272,21 +272,21 @@ const CRIT_CONFIG = {
 const LOOT_CONFIG = {
     MAX_HISTORY: 5,
     ITEMS: {
-        'Dragon Claw': { name: 'Dragon Claw', icon: 'img/Enemy Drops/Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2, tier: 'epic' },
-        'Dragon Heart': { name: 'Dragon Heart', icon: 'img/Enemy Drops/Dragon Heart.webp', baseChance: 0.05, min: 1, max: 1, tier: 'god' },
-        'Dragon Horn': { name: 'Dragon Horn', icon: 'img/Enemy Drops/Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2, tier: 'epic' },
-        'Galaxy Dragon Claw': { name: 'Galaxy Dragon Claw', icon: 'img/Enemy Drops/Galaxy Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'omega' },
-        'Galaxy Dragon Horn': { name: 'Galaxy Dragon Horn', icon: 'img/Enemy Drops/Galaxy Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'alpha' },
-        'Blue Dragon Claw': { name: 'Blue Dragon Claw', icon: 'img/Enemy Drops/Blue Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'god' },
-        'Blue Dragon Horn': { name: 'Blue Dragon Horn', icon: 'img/Enemy Drops/Blue Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'god' },
-        'Phoenix Feather': { name: 'Phoenix Feather', icon: 'img/Enemy Drops/Phoenix Feather.webp', baseChance: 0.15, min: 1, max: 3, tier: 'normal' },
-        'Butterfly Wing': { name: 'Butterfly Wing', icon: 'img/Enemy Drops/Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'normal' },
-        'Blue White Butterfly Wing': { name: 'Blue White Butterfly Wing', icon: 'img/Enemy Drops/Blue White Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'god' },
-        'Gold Butterfly Wing': { name: 'Gold Butterfly Wing', icon: 'img/Enemy Drops/Gold Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
-        'Green Black Butterfly Wing': { name: 'Green Black Butterfly Wing', icon: 'img/Enemy Drops/Green Black Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
-        'Black Red Butterfly Wing': { name: 'Black Red Butterfly Wing', icon: 'img/Enemy Drops/Black Red Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
-        'Main Game Currency': { name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.webp', baseChance: .05, min: 10, max: 50, tier: 'god' },
-        'Crystal': { name: 'Crystal', icon: 'img/Enemy Drops/Crystal.webp', baseChance: 0.01, min: 1, max: 1, tier: 'epic' }
+        'Dragon Claw': { id: 1, name: 'Dragon Claw', icon: 'img/Enemy Drops/Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2, tier: 'epic' },
+        'Dragon Heart': { id: 2, name: 'Dragon Heart', icon: 'img/Enemy Drops/Dragon Heart.webp', baseChance: 0.05, min: 1, max: 1, tier: 'god' },
+        'Dragon Horn': { id: 3, name: 'Dragon Horn', icon: 'img/Enemy Drops/Dragon Horn.webp', baseChance: 0.10, min: 1, max: 2, tier: 'epic' },
+        'Galaxy Dragon Claw': { id: 4, name: 'Galaxy Dragon Claw', icon: 'img/Enemy Drops/Galaxy Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'omega' },
+        'Galaxy Dragon Horn': { id: 5, name: 'Galaxy Dragon Horn', icon: 'img/Enemy Drops/Galaxy Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'alpha' },
+        'Blue Dragon Claw': { id: 6, name: 'Blue Dragon Claw', icon: 'img/Enemy Drops/Blue Dragon Claw.png', baseChance: 0.15, min: 1, max: 2, tier: 'god' },
+        'Blue Dragon Horn': { id: 7, name: 'Blue Dragon Horn', icon: 'img/Enemy Drops/Blue Dragon Horn.png', baseChance: 0.10, min: 1, max: 2, tier: 'god' },
+        'Phoenix Feather': { id: 8, name: 'Phoenix Feather', icon: 'img/Enemy Drops/Phoenix Feather.webp', baseChance: 0.15, min: 1, max: 3, tier: 'normal' },
+        'Butterfly Wing': { id: 9, name: 'Butterfly Wing', icon: 'img/Enemy Drops/Butterfly Wing.webp', baseChance: 0.20, min: 2, max: 5, tier: 'normal' },
+        'Blue White Butterfly Wing': { id: 10, name: 'Blue White Butterfly Wing', icon: 'img/Enemy Drops/Blue White Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'god' },
+        'Gold Butterfly Wing': { id: 11, name: 'Gold Butterfly Wing', icon: 'img/Enemy Drops/Gold Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Green Black Butterfly Wing': { id: 12, name: 'Green Black Butterfly Wing', icon: 'img/Enemy Drops/Green Black Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Black Red Butterfly Wing': { id: 13, name: 'Black Red Butterfly Wing', icon: 'img/Enemy Drops/Black Red Butterfly Wing.png', baseChance: 0.20, min: 2, max: 5, tier: 'epic' },
+        'Main Game Currency': { id: 14, name: 'Currency', icon: 'img/Enemy Drops/Main Game Currency.webp', baseChance: .05, min: 10, max: 50, tier: 'god' },
+        'Crystal': { id: 15, name: 'Crystal', icon: 'img/Enemy Drops/Crystal.webp', baseChance: 0.01, min: 1, max: 1, tier: 'epic' }
     },
     // Tier multipliers (Standard < Arch < God < Alpha < Omega)
     TIERS: [

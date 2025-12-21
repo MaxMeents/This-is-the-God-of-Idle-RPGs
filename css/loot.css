@@ -759,3 +759,23 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 215, 0, 0.5);
 }
+
+/* Virtual Scrolling Styles */
+.virtual-scroll-container {
+    width: 100%;
+    will-change: transform;
+}
+
+.modal-body {
+    position: relative;
+    /* Required for absolute positioning of virtual rows */
+}
+
+.in-log .loot-box {
+    margin: 0;
+}
+
+.in-log .loot-box::before {
+    display: none !important;
+    /* Performance: Disable spinners in log */
+}

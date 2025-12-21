@@ -5,15 +5,89 @@
 
 const lootHistory = [];
 const lootLogHistory = [];
-const MAX_LOG_HISTORY = 1000;
 const sessionStartTime = Date.now();
 
-// Log UI State
+// Permanent High-Capacity Log
+const LootPersistence = {
+    STORAGE_KEY: 'god_loot_ledger_v1',
+    BUFFER: '',
+
+    init() {
+        const stored = localStorage.getItem(this.STORAGE_KEY);
+        if (stored) {
+            this.BUFFER = stored;
+            this.syncMemory();
+        }
+    },
+
+    /**
+     * @param {number} id - Item ID
+     * @param {number} amount - Quantity
+     * @param {boolean} isLucky - Lucky hit flag
+     */
+    add(id, amount, isLucky = false) {
+        const timeBase36 = Date.now().toString(36);
+        const amtBase36 = amount.toString(36);
+        const luckyFlag = isLucky ? '1' : '0';
+        const entry = `${id}:${timeBase36}:${amtBase36}:${luckyFlag}`;
+
+        if (this.BUFFER) this.BUFFER += ',';
+        this.BUFFER += entry;
+
+        // Save to localStorage immediately (or we could throttle)
+        localStorage.setItem(this.STORAGE_KEY, this.BUFFER);
+
+        // Update memory cache
+        this.syncEntry(id, Date.now(), amount, isLucky);
+    },
+
+    syncMemory() {
+        lootLogHistory.length = 0;
+        if (!this.BUFFER) return;
+
+        const entries = this.BUFFER.split(',');
+        // For performance, we only parse what we need for the UI currently
+        // or we parse all if memory allows (JSON is ready for detailed view)
+        entries.forEach(e => {
+            const [idStr, timeBase36, amtBase36, luckyFlag] = e.split(':');
+            const id = parseInt(idStr);
+            const time = parseInt(timeBase36, 36);
+            const amt = parseInt(amtBase36, 36);
+            const lucky = luckyFlag === '1';
+            this.syncEntry(id, time, amt, lucky, false);
+        });
+        lootLogHistory.sort((a, b) => b.rawTime - a.rawTime);
+    },
+
+    syncEntry(id, time, amt, isLucky = false, sort = true) {
+        // Reverse lookup itemKey from ID
+        const itemKey = Object.keys(LOOT_CONFIG.ITEMS).find(k => LOOT_CONFIG.ITEMS[k].id === id);
+        if (!itemKey) return;
+
+        const itemCfg = LOOT_CONFIG.ITEMS[itemKey];
+        const date = new Date(time);
+
+        lootLogHistory.push({
+            itemKey,
+            amount: amt,
+            tier: itemCfg.tier || 'normal',
+            rawTime: time,
+            timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+            hourLabel: date.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00",
+            dateLabel: date.toLocaleDateString(),
+            isLucky: isLucky
+        });
+        if (sort) lootLogHistory.sort((a, b) => b.rawTime - a.rawTime);
+    }
+};
+
 let logViewState = {
-    currentView: 'hours', // 'hours' or 'detail'
-    selectedHour: null,   // e.g. "13:00"
-    timeScope: 'session',  // 'session', 'today', 'all'
-    activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega'])
+    currentView: 'hours',
+    selectedHour: null,
+    timeScope: 'session',
+    activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega']),
+    scrollPos: 0,
+    visibleCount: 20
 };
 
 /**
@@ -27,6 +101,9 @@ function initLootSystem() {
     const container = document.createElement('div');
     container.id = 'loot-history-container';
     ui.appendChild(container);
+
+    // Initialize persistence
+    LootPersistence.init();
 
     // Initialize the historical log UI
     initLootLogUI();
@@ -193,24 +270,8 @@ function addLootToHistory(itemKey, amount, isLucky = false) {
     container.appendChild(el);
     lootHistory.push(el);
 
-    // Record to the permanent Log (Build a simplified data object for the log)
-    const now = new Date();
-    const logData = {
-        itemKey,
-        amount,
-        boxClass,
-        flowClass,
-        amtClass,
-        amtStyle,
-        tier,
-        timestamp: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        hourLabel: now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00",
-        rawTime: now.getTime(),
-        dateLabel: now.toLocaleDateString(),
-        isLucky: isLucky
-    };
-    lootLogHistory.unshift(logData); // Newest first
-    if (lootLogHistory.length > MAX_LOG_HISTORY) lootLogHistory.pop();
+    // Save to persistence
+    LootPersistence.add(itemCfg.id, amount, isLucky);
 
     // Maintain max history (shift up / remove top)
     if (lootHistory.length > LOOT_CONFIG.MAX_HISTORY) {
@@ -349,29 +410,56 @@ function renderHoursIndex(content, headerTitle, data) {
 function renderDetailLog(content, headerTitle, data) {
     headerTitle.innerHTML = `Loot Log: ${logViewState.selectedHour}`;
 
-    // Add Back Button
+    const filtered = data.filter(item => item.hourLabel === logViewState.selectedHour);
+
+    // Virtual Scrolling Logic
+    const itemHeight = 70; // Approximation of row height + gap
+    const totalHeight = filtered.length * itemHeight;
+
+    content.innerHTML = '';
+
+    // Add Back Button (Always at top)
     const backBtn = document.createElement('div');
     backBtn.className = 'log-back-btn';
     backBtn.innerHTML = '← Back to Ledger Index';
     backBtn.onclick = viewHoursIndex;
     content.appendChild(backBtn);
 
-    const filtered = data.filter(item => item.hourLabel === logViewState.selectedHour);
+    // Virtual Scroll Container
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'virtual-scroll-container';
+    scrollContainer.style.height = `${totalHeight}px`;
+    scrollContainer.style.position = 'relative';
+    content.appendChild(scrollContainer);
 
-    filtered.forEach(data => {
+    // Calculate visible range
+    const scrollTop = content.scrollTop;
+    const startIndex = Math.max(0, Math.floor((scrollTop - 50) / itemHeight));
+    const endIndex = Math.min(filtered.length, startIndex + logViewState.visibleCount);
+
+    // Attach scroll listener if not present (or every render for simplicity here)
+    content.onscroll = () => {
+        if (logViewState.currentView === 'detail') renderDetailLog(content, headerTitle, data);
+    };
+
+    for (let i = startIndex; i < endIndex; i++) {
+        const data = filtered[i];
         const itemCfg = LOOT_CONFIG.ITEMS[data.itemKey];
-        if (!itemCfg) return;
+        if (!itemCfg) continue;
 
         const row = document.createElement('div');
         row.className = `loot-log-row loot-tier-${data.tier}`;
+        row.style.position = 'absolute';
+        row.style.top = `${i * itemHeight}px`;
+        row.style.width = '100%';
 
         row.innerHTML = `
             <div class="log-timestamp">${data.timestamp}</div>
             <div class="loot-item in-log">
-                <div class="loot-box ${data.boxClass}">
+                <div class="loot-box">
                     <div class="loot-text">
-                        <span class="loot-amount ${data.amtClass}" ${data.amtStyle}>${data.amount.toLocaleString()}</span>
-                        <span class="loot-name ${data.flowClass}">${itemCfg.name}</span>
+                        <span class="loot-amount">${data.amount.toLocaleString()}</span>
+                        <span class="loot-name">${itemCfg.name}</span>
                     </div>
                 </div>
                 <div class="loot-icon-wrapper">
@@ -380,8 +468,8 @@ function renderDetailLog(content, headerTitle, data) {
                 </div>
             </div>
         `;
-        content.appendChild(row);
-    });
+        scrollContainer.appendChild(row);
+    }
 }
 
 /**
