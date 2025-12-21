@@ -1,0 +1,96 @@
+/**
+ * LOOT LEDGER & MODAL STYLES
+ * 
+ * Defines the complex UI structure of the God's Loot Ledger.
+ * Includes nested filters, zoom sliders, and background shimmers for log rows.
+ * 
+ * LOCATED IN: css/loot/loot-ledger.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+.modal-panel {
+    width: 800px;
+    height: calc(100vh - 60px);
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ledger-filter-bar {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.cat-btn {
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cat-btn.active {
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 0 32px 15px 32px;
+}
+
+input[type=range].zoom-slider {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.log-back-btn {
+    padding: 12px 24px;
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    color: #ffd700;
+    cursor: pointer;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    animation: pulseBorder 2s infinite;
+}
+
+.loot-log-trigger {
+    position: fixed;
+    bottom: 30px;
+    left: 20px;
+    z-index: 2000;
+    padding: 12px 24px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    color: #ffd700;
+    font-family: 'Orbitron', sans-serif;
+}

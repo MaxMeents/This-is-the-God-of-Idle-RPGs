@@ -1,0 +1,73 @@
+/**
+ * SKILL BUTTONS HUD
+ * 
+ * Defines the layout and styles for the three skill tiers and the ultimate sword button.
+ * 
+ * LOCATED IN: css/hud/skill-buttons.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+#skill-buttons-rack {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 15px;
+    z-index: 2000;
+}
+
+.skill-btn-wrapper {
+    position: relative;
+    cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.sword-of-light-btn {
+    background: #000;
+    border: 3px solid #fff;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+    width: 64px;
+    height: 64px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sword-of-light-btn canvas {
+    transform: scale(0.8);
+}
+
+.skill-btn-wrapper:hover {
+    transform: translateY(-5px) scale(1.05);
+}
+
+#skill-button-container-1 {
+    width: 140px;
+    height: 140px;
+}
+
+#skill-button-container-2 {
+    width: 93px;
+    height: 93px;
+}
+
+#skill-button-container-3 {
+    width: 62px;
+    height: 62px;
+}
+
+.skill-btn-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}

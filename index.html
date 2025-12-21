@@ -18,6 +18,19 @@
         rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/loot.css">
+
+    <!-- MODULAR SYSTEM STYLES -->
+    <link rel="stylesheet" href="css/base/global.css">
+    <link rel="stylesheet" href="css/base/animations.css">
+    <link rel="stylesheet" href="css/hud/player-vitals.css">
+    <link rel="stylesheet" href="css/hud/ammo-systems.css">
+    <link rel="stylesheet" href="css/hud/speed-controls.css">
+    <link rel="stylesheet" href="css/hud/skill-buttons.css">
+    <link rel="stylesheet" href="css/hud/stage-nav.css">
+    <link rel="stylesheet" href="css/hud/target-hud.css">
+    <link rel="stylesheet" href="css/loot/loot-stairs.css">
+    <link rel="stylesheet" href="css/loot/loot-ledger.css">
+    <link rel="stylesheet" href="css/modals/base-modal.css">
 </head>
 
 <body>
@@ -128,11 +141,7 @@
          -------------------------------------------------------------------------
     -->
 
-    <!-- 1. CORE STATE & DATA -->
-    <script src="js/core/state.js"></script>
-    <script src="js/core/enemies.js"></script>
-
-    <!-- 2. GRANULAR CONFIGURATION -->
+    <!-- 1. BASE CONFIGURATION (Independent) -->
     <script src="js/core/config/performance-config.js"></script>
     <script src="js/core/config/ship-config.js"></script>
     <script src="js/core/config/skill-config.js"></script>
@@ -142,14 +151,20 @@
     <script src="js/core/config/loot-config.js"></script>
     <script src="js/core/config/world-config.js"></script>
 
-    <!-- 3. RENDERING SUBSYSTEMS -->
+    <!-- 2. DATA DICTIONARIES (Depends on Config) -->
+    <script src="js/core/enemies.js"></script>
+
+    <!-- 3. CORE STATE (Depends on Config & Enemies) -->
+    <script src="js/core/state.js"></script>
+
+    <!-- 4. RENDERING SUBSYSTEMS (Depends on State) -->
     <script src="js/systems/rendering/asset-registry.js"></script>
     <script src="js/systems/rendering/particle-system.js"></script>
     <script src="js/systems/rendering/texture-baker.js"></script>
     <script src="js/systems/rendering/lod-manager.js"></script>
     <script src="js/systems/rendering/pixi-renderer.js"></script>
 
-    <!-- 4. COMBAT & PHYSICS SYSTEM -->
+    <!-- 5. COMBAT & PHYSICS SYSTEM -->
     <script src="js/systems/combat/projectile-engine.js"></script>
     <script src="js/systems/combat/damage-processor.js"></script>
     <script src="js/systems/combat/player-movement.js"></script>
@@ -157,7 +172,7 @@
     <script src="js/systems/combat/skills-system.js"></script>
     <script src="js/systems/combat/combat-core.js"></script>
 
-    <!-- 5. LOOT & LEDGER SYSTEM -->
+    <!-- 6. LOOT & LEDGER SYSTEM -->
     <script src="js/systems/loot/loot-persistence.js"></script>
     <script src="js/systems/loot/loot-logic.js"></script>
     <script src="js/systems/loot/loot-ui.js"></script>
@@ -165,12 +180,12 @@
     <script src="js/systems/loot/loot-filters.js"></script>
     <script src="js/systems/loot/loot-batching.js"></script>
 
-    <!-- 6. UI ORCHESTRATION -->
+    <!-- 7. UI ORCHESTRATION -->
     <script src="js/systems/ui/ui-cache.js"></script>
     <script src="js/systems/ui/ui-orchestrator.js"></script>
     <script src="js/systems/ui/ui-listeners.js"></script>
 
-    <!-- 7. ASSET LOADER & MAIN ENTRY -->
+    <!-- 8. ASSET LOADER & MAIN ENTRY -->
     <script src="js/systems/rendering/asset-loader.js"></script>
     <script src="js/index.js"></script>
 </body>

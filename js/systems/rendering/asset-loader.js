@@ -21,11 +21,8 @@
  * -------------------------------------------------------------------------
  */
 
-// LOADING COUNTERS (Used by LOD system as well)
-let loadedCt = 0;
-let conversionCt = 0;
-let prewarmCt = 0;
-let isPriorityDone = false;
+// LOADING COUNTERS (Managed in state.js)
+// loadedCt, conversionCt, prewarmCt, isPriorityDone are global
 
 // LOADING MATH (Determined in assets.js originally)
 const TOTAL_BASIC_ASSETS = (typeof enemyKeys !== 'undefined' ? enemyKeys.length * 3 : 0) + 1 + 4 + 3 + 3;

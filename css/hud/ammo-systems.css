@@ -1,0 +1,60 @@
+/**
+ * AMMO & RESOURCE HUD
+ * 
+ * Specialized skinny bars for weapon resource tracking (Laser/Bullets).
+ * 
+ * LOCATED IN: css/hud/ammo-systems.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+.skinny-bar {
+    position: relative;
+    width: 10px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#laser-ammo-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg, #8b0000, #ff0055, #8b0000);
+    background-size: 400% 400%;
+    animation: healthFlowVertical 2.5s ease infinite;
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+#laser-ammo-bar.recharging {
+    background: linear-gradient(0deg, #004400, #00ff00, #004400);
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+}
+
+#bullet-ammo-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg, #004488, #00ffff, #004488);
+    background-size: 400% 400%;
+    animation: healthFlowVertical 3.5s ease infinite;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+#bullet-ammo-bar.recharging {
+    background: linear-gradient(0deg, #004400, #00ff00, #004400);
+    box-shadow: 0 0 25px rgba(0, 255, 0, 0.7);
+}

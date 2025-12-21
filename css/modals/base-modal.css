@@ -1,0 +1,55 @@
+/**
+ * GENERIC MODAL ARCHITECTURE
+ * 
+ * Provides the base visual shell for all full-screen or focused overlays.
+ * 
+ * LOCATED IN: css/modals/base-modal.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.modal-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-backdrop.hidden {
+    display: none;
+}
+
+.modal-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    color: #ffd700;
+    text-transform: uppercase;
+    font-size: 24px;
+}

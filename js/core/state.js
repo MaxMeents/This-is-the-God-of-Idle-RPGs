@@ -122,8 +122,11 @@ let onScreenCount = 0;    // Number of enemies currently within the camera view
 let readyMapDirty = true; // Flag for rebuilding the sprite caches if assets change
 
 /**
- * PERFORMANCE MONITORING
+ * PERFORMANCE MONITORING & LOADING STATE
  */
 let workerTasksCount = 0; // Tracks active background image-baking tasks
 let loadedCt = 0;         // Tracks file loading progress for the splash screen
+let conversionCt = 0;     // Tracks off-thread bitmap conversions
+let prewarmCt = 0;        // Tracks GPU texture warming progress
 let bakesCt = 0;          // Tracks how many image-bakes have been completed
+let isPriorityDone = false; // Flag for minimum playability threshold

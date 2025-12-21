@@ -162,6 +162,11 @@ let drawTimeSum = 0;
  * MAIN GAME LOOP
  */
 function loop(now) {
+    // SAFETY: Wait for PIXI application to be fully ready
+    if (!app || !app.renderer) {
+        requestAnimationFrame(loop);
+        return;
+    }
     let dt = now - last;
     last = now;
     if (dt > 100) dt = 16.6;

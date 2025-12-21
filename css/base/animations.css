@@ -1,0 +1,199 @@
+/**
+ * GLOBAL ANIMATIONS & KEYFRAMES
+ * 
+ * Central registry for all visual transitions and procedural flow effects.
+ * 
+ * LOCATED IN: css/base/animations.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+@keyframes btnPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 40px rgba(255, 204, 0, 0.5);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
+    }
+}
+
+@keyframes healthFlowVertical {
+    0% {
+        background-position: 50% 0%;
+    }
+
+    50% {
+        background-position: 50% 100%;
+    }
+
+    100% {
+        background-position: 50% 0%;
+    }
+}
+
+@keyframes challengePulse {
+    0% {
+        transform: translateX(-50%) scale(1);
+    }
+
+    50% {
+        transform: translateX(-50%) scale(1.03);
+        filter: brightness(1.2);
+    }
+
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+@keyframes bgFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes racingRotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes racingRotateCCW {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(-360deg);
+    }
+}
+
+@keyframes thumbPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 10px #00ff88;
+    }
+
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 20px #00ff88, inset 0 0 15px #fff;
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 10px #00ff88;
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateCentered {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes rotateCenteredCCW {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(-360deg);
+    }
+}
+
+@keyframes lootSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(80px) scale(0.7);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes bounceDynamic {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(var(--bounce-dist, -3px)) scale(var(--bounce-scale, 1.05));
+    }
+}
+
+@keyframes textFlowVertical {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% -200%;
+    }
+}
+
+@keyframes textFlowVerticalDown {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% 200%;
+    }
+}
+
+@keyframes pulseBorder {
+    0% {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    50% {
+        border-color: rgba(255, 215, 0, 1);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+
+    100% {
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+}

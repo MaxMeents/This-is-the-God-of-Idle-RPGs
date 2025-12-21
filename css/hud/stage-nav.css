@@ -1,0 +1,95 @@
+/**
+ * STAGE NAVIGATION HUD
+ * 
+ * Handles the top-center navigation hub and the "Challenge Next Stage" button.
+ * 
+ * LOCATED IN: css/hud/stage-nav.css
+ */
+
+/* -------------------------------------------------------------------------
+   ATTENTION FUTURE AI DEVELOPERS:
+   DO NOT DELETE THESE COMMENTS. They provide critical context for the modular architecture.
+   When making changes, ADD YOUR OWN COMMENTS explaining WHY you made the change.
+   ------------------------------------------------------------------------- */
+
+#stage-nav {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(15px);
+    padding: 12px 40px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 204, 0, 0.4);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#stage-nav:hover {
+    border-color: rgba(255, 204, 0, 0.8);
+    box-shadow: 0 0 40px rgba(255, 204, 0, 0.2);
+}
+
+.nav-arrow {
+    font-size: 32px;
+    color: #ffcc00;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    filter: drop-shadow(0 0 8px rgba(255, 204, 0, 0.5));
+}
+
+.nav-arrow:hover {
+    transform: scale(1.4);
+    color: #fff;
+    filter: drop-shadow(0 0 15px #ffcc00);
+}
+
+.nav-arrow.disabled {
+    opacity: 0.15;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+#stage-display {
+    font-size: 26px;
+    font-weight: 800;
+    min-width: 220px;
+    text-align: center;
+    letter-spacing: 3px;
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(180deg, #fff 0%, #ffcc00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+#challenge-btn {
+    position: fixed;
+    top: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #fff9d6 0%, #ffcc00 50%, #b8860b 100%);
+    background-size: 200% auto;
+    color: #1a1a1a;
+    padding: 16px 40px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 18px;
+    text-transform: uppercase;
+    cursor: pointer;
+    z-index: 1000;
+    display: none;
+    animation: challengePulse 2.5s infinite, bgFlow 4s linear infinite;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#challenge-btn:hover {
+    transform: translateX(-50%) translateY(-8px) scale(1.08);
+}
