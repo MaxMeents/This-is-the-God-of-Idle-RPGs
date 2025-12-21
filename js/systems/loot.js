@@ -551,7 +551,7 @@ function renderDetailLog(content, headerTitle, data) {
                     </div>
                     <div class="loot-icon-wrapper">
                         <div class="loot-icon-bg"></div>
-                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 250px !important; height: 250px !important;">
+                        <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 70px !important; height: 70px !important;">
                     </div>
                 </div>
             </div>

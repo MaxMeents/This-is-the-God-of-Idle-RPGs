@@ -513,7 +513,10 @@
 
 .modal-panel {
     width: 800px;
-    max-height: 85vh;
+    height: calc(100vh - 60px);
+    /* Tall modal */
+    margin-bottom: 10px;
+    /* 10px from bottom */
     background: rgba(15, 15, 15, 0.95);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
@@ -741,8 +744,8 @@
     width: 100%;
     max-width: 800px;
     /* Increased max width */
-    height: 320px !important;
-    /* Massive row height */
+    height: 110px !important;
+    /* Balanced row height (fits ~7) */
     animation: none;
     pointer-events: auto;
     display: flex;
@@ -761,9 +764,9 @@
 .in-log .loot-icon-wrapper {
     position: relative;
     right: 0;
-    width: 300px !important;
-    /* HUGE Icon Wrapper */
-    height: 300px !important;
+    width: 90px !important;
+    /* Balanced Premium Icon */
+    height: 90px !important;
     flex-shrink: 0;
     margin-left: auto;
     margin-right: 40px;
@@ -784,9 +787,9 @@
 .in-log .loot-icon-bg::before {
     content: '';
     position: absolute;
-    width: 260px !important;
+    width: 78px !important;
     /* Scaled white center */
-    height: 260px !important;
+    height: 78px !important;
     background: #fff;
     border-radius: 50%;
 }
