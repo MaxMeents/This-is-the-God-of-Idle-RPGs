@@ -47,42 +47,85 @@ const LootPersistence = {
      * - lootLogHistory (Array in this file) - updated in memory for fast retrieval.
      */
     add(id, amount, isLucky = false, tier = 'normal') {
-        const timeBase36 = Date.now().toString(36);
+        const now = Date.now();
+        const date = new Date(now);
+        const timeBase36 = now.toString(36);
         const amtBase36 = amount.toString(36);
         const luckyFlag = isLucky ? '1' : '0';
         const entry = `${id}:${timeBase36}:${amtBase36}:${luckyFlag}:${tier}`;
 
+        // 1. RAW BUFFER UPDATE (The Source of Truth)
         if (this.BUFFER) this.BUFFER += ',';
         this.BUFFER += entry;
-
-        // Save to browser storage
         localStorage.setItem(this.STORAGE_KEY, this.BUFFER);
 
-        // LIVE UI UPDATE: If the ledger modal is currently visible
+        // 2. LIVE CACHE UPDATE (Fixes the delay/missed drops issue)
+        // We must update the hourCounts and specific Hour Data in localStorage immediately
+        // so that if the user opens the log or switches views, it reads FRESH data.
+
+        const hourLabel = date.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
+
+        // Ensure hourCounts is loaded/ready
+        if (!this.hourCounts) this.syncMemory();
+
+        // Increment Count
+        if (!this.hourCounts[hourLabel]) this.hourCounts[hourLabel] = 0;
+        this.hourCounts[hourLabel]++;
+        localStorage.setItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
+
+        // Update Specific Hour Data Cache
+        const itemKey = Object.keys(LOOT_CONFIG.ITEMS).find(k => LOOT_CONFIG.ITEMS[k].id === id);
+        if (itemKey) {
+            const hourKey = this.STORAGE_KEY + '_hour_' + hourLabel.replace(':', '_');
+            let hourList = [];
+
+            // Try to read existing cache
+            const storedHour = localStorage.getItem(hourKey);
+            if (storedHour) {
+                try { hourList = JSON.parse(storedHour); } catch (e) { }
+            }
+
+            // Create new entry object
+            const newEntry = {
+                itemKey,
+                amount,
+                tier,
+                rawTime: now,
+                timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                hourLabel: hourLabel,
+                dateLabel: date.toLocaleDateString(),
+                isLucky
+            };
+
+            // Add and Sort (Newest first)
+            hourList.push(newEntry);
+            hourList.sort((a, b) => b.rawTime - a.rawTime);
+
+            // Write back to LS
+            localStorage.setItem(hourKey, JSON.stringify(hourList));
+        }
+
+        // 3. LIVE UI UPDATE (If modal is visible)
         const modal = document.getElementById('loot-log-modal');
         if (modal) {
-            this.syncEntry(id, Date.now(), amount, isLucky, tier);
+            this.syncEntry(id, now, amount, isLucky, tier);
 
-            // Update hour counts in the Index View (Defined in loot-renderer.js)
-            const now = new Date();
-            const hourLabel = now.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
+            // Update hour counts in the Index View
             const safeHour = hourLabel.replace(':', '-');
 
             if (typeof logViewState !== 'undefined' && logViewState.currentView === 'index') {
                 const countEl = document.getElementById(`log-count-${safeHour}`);
                 if (countEl) {
-                    const hourCount = lootLogHistory.filter(item => item.hourLabel === hourLabel).length;
-                    countEl.innerText = `${hourCount} Drops Recorded`;
+                    countEl.innerText = `${this.hourCounts[hourLabel]} Drops Recorded`; // Use live count
 
                     const btn = countEl.closest('.loot-log-hour-btn');
                     if (btn && btn.classList.contains('disabled')) {
                         btn.classList.remove('disabled');
-                        // viewHourLog defined in loot-filters.js
                         if (typeof viewHourLog === 'function') btn.onclick = () => viewHourLog(hourLabel);
                     }
                 }
             } else if (typeof logViewState !== 'undefined' && logViewState.currentView === 'detail' && logViewState.currentHour === hourLabel) {
-                // Refresh list if looking at the current hour (Defined in loot-renderer.js)
+                // Refresh list if looking at the current hour
                 if (typeof renderLootLog === 'function') renderLootLog();
             }
         }

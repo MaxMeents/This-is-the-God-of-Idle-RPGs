@@ -100,12 +100,20 @@ function createLootLogModal() {
                     <button class="cat-btn" onclick="setLogCategory('rewards')">Rewards</button>
                 </div>
                 
-                <div class="tier-filters">
+                <div id="filters-drops" class="tier-filters">
                     <div class="tier-circle tier-normal active" onclick="toggleLogTier('normal')"></div>
                     <div class="tier-circle tier-epic active" onclick="toggleLogTier('epic')"></div>
                     <div class="tier-circle tier-god active" onclick="toggleLogTier('god')"></div>
                     <div class="tier-circle tier-omega active" onclick="toggleLogTier('omega')"></div>
                     <div class="tier-circle tier-alpha active" onclick="toggleLogTier('alpha')"></div>
+                </div>
+
+                <!-- REWARDS FILTERS (Hidden by default, shown when 'Rewards' cat is active) -->
+                <div id="filters-rewards" class="reward-filters" style="display: none;">
+                    <button class="reward-btn" onclick="toggleRewardFilter('daily')">Daily</button>
+                    <button class="reward-btn" onclick="toggleRewardFilter('monthly')">Monthly</button>
+                    <button class="reward-btn" onclick="toggleRewardFilter('yearly')">Yearly</button>
+                    <button class="reward-btn special" onclick="toggleRewardFilter('special')">Special Chance</button>
                 </div>
             </div>
             

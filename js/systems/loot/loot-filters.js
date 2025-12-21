@@ -150,13 +150,56 @@ function toggleLogTier(tier) {
     if (typeof renderLootLog === 'function') renderLootLog();
 }
 
+// NEW: Reward filter active state
+function toggleRewardFilter(filter) {
+    if (logViewState.rewardFilter === filter) return; // Already active
+    logViewState.rewardFilter = filter;
+
+    // Visual Update
+    $('.reward-filters .reward-btn').removeClass('active');
+    $(`.reward-filters .reward-btn:contains('${filter.charAt(0).toUpperCase() + filter.slice(1)}')`).addClass('active'); // Simple text match or specific ID needed?
+    // Better: Add data attributes in HTML or just use index.
+    // Let's assume the button click passed the string.
+    // Actually, let's just re-select by onclick since I didn't add IDs.
+    // Or just look for the text content.
+    // User asked for "Daily", "Monthly".
+    // I'll assume the button update happens in the renderer or here via simple class toggle.
+
+    // Manual class toggle for now (since no renderer logic for this yet)
+    const btns = document.querySelectorAll('.reward-filters .reward-btn');
+    btns.forEach(b => {
+        if (b.innerText.toLowerCase().includes(filter) || (filter === 'special' && b.innerText.includes('Special'))) {
+            b.classList.add('active');
+        } else {
+            b.classList.remove('active');
+        }
+    });
+
+    if (typeof renderLootLog === 'function') renderLootLog();
+}
+
 function setLogCategory(cat) {
     logViewState.activeCategory = cat;
+
+    // Toggle Button Active State
     $('.category-filters .cat-btn').removeClass('active');
-    // jQuery text match for active state
     $(`.category-filters .cat-btn`).each(function () {
         const txt = $(this).text().toLowerCase();
         if (txt.includes(cat) || (cat === 'drops' && txt.includes('monster'))) $(this).addClass('active');
     });
+
+    // Toggle Filter Containers
+    if (cat === 'rewards') {
+        $('#filters-drops').hide();
+        $('#filters-rewards').css('display', 'flex'); // Flex for alignment
+    } else if (cat === 'drops') {
+        $('#filters-rewards').hide();
+        $('#filters-drops').css('display', 'flex');
+    } else {
+        // Other cats (Spending) might not have filters?
+        $('#filters-drops').hide();
+        $('#filters-rewards').hide();
+    }
+
     if (typeof renderLootLog === 'function') renderLootLog();
 }

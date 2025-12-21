@@ -94,3 +94,55 @@ input[type=range].zoom-slider {
     color: #ffd700;
     font-family: 'Orbitron', sans-serif;
 }
+
+/* REWARD FILTERS (Left Aligned, Super Sexy) */
+.reward-filters {
+    display: flex;
+    gap: 15px;
+    margin-right: auto;
+    /* Pushes everything else to the right */
+    padding-left: 10px;
+}
+
+.reward-btn {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    padding: 6px 16px;
+    border-radius: 4px;
+    color: #00cccc;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.05);
+}
+
+.reward-btn:hover {
+    border-color: #00ffff;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.reward-btn.active {
+    background: rgba(0, 255, 255, 0.1);
+    border-color: #00ffff;
+    color: #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 10px rgba(0, 255, 255, 0.2);
+    font-weight: 700;
+}
+
+/* SPECIAL CHANCE BUTTON (Unique Flare) */
+.reward-btn.special {
+    border-color: rgba(255, 0, 255, 0.3);
+    color: #ff00ff;
+}
+
+.reward-btn.special:hover,
+.reward-btn.special.active {
+    border-color: #ff00ff;
+    color: #fff;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.6);
+}
