@@ -251,6 +251,8 @@ let canvas;
 
     initUIListeners();
     if (typeof initLootSystem === 'function') initLootSystem();
+    // New AAA Overlay System
+    if (typeof CursorOverlaySystem !== 'undefined') CursorOverlaySystem.init();
 
     requestAnimationFrame(loop);
 })();
