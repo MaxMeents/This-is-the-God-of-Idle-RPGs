@@ -69,27 +69,6 @@ function prepareStagePool(stageId) {
     }
 }
 
-/**
- * FX UPDATER
- * Handles the floating damage numbers.
- */
-function updateDamageNumbers(dt) {
-    const gameSpd = PERFORMANCE.GAME_SPEED;
-    const dtMult = (dt / 16.6) * gameSpd;
-
-    for (let i = activeDamageCount - 1; i >= 0; i--) {
-        const idx = activeDamageIndices[i];
-        const dn = damageNumbers[idx];
-        dn.life -= 0.02 * dtMult;
-        dn.x += dn.vx * dtMult;
-        dn.y += dn.vy * dtMult;
-        if (dn.life <= 0) {
-            dn.active = false;
-            activeDamageIndices[i] = activeDamageIndices[activeDamageCount - 1];
-            activeDamageCount--;
-        }
-    }
-}
 
 /**
  * PROGRESSIVE SPAWNING
@@ -270,34 +249,6 @@ let canvas;
     window.addEventListener('wheel', (e) => {
         targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
         targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
-    });
-
-    initUIListeners();
-
-    const loadSkillSheets = () => {
-        let loaded = 0;
-        const check = () => {
-            loaded++;
-            onAssetLoad();
-            if (loaded >= 3) {
-                skillAssets.ready = true;
-                bakeSkills();
-            }
-        };
-        skillAssets.buttonImg.onload = check;
-        skillAssets.skillImg.onload = check;
-        skillAssets.swordOfLightImg.onload = check;
-        skillAssets.buttonImg.src = SKILLS.Tier3.buttonSheet;
-        skillAssets.skillImg.src = SKILLS.Tier3.skillSheet;
-        skillAssets.swordOfLightImg.src = SKILLS.SwordOfLight.skillSheet;
-    };
-    loadSkillSheets();
-
-    enemyKeys.forEach(k => {
-        const loadImg = (p, img) => { img.onload = onAssetLoad; img.src = p; };
-        loadImg(Enemy[k].walkPath, enemyAssets[k].walk);
-        loadImg(Enemy[k].deathPath, enemyAssets[k].death);
-        loadImg(Enemy[k].attackPath, enemyAssets[k].attack);
     });
 
     requestAnimationFrame(loop);
