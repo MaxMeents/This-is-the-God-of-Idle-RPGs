@@ -315,10 +315,14 @@ function draw() {
         t.visible = true;
         t.alpha = dn.life;
 
+        t.zIndex = dn.critTier;
+
         // SCREEN SPACE CALCULATION
         // We track the world position but draw in screen space so they stay sharp and visible
+        // Adding a slight upward offset for higher tiers to keep them distinct
+        const tierOffset = dn.critTier * 15;
         const screenX = (dn.x - player.x) * zoom + cx;
-        const screenY = (dn.y - player.y) * zoom + cy;
+        const screenY = (dn.y - player.y) * zoom + cy - tierOffset;
         t.position.set(screenX, screenY);
 
         const valStr = String(dn.val);

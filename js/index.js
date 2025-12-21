@@ -258,6 +258,7 @@ let canvas;
     fxContainer = new PIXI.Container();
     playerContainer = new PIXI.Container();
     uiContainer = new PIXI.Container();
+    uiContainer.sortableChildren = true;
 
     app.stage.addChild(worldContainer);
     worldContainer.addChild(enemyContainer);
