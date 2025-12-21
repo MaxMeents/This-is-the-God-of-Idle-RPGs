@@ -1,0 +1,57 @@
+/**
+ * PAUSE OVERLAY
+ * 
+ * Displays a premium "PAUSED" state in the center of the screen.
+ * 
+ * LOCATED IN: css/hud/pause-overlay.css
+ */
+
+#paused-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    pointer-events: none;
+    /* Let clicks pass through if needed, though game is paused */
+    display: none;
+    /* Hidden by default */
+    text-align: center;
+}
+
+#paused-overlay.active {
+    display: block;
+    animation: pausePulse 2s infinite ease-in-out;
+}
+
+#paused-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 120px;
+    font-weight: 900;
+    color: #00ffff;
+    /* Cyan */
+    letter-spacing: 20px;
+    text-transform: uppercase;
+    /* Super Sexy Glow */
+    text-shadow:
+        0 0 10px rgba(0, 255, 255, 0.8),
+        0 0 20px rgba(0, 255, 255, 0.6),
+        0 0 40px rgba(0, 255, 255, 0.4),
+        0 0 80px rgba(0, 255, 255, 0.2);
+    -webkit-text-stroke: 2px rgba(0, 0, 0, 0.5);
+    /* Definition against bright backgrounds */
+}
+
+@keyframes pausePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}

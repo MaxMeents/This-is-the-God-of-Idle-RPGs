@@ -42,6 +42,7 @@ const GamepadSystem = {
             this.gamepadIndex = e.gamepad.index;
             this.active = true;
             this.createSafetyPopup();
+            this.createPauseOverlay(); // Create the sexy overlay
             this.startPolling();
         });
 
@@ -51,6 +52,40 @@ const GamepadSystem = {
         });
 
         console.log("[GAMEPAD] System Ready (Waiting for connection...)");
+    },
+
+    // ... (rest of methods)
+
+    /**
+     * CREATE PAUSE OVERLAY
+     */
+    createPauseOverlay() {
+        if (document.getElementById('paused-overlay')) return;
+        const ov = document.createElement('div');
+        ov.id = 'paused-overlay';
+        ov.innerHTML = '<div id="paused-text">PAUSED</div>';
+        document.body.appendChild(ov);
+    },
+
+    togglePause() {
+        const overlay = document.getElementById('paused-overlay');
+        const speedVal = document.getElementById('speed-val');
+        const slider = document.getElementById('speed-slider');
+
+        if (PERFORMANCE.GAME_SPEED > 0) {
+            // PAUSE
+            PERFORMANCE.GAME_SPEED = 0;
+            if (overlay) overlay.classList.add('active');
+            if (speedVal) speedVal.innerText = 'PAUSED';
+        } else {
+            // RESUME (Instant back to 1.0 as requested)
+            PERFORMANCE.GAME_SPEED = 1.0;
+            if (overlay) overlay.classList.remove('active');
+
+            // Sync UI
+            if (speedVal) speedVal.innerText = '1.0x';
+            if (slider) slider.value = 1.0;
+        }
     },
 
     /**
@@ -202,6 +237,11 @@ const GamepadSystem = {
         if (justPressed(this.buttonMap.UP)) {
             if (autoSkills) this.showSafetyWarning();
             else if (typeof activateSupernova === 'function') activateSupernova(3);
+        }
+
+        // 6. PAUSE TOGGLE (Start Button / index 9)
+        if (justPressed(this.buttonMap.START)) {
+            this.togglePause();
         }
 
         // Update History
