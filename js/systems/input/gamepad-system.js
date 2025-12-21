@@ -90,7 +90,11 @@ const GamepadSystem = {
         if (Math.abs(dx) < this.deadzone) dx = 0;
         if (Math.abs(dy) < this.deadzone) dy = 0;
 
-        if (dx === 0 && dy === 0) return;
+        // IDLE STATE if no input
+        if (dx === 0 && dy === 0) {
+            player.shipState = 'IDLE';
+            return;
+        }
 
         // SAFETY CHECK: Auto-Skill must be OFF for manual movement
         if (autoSkills) {

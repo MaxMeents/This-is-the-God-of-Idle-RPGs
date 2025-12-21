@@ -50,8 +50,9 @@ function updatePlayerMovement(dt, sc) {
     /**
      * STATE: ENGAGED / HUNTING
      * Navigates toward the current targetIdx with tactical awareness.
+     * ONLY ACTIVE IF AUTO-SKILLS ARE ENABLED.
      */
-    else if (player.targetIdx !== -1) {
+    else if (window.autoSkills && player.targetIdx !== -1) {
         const tIdx = player.targetIdx * STRIDE;
         const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
         const dSq = dx * dx + dy * dy;
