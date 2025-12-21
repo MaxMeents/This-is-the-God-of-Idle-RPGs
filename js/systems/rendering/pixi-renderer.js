@@ -257,6 +257,15 @@ function renderSkills() {
 }
 
 function renderDamageNumbers(cx, cy) {
+    // SPRITE SANITATION (Cleanup)
+    // -------------------------------------------------------------------------
+    // CRITICAL: Reset all damage text sprites to invisible before rendering.
+    // This prevents expired damage numbers from "sticking" on screen forever.
+    // Without this loop, damage text accumulates and causes severe lag.
+    // SOURCE: Gold Standard renderer.js line 308
+    // -------------------------------------------------------------------------
+    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
+
     for (let poolIdx of activeDamageIndices.slice(0, activeDamageCount)) {
         const t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
         t.visible = true; t.alpha = dn.life; t.zIndex = dn.critTier;

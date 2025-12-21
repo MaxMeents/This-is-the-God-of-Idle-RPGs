@@ -33,8 +33,8 @@ function init(firstLoad = false) {
 
     // Initial Camera Setup
     if (firstLoad) {
-        zoom = 0.05;
-        targetZoom = 0.05;
+        window.zoom = 0.05;
+        window.targetZoom = 0.05;
     }
 
     // Prepare the spawn list for the current stage
@@ -187,14 +187,7 @@ function loop(now) {
         let gridTime = 0, targetTime = 0, playerTime = 0, enemyTime = 0, combatTime = 0, weaponTime = 0, bulletTime = 0;
 
         for (let s = 0; s < steps; s++) {
-            const stepStart = performance.now();
             update(stepDt, now + (s * stepDt), s === 0, s);
-            const stepEnd = performance.now();
-
-            // Log slow steps
-            if (stepEnd - stepStart > 5) {
-                console.warn(`[PERF] Slow step ${s}: ${(stepEnd - stepStart).toFixed(2)}ms`);
-            }
         }
         updateFX(dt);
         const totalPhysics = performance.now() - sUpdate;
@@ -252,8 +245,8 @@ let canvas;
     app.stage.addChild(uiContainer);
 
     window.addEventListener('wheel', (e) => {
-        targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
-        targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, targetZoom));
+        window.targetZoom *= e.deltaY > 0 ? 0.9 : 1.1;
+        window.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, window.targetZoom));
     });
 
     requestAnimationFrame(loop);

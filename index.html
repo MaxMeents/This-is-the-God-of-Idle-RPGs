@@ -163,12 +163,9 @@
     <script src="js/systems/rendering/pixi-renderer.js"></script>
 
     <script src="js/systems/combat/projectile-engine.js"></script>
-    <script src="js/systems/combat/damage-processor.js"></script>
-    <script src="js/systems/combat/player-movement.js"></script>
-    <script src="js/systems/combat/enemy-ai.js"></script>
-    <script src="js/systems/combat/skills-system.js"></script>
-    <script src="js/systems/combat/combat-core.js"></script>
 
+    <!-- LOOT SYSTEM: Must load BEFORE damage-processor.js -->
+    <!-- Reason: damage-processor.js calls handleEnemyDrop() on enemy death -->
     <script src="js/systems/loot/loot-persistence.js"></script>
     <script src="js/systems/loot/loot-logic.js"></script>
     <script src="js/systems/loot/loot-ui.js"></script>
@@ -176,6 +173,13 @@
     <script src="js/systems/loot/loot-filters.js"></script>
     <script src="js/systems/loot/loot-batching.js"></script>
 
+    <script src="js/systems/combat/damage-processor.js"></script>
+    <script src="js/systems/combat/player-movement.js"></script>
+    <script src="js/systems/combat/enemy-ai.js"></script>
+    <script src="js/systems/combat/skills-system.js"></script>
+    <script src="js/systems/combat/combat-core.js"></script>
+
+    <!-- 3. UI SYSTEM (Depends on game state) -->
     <script src="js/systems/ui/ui-cache.js"></script>
     <script src="js/systems/ui/ui-orchestrator.js"></script>
     <script src="js/systems/ui/ui-listeners.js"></script>

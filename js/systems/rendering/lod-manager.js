@@ -186,23 +186,27 @@ function startAsyncLODPipeline(tiers, aggressive, onComplete) {
         const sheetImg = enemyAssets[typeKey][animType];
 
         // Ensure we only process loaded images
-        if (sheetImg.complete && sheetImg.naturalWidth > 0 && window.BAKER_WORKER) {
-            let bitmap = sheetImg._bitmap;
-            if (!bitmap) { bitmap = await createImageBitmap(sheetImg); sheetImg._bitmap = bitmap; }
+        const data = enemyAssets[typeKey][animType];
+        const cfg = Enemy[typeKey];
 
-            workerTasksCount++;
-            window.BAKER_WORKER.postMessage({
-                typeKey, animType, tier,
-                frameCount: Enemy[typeKey][animType + 'Frames'],
-                cols: Enemy[typeKey][animType + 'Cols'],
-                sourceSize: Enemy[typeKey][animType + 'Size'],
-                sheet: bitmap
+        if (data && data.naturalWidth > 0) {
+            const frames = [];
+            const size = tier.size;
+            const cols = cfg[animType + 'Cols'];
+            const baseTexture = PIXI.Texture.from(data);
+            for (let i = 0; i < cfg[animType + 'Frames']; i++) {
+                frames.push(new PIXI.Texture({
+                    source: baseTexture.source,
+                    frame: new PIXI.Rectangle((i % cols) * size, Math.floor(i / cols) * size, size, size)
+                }));
+            }
+            // Assign to ALL tiers (since we only use 512px now)
+            PERFORMANCE.LOD_TIERS.forEach(t => {
+                enemyAssets[typeKey].caches[animType][t.id] = frames;
             });
-
-            conversionCt++;
-            if (typeof window.updateLoadingProgress === 'function') window.updateLoadingProgress();
         }
-
+        if (typeof conversionCt !== 'undefined') conversionCt++;
+        if (typeof window.updateLoadingProgress === 'function') window.updateLoadingProgress();
         taskIndex++;
         requestAnimationFrame(runConversion);
     }

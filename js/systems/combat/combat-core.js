@@ -93,7 +93,7 @@ function update(dt, now, isFirstStep, s) {
     }
 
     // AUTO SKILL TRIGGER
-    if (autoSkills && player.targetIdx !== -1) {
+    if (window.autoSkills && player.targetIdx !== -1) {
         const tIdx = player.targetIdx * STRIDE;
         const dx = data[tIdx] - player.x, dy = data[tIdx + 1] - player.y;
         const distSq = dx * dx + dy * dy;
