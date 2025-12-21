@@ -251,7 +251,7 @@ const FLOOR_TILE_SIZE = 46000;
  * LOOT & DROPS CONFIGURATION
  */
 const LOOT_CONFIG = {
-    MAX_HISTORY: 5,
+    MAX_HISTORY: 3,
     ITEMS: {
         'Dragon Claw': { name: 'Dragon Claw', icon: 'img/Enemy Drops/Dragon Claw.webp', baseChance: 0.15, min: 1, max: 2 },
         'Dragon Heart': { name: 'Dragon Heart', icon: 'img/Enemy Drops/Dragon Heart.webp', baseChance: 0.05, min: 1, max: 1 },
@@ -270,9 +270,14 @@ const LOOT_CONFIG = {
         { id: 'Omega', chanceMult: 25.0, amountMult: 10000.0, healthMult: 10000, sizeMult: 20 }
     ],
     ENEMY_DROPS: {
-        'Dragon': ['Dragon Claw', 'Dragon Heart', 'Dragon Horn'],
-        'Phoenix': ['Phoenix Feather'],
-        'Butterfly': ['Butterfly Wing']
+        'GalaxyDragon': ['Dragon Claw', 'Dragon Heart', 'Dragon Horn'],
+        'BlueDragon': ['Dragon Claw', 'Dragon Heart', 'Dragon Horn'],
+        'PhoenixSurrender': ['Phoenix Feather'],
+        'GalaxyButterfly': ['Butterfly Wing'],
+        'BlueWhiteButterfly': ['Butterfly Wing'],
+        'GoldButterfly': ['Butterfly Wing'],
+        'GreenBlackButterfly': ['Butterfly Wing'],
+        'BlackRedButterfly': ['Butterfly Wing']
     },
     GLOBAL_DROPS: ['Main Game Currency', 'Crystal']
 };

@@ -4,12 +4,14 @@
  */
 #loot-history-container {
     position: fixed;
-    bottom: 250px;
-    right: 40px;
+    bottom: 180px;
+    /* Moved down significantly */
+    right: 20px;
+    /* Moved to the right */
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 35px;
+    gap: 52px;
     /* Space for large icons */
     z-index: 1500;
     pointer-events: none;
@@ -19,45 +21,47 @@
     position: relative;
     display: flex;
     align-items: center;
-    width: 240px;
-    height: 70px;
+    width: 360px;
+    height: 105px;
     /* Container height to fit icon */
     overflow: visible;
     animation: lootSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* STAIRCASE LAYOUT */
+/* VISIBILITY ENFORCEMENT: Strictly hide anything older than the top 3 */
+.loot-item:nth-last-child(n+4) {
+    display: none !important;
+}
+
+/* STAIRCASE LAYOUT - Only need 3 levels */
 .loot-item:nth-last-child(1) {
-    margin-right: 120px;
+    margin-right: 180px;
+    /* 120px * 1.5 */
 }
 
 .loot-item:nth-last-child(2) {
-    margin-right: 90px;
+    margin-right: 135px;
+    /* 90px * 1.5 */
 }
 
 .loot-item:nth-last-child(3) {
-    margin-right: 60px;
-}
-
-.loot-item:nth-last-child(4) {
-    margin-right: 30px;
-}
-
-.loot-item:nth-last-child(5) {
-    margin-right: 0px;
+    margin-right: 90px;
+    /* 60px * 1.5 */
 }
 
 /**
- * THE LOOT BOX: 30px high, white/black chasing border
+ * THE LOOT BOX: 45px high (30px * 1.5), white/black chasing border
  */
 .loot-box {
     position: absolute;
     right: 0;
-    width: 200px;
-    height: 32px;
+    width: 300px;
+    /* 200px * 1.5 */
+    height: 48px;
+    /* 32px * 1.5 */
     /* Sleek Thinner Height */
     background: #000;
-    border-radius: 4px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
@@ -69,12 +73,13 @@
 .loot-box::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
     background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
-    border-radius: 6px;
+    border-radius: 8px;
+    /* Scaled radius */
     z-index: -2;
     animation: rotate 3s linear infinite;
 }
@@ -88,19 +93,22 @@
     right: 0;
     bottom: 0;
     background: #000;
-    border-radius: 4px;
+    border-radius: 6px;
     z-index: -1;
 }
 
 /**
- * THE ICON: 70px high, RGB chasing border, white center
+ * THE ICON: 105px high (70px * 1.5), RGB chasing border, white center
  */
 .loot-icon-wrapper {
     position: absolute;
-    left: 10px;
+    left: 15px;
+    /* 10px * 1.5 */
     /* Positioned to overlap the box dock */
-    width: 70px;
-    height: 70px;
+    width: 105px;
+    /* 70px * 1.5 */
+    height: 105px;
+    /* 70px * 1.5 */
     z-index: 10;
     display: flex;
     justify-content: center;
@@ -118,33 +126,38 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
 
 .loot-icon-bg::before {
     content: '';
     position: absolute;
-    width: 62px;
+    width: 93px;
+    /* 62px * 1.5 */
     /* Leaves thin border */
-    height: 62px;
+    height: 93px;
+    /* 62px * 1.5 */
     background: #fff;
     border-radius: 50%;
 }
 
 .loot-icon {
     position: relative;
-    width: 55px;
-    height: 55px;
+    width: 82px;
+    /* 55px * 1.5 */
+    height: 82px;
+    /* 55px * 1.5 */
     object-fit: contain;
     z-index: 11;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
 }
 
 /**
  * TEXT STYLING
  */
 .loot-text {
-    padding-left: 55px;
+    padding-left: 82px;
+    /* 55px * 1.5 */
     /* Offset to clear the docked icon */
     display: flex;
     flex-direction: column;
@@ -155,46 +168,23 @@
 
 .loot-amount {
     color: #ffcc00;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 19px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+    font-size: 21px;
+    /* 14px * 1.5 */
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 1);
 }
 
 .loot-name {
-    font-size: 10px;
     color: #ffffff;
-    opacity: 0.7;
-    font-weight: 700;
-    letter-spacing: 1.2px;
+    font-size: 15px;
+    /* 10px * 1.5 */
+    font-family: Arial, sans-serif;
     text-transform: uppercase;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes lootSlideIn {
-    0% {
-        opacity: 0;
-        transform: translateX(80px) scale(0.7);
-    }
-
-    100% {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-
-.loot-item.removing {
-    opacity: 0;
-    transform: translateY(-30px);
-    transition: all 0.3s ease-out;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 195px;
+    /* Scaled max width */
 }

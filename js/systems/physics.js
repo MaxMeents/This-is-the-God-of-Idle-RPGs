@@ -760,6 +760,7 @@ function processAOEDamage() {
                             data[idx + 8] = 0;
                             data[idx + 9] = 0.001;
                             spawnFX(data[idx], data[idx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+                            handleEnemyDrop(enemyKeys[data[idx + 11] | 0], data[idx + 12] | 0);
                         }
                     }
                 }
@@ -829,6 +830,7 @@ function processSkillDamage() {
                                 data[eIdx + 8] = 0;
                                 data[eIdx + 9] = 0.001; // Trigger death animation
                                 spawnFX(data[eIdx], data[eIdx + 1], 0, 0, 500, FX_TYPES.EXPLOSION, 100);
+                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0);
                             }
                         }
                     }
@@ -1004,6 +1006,7 @@ function updateBullets(dt) {
                                 killCount++; stageKillCount++;
                                 data[eIdx + 8] = 0; data[eIdx + 9] = 0.001;
                                 spawnFX(bx, by, 0, 0, 500, FX_TYPES.EXPLOSION, 80);
+                                handleEnemyDrop(enemyKeys[data[eIdx + 11] | 0], data[eIdx + 12] | 0);
                                 for (let k = 0; k < 5; k++) spawnFX(bx, by, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, 300, FX_TYPES.SPARK, 10);
                             }
 
