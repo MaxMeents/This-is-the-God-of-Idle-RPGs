@@ -37,9 +37,8 @@ let logViewState = {
 function openLootLog() {
     const modal = createLootLogModal(); // Defined in loot-ui.js
 
-    // RE-SYNC ALL PERSISTENT DATA before viewing (ONLY if empty)
-    // This prevents lag when reopening - we only parse once
-    if (typeof LootPersistence !== 'undefined' && lootLogHistory.length === 0) {
+    // Load hour counts (instant from localStorage)
+    if (typeof LootPersistence !== 'undefined') {
         LootPersistence.syncMemory();
     }
 

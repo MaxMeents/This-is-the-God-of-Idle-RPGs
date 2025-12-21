@@ -27,7 +27,13 @@ function renderLootLog() {
     const headerTitle = document.querySelector('.modal-header h2');
     if (!content) return;
 
-    // 1. FILTER DATA BY TIME SCOPE
+    // INDEX VIEW: Just show hour counts (no data filtering needed)
+    if (logViewState.currentView === 'index') {
+        renderHoursIndex(content, headerTitle, null);
+        return;
+    }
+
+    // DETAIL VIEW: Filter lootLogHistory for the specific hour
     let filteredHistory = lootLogHistory;
     if (logViewState.timeScope === 'session') {
         filteredHistory = filteredHistory.filter(item => item.rawTime >= sessionStartTime);
@@ -36,10 +42,10 @@ function renderLootLog() {
         filteredHistory = filteredHistory.filter(item => item.dateLabel === todayStr);
     }
 
-    // 2. FILTER BY TIER TOGGLES (Set in loot-filters.js)
+    // FILTER BY TIER TOGGLES (Set in loot-filters.js)
     filteredHistory = filteredHistory.filter(item => logViewState.activeTiers.has(item.tier));
 
-    // 3. CATEGORY SWITCHING (Placeholder for spending/rewards)
+    // CATEGORY SWITCHING (Placeholder for spending/rewards)
     if (logViewState.activeCategory !== 'drops') filteredHistory = [];
 
     // EMPTY STATE HANDLING
@@ -53,12 +59,8 @@ function renderLootLog() {
         return;
     }
 
-    // 4. CHOOSE VIEW (Index vs Detail)
-    if (logViewState.currentView === 'index') {
-        renderHoursIndex(content, headerTitle, filteredHistory);
-    } else {
-        renderDetailLog(content, headerTitle, filteredHistory);
-    }
+    // DETAIL VIEW
+    renderDetailLog(content, headerTitle, filteredHistory);
 }
 
 /**
