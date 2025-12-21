@@ -308,7 +308,7 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
         </div>
             <div class="loot-icon-wrapper">
                 <div class="loot-icon-bg"></div>
-                <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}">
+                <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" loading="lazy">
             </div>
     `;
 
@@ -624,30 +624,8 @@ function renderDetailLog(content, headerTitle, data) {
             rows: gridRows,
             scrollId: 'loot-log-scroll-area',
             contentId: 'loot-log-content-area',
-            rows_in_block: 20,
-            callbacks: {
-                clusterChanged: function () {
-                    const scrollArea = document.getElementById('loot-log-scroll-area');
-                    const observer = lozad('.lozad', {
-                        root: scrollArea,
-                        rootMargin: '200px 0px',
-                        threshold: 0.1,
-                        loaded: function (el) { el.classList.add('loaded'); }
-                    });
-                    observer.observe();
-                }
-            }
+            rows_in_block: 20
         });
-
-        // Initial Observation
-        const scrollArea = document.getElementById('loot-log-scroll-area');
-        const observer = lozad('.lozad', {
-            root: scrollArea,
-            rootMargin: '200px 0px',
-            threshold: 0.1,
-            loaded: function (el) { el.classList.add('loaded'); }
-        });
-        observer.observe();
         return;
 
     }
@@ -661,35 +639,8 @@ function renderDetailLog(content, headerTitle, data) {
         rows: listRows,
         scrollId: 'loot-log-scroll-area',
         contentId: 'loot-log-content-area',
-        rows_in_block: 50,
-        callbacks: {
-            clusterChanged: function () {
-                // Re-observe newly injected/swapped elements
-                const scrollArea = document.getElementById('loot-log-scroll-area');
-                const observer = lozad('.lozad', {
-                    root: scrollArea,
-                    rootMargin: '200px 0px', // Pre-load slightly before view
-                    threshold: 0.1,
-                    loaded: function (el) {
-                        el.classList.add('loaded'); // Add class for CSS fade-in
-                    }
-                });
-                observer.observe();
-            }
-        }
+        rows_in_block: 50
     });
-
-    // Initial Observation for first render
-    const scrollArea = document.getElementById('loot-log-scroll-area');
-    const observer = lozad('.lozad', {
-        root: scrollArea,
-        rootMargin: '200px 0px',
-        threshold: 0.1,
-        loaded: function (el) {
-            el.classList.add('loaded');
-        }
-    });
-    observer.observe();
 }
 
 function renderGridItem(itemData) {
@@ -704,7 +655,7 @@ function renderGridItem(itemData) {
             </div>
              <div class="loot-icon-wrapper">
                 <div class="loot-icon-bg"></div>
-                <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}" style="width: 40px; height: 40px;">
+                <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 40px; height: 40px;" loading="lazy">
             </div>
         </div>
     `;
@@ -728,7 +679,7 @@ function renderDetailRow(itemData) {
                 <!-- Icon sizes controlled by CSS var -->
                 <div class="loot-icon-wrapper">
                     <div class="loot-icon-bg"></div>
-                    <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}">
+                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" loading="lazy">
                 </div>
             </div>
         </div>

@@ -901,23 +901,12 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     /* Scale image: 77% of wrapper */
     width: 77% !important;
     height: 77% !important;
-    opacity: 0;
-    /* Hidden by default for lazy load */
-    transition: opacity 0.4s ease-in;
-}
-
-.in-log .loot-icon.loaded {
+    /* Native lazy load doesn't need opacity hack */
     opacity: 1;
-    /* Fade in when loaded */
 }
 
 /* Grid Icon Lazy Load */
 .loot-grid-item .loot-icon {
-    opacity: 0;
-    transition: opacity 0.4s ease-in;
-}
-
-.loot-grid-item .loot-icon.loaded {
     opacity: 1;
 }
 
