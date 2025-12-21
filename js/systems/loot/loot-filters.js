@@ -37,8 +37,11 @@ let logViewState = {
 function openLootLog() {
     const modal = createLootLogModal(); // Defined in loot-ui.js
 
-    // RE-SYNC ALL PERSISTENT DATA before viewing
-    if (typeof LootPersistence !== 'undefined') LootPersistence.syncMemory();
+    // RE-SYNC ALL PERSISTENT DATA before viewing (ONLY if empty)
+    // This prevents lag when reopening - we only parse once
+    if (typeof LootPersistence !== 'undefined' && lootLogHistory.length === 0) {
+        LootPersistence.syncMemory();
+    }
 
     logViewState.currentView = 'index';
     logViewState.currentHour = null;
@@ -112,6 +115,14 @@ function viewHourLog(hour) {
     logViewState.currentView = 'detail';
     logViewState.currentHour = hour;
     if (logViewState.clusterize) logViewState.clusterize.destroy();
+
+    // Load hour details on-demand (only if not already cached)
+    if (typeof LootPersistence !== 'undefined') {
+        // Clear lootLogHistory and load only this hour's entries
+        lootLogHistory.length = 0;
+        LootPersistence.syncHourDetails(hour);
+    }
+
     if (typeof renderLootLog === 'function') renderLootLog();
 }
 

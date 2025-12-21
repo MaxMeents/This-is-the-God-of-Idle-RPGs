@@ -69,11 +69,10 @@ function renderHoursIndex(content, headerTitle, data) {
     headerTitle.innerHTML = "God's Loot Ledger";
     content.innerHTML = '';
 
-    // Calculate counts per hour
-    const hoursMap = {};
-    data.forEach(item => {
-        hoursMap[item.hourLabel] = (hoursMap[item.hourLabel] || 0) + 1;
-    });
+    // Use cached hour counts (FAST - no array filtering needed)
+    const hoursMap = (typeof LootPersistence !== 'undefined' && LootPersistence.hourCounts)
+        ? LootPersistence.hourCounts
+        : {};
 
     // Display window for last 24 hours
     const now = new Date();

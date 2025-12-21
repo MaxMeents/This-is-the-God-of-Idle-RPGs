@@ -90,15 +90,34 @@ const LootPersistence = {
 
     /**
      * SYNC MEMORY FROM BUFFER
-     * Parses the raw string into the 'lootLogHistory' array for active use.
-     * Typically called when opening the Ledger (openLootLog in loot-ui.js).
+     * Only loads hour counts from localStorage - no parsing needed!
      */
     syncMemory() {
-        lootLogHistory.length = 0; // Clear current memory array
+        // Load pre-computed hour counts from localStorage
+        const countsKey = this.STORAGE_KEY + '_counts';
+        const storedCounts = localStorage.getItem(countsKey);
+
+        if (storedCounts) {
+            this.hourCounts = JSON.parse(storedCounts);
+            console.log(`[LOOT] Loaded hour counts for ${Object.keys(this.hourCounts).length} hours (instant)`);
+        } else {
+            // First time - need to build counts
+            this.rebuildHourCounts();
+        }
+    },
+
+    /**
+     * REBUILD HOUR COUNTS
+     * Only called once when counts don't exist in localStorage
+     */
+    rebuildHourCounts() {
         if (!this.BUFFER) return;
 
         const entries = this.BUFFER.split(',');
-        console.log(`[LOOT] Syncing ${entries.length} persistent entries...`);
+        console.log(`[LOOT] Building hour counts for ${entries.length} entries...`);
+
+        this.hourCounts = {};
+        const hourData = {}; // Store parsed entries by hour
 
         entries.forEach(e => {
             if (!e) return;
@@ -106,17 +125,69 @@ const LootPersistence = {
             if (parts.length < 3) return;
 
             const [idStr, timeBase36, amtBase36, luckyFlag, tier] = parts;
-            const id = parseInt(idStr);
             const time = parseInt(timeBase36, 36);
+            const date = new Date(time);
+            const hourLabel = date.toLocaleTimeString([], { hour: '2-digit', hour12: false }) + ":00";
+
+            // Increment count
+            if (!this.hourCounts[hourLabel]) this.hourCounts[hourLabel] = 0;
+            this.hourCounts[hourLabel]++;
+
+            // Store parsed entry for this hour
+            if (!hourData[hourLabel]) hourData[hourLabel] = [];
+
+            const id = parseInt(idStr);
             const amt = parseInt(amtBase36, 36);
             const lucky = luckyFlag === '1';
             const finalTier = tier || 'normal';
 
-            this.syncEntry(id, time, amt, lucky, finalTier, false);
+            // Reverse lookup itemKey
+            const itemKey = Object.keys(LOOT_CONFIG.ITEMS).find(k => LOOT_CONFIG.ITEMS[k].id === id);
+            if (itemKey) {
+                hourData[hourLabel].push({
+                    itemKey,
+                    amount: amt,
+                    tier: finalTier,
+                    rawTime: time,
+                    timestamp: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+                    hourLabel: hourLabel,
+                    dateLabel: date.toLocaleDateString(),
+                    isLucky: lucky
+                });
+            }
         });
 
-        // Sort newest first
-        lootLogHistory.sort((a, b) => b.rawTime - a.rawTime);
+        // Save counts to localStorage
+        localStorage.setItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
+
+        // Save each hour's data separately
+        Object.keys(hourData).forEach(hourLabel => {
+            const hourKey = this.STORAGE_KEY + '_hour_' + hourLabel.replace(':', '_');
+            hourData[hourLabel].sort((a, b) => b.rawTime - a.rawTime);
+            localStorage.setItem(hourKey, JSON.stringify(hourData[hourLabel]));
+        });
+
+        console.log(`[LOOT] Cached ${Object.keys(this.hourCounts).length} hours to localStorage`);
+    },
+
+    /**
+     * SYNC HOUR DETAILS
+     * Loads pre-parsed hour data from localStorage (instant!)
+     */
+    syncHourDetails(hourLabel) {
+        const hourKey = this.STORAGE_KEY + '_hour_' + hourLabel.replace(':', '_');
+        const storedHour = localStorage.getItem(hourKey);
+
+        lootLogHistory.length = 0;
+
+        if (storedHour) {
+            // Load pre-parsed data (INSTANT)
+            const hourData = JSON.parse(storedHour);
+            lootLogHistory.push(...hourData);
+            console.log(`[LOOT] Loaded ${lootLogHistory.length} entries from localStorage for hour ${hourLabel} (instant)`);
+        } else {
+            console.warn(`[LOOT] No cached data for hour ${hourLabel}`);
+        }
     },
 
     /**
