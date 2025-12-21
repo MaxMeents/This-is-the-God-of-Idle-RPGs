@@ -6,7 +6,7 @@
     position: fixed;
     bottom: 180px;
     /* Moved down significantly */
-    right: 20px;
+    right: -60px;
     /* Moved to the right */
     display: flex;
     flex-direction: column;
@@ -50,50 +50,50 @@
 }
 
 /**
- * THE LOOT BOX: 45px high (30px * 1.5), white/black chasing border
+ * THE LOOT BOX: 48px high internal + border
  */
 .loot-box {
     position: absolute;
     right: 0;
-    width: 300px;
-    /* 200px * 1.5 */
-    height: 48px;
-    /* 32px * 1.5 */
-    /* Sleek Thinner Height */
-    background: #000;
-    border-radius: 6px;
+    width: 308px;
+    /* 300px + 4px + 4px border */
+    height: 56px;
+    /* 48px + 4px + 4px border */
+    background: transparent;
+    /* Must be transparent so negative z-index children show */
+    border-radius: 8px;
+    /* Outer radius */
     display: flex;
     align-items: center;
+    overflow: hidden;
+    /* CLIPS the giant spinning square */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
-    /* Clip the left edge so it docks into the circle seamlessly */
-    clip-path: polygon(12% 0%, 100% 0%, 100% 100%, 12% 100%);
+    /* Clip-path removed */
 }
 
-/* BOX BORDER: White chasing black */
+/* BOX BORDER: The Spinning Gradient Layer */
 .loot-box::before {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
+    top: 50%;
+    left: 50%;
+    width: 500px;
+    /* Huge square to cover rotation */
+    height: 500px;
     background: conic-gradient(from 0deg, #fff, #000, #fff, #000, #fff);
-    border-radius: 8px;
-    /* Scaled radius */
     z-index: -2;
-    animation: rotate 3s linear infinite;
+    animation: rotateCentered 3s linear infinite;
 }
 
-/* Inner cover to keep border thin */
+/* Inner cover to keep border thick */
 .loot-box::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 4px;
+    /* Creates the 4px border thickness */
     background: #000;
     border-radius: 6px;
+    /* Inner radius */
     z-index: -1;
 }
 
@@ -164,6 +164,9 @@
     justify-content: center;
     line-height: 1.1;
     width: 100%;
+    position: relative;
+    z-index: 2;
+    /* Ensure text is above mask */
 }
 
 .loot-amount {
@@ -187,4 +190,42 @@
     text-overflow: ellipsis;
     max-width: 195px;
     /* Scaled max width */
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateCentered {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes lootSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(80px) scale(0.7);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.loot-item.removing {
+    opacity: 0;
+    transform: translateY(-30px);
+    transition: all 0.3s ease-out;
 }
