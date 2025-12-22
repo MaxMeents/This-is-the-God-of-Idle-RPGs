@@ -341,14 +341,16 @@
 .settings-panel {
     width: 800px;
     max-width: 90%;
+    max-height: 66.67vh;
+    /* 2/3 of viewport = 1/6 from top and bottom */
     background: linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 100, 255, 0.1);
     transform: translateY(20px);
     transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    overflow: visible;
-    /* Changed from hidden to allow dropdowns to overlay */
+    overflow: hidden;
+    /* Hide overflow on panel itself */
     display: flex;
     flex-direction: column;
 }
@@ -432,6 +434,39 @@
 .settings-content {
     padding: 30px;
     min-height: 300px;
+    overflow-y: auto;
+    /* Make content scrollable */
+    overflow-x: hidden;
+    flex: 1;
+    /* Take remaining space */
+}
+
+/* Custom Scrollbar for Settings Content */
+.settings-content::-webkit-scrollbar {
+    width: 12px;
+}
+
+.settings-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    margin: 5px 0;
+}
+
+.settings-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #0096ff 0%, #00d4ff 100%);
+    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 10px rgba(0, 150, 255, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.settings-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #00d4ff 0%, #00ffff 100%);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+.settings-content::-webkit-scrollbar-thumb:active {
+    background: #00ffff;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 1);
 }
 
 .settings-section {

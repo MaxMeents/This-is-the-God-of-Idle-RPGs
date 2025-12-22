@@ -129,7 +129,9 @@ function softReset() {
     // In Progress mode, go back one stage on death. In Farm mode, stay on current stage.
     let targetStage = currentStage;
     if (mode === 'Progress') {
-        targetStage = Math.max(1, currentStage - 1);
+        const isSim = currentStage > 2000;
+        const minStage = isSim ? 2001 : 1;
+        targetStage = Math.max(minStage, currentStage - 1);
     }
 
     lastGridUpdate = 0;

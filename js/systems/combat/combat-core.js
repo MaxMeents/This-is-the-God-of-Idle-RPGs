@@ -44,10 +44,26 @@ function update(dt, now, isFirstStep, s) {
     }
 
     if (!isTraveling && targetKills > 0 && stageKillCount >= targetKills) {
-        // Reset kill count and restart the stage
-        stageKillCount = 0;
-        if (typeof changeStage === 'function') {
-            changeStage(currentStage);
+        const mode = (typeof SettingsState !== 'undefined') ? SettingsState.get('progressionMode') : 'Farm';
+
+        if (mode === 'Progress') {
+            // Progress Mode: Advance to next area
+            stageKillCount = 0;
+            const nextStage = currentStage + 1;
+            const maxStage = isSim ? 2500 : 9;
+
+            if (currentStage < maxStage && typeof changeStage === 'function') {
+                changeStage(nextStage);
+            } else {
+                // At max stage, just restart current stage
+                if (typeof changeStage === 'function') changeStage(currentStage);
+            }
+        } else {
+            // Farm Mode: Reset kill count and restart the stage
+            stageKillCount = 0;
+            if (typeof changeStage === 'function') {
+                changeStage(currentStage);
+            }
         }
     }
 
