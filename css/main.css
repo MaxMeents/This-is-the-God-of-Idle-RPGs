@@ -798,56 +798,215 @@ input[type=range]::-webkit-slider-thumb {
     border: 1px solid rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(4px);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    position: relative;
+    /* Ensure stacking context */
+    overflow: visible;
+    /* Let glows spill if needed, but pseudo handles it */
 }
 
-/* TIER THEMES */
-#target-hud-container.tier-arch {
-    background: linear-gradient(135deg, rgba(184, 134, 11, 0.9) 0%, rgba(255, 215, 0, 0.9) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+/* ANIMATED BACKGROUNDS (The "Moving Colors" Box) */
+/* We use a pseudo-element filling the box for the fluid effect */
+#target-hud-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    /* Fill the whole box */
+    border-radius: 8px;
+    /* Match parent */
+    z-index: -2;
+    background-size: 300% 300%;
+    /* Large size for smooth flow */
+    animation: fluidFlow 3s ease infinite;
+    /* Slower, smoother flow */
+    display: none;
+    /* Hidden by default */
 }
 
-#target-hud-container.tier-god {
-    background: linear-gradient(135deg, rgba(0, 35, 102, 0.9) 0%, rgba(65, 105, 225, 0.9) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 25px rgba(65, 105, 225, 0.5);
+/* Inner Background (The "Box Body") - Tint for Readability */
+#target-hud-container::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    /* Defines border thickness */
+    background: rgba(10, 10, 10, 0.4);
+    /* Default tint */
+    border-radius: 6px;
+    z-index: -1;
+    display: none;
 }
 
-#target-hud-container.tier-alpha {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    box-shadow: 0 0 25px rgba(255, 255, 255, 0.6);
+@keyframes fluidFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
-#target-hud-container.tier-omega {
-    background: linear-gradient(135deg, rgba(75, 0, 130, 0.9) 0%, rgba(147, 112, 219, 0.9) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 25px rgba(147, 112, 219, 0.5);
+/* TIER THEMES - FLUID LINEAR GRADIENTS */
+
+/* NORMAL TIER: Static Black/White */
+#target-hud-container.tier-normal {
+    background: #000;
+    border: 1px solid #333;
+    box-shadow: none;
 }
 
-#target-name {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 14px;
+#target-hud-container.tier-normal::before,
+#target-hud-container.tier-normal::after {
+    display: none;
+}
+
+#target-hud-container.tier-normal #target-name {
     color: #fff;
-    font-weight: 900;
-    text-shadow: 0 0 15px rgba(255, 0, 0, 0.9);
-    letter-spacing: 2px;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    transition: color 0.2s, text-shadow 0.2s;
-}
-
-/* TIER NAME OVERRIDES */
-#target-hud-container.tier-alpha #target-name {
-    color: #000;
+    background: none;
+    -webkit-text-fill-color: #fff;
     text-shadow: none;
 }
 
-#target-hud-container.tier-arch #target-name,
-#target-hud-container.tier-god #target-name,
-#target-hud-container.tier-omega #target-name {
-    text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+/* ARCH (Gold/White Fluid) */
+#target-hud-container.tier-arch::before {
+    display: block;
+    background: linear-gradient(45deg, #b8860b, #ffd700, #fff, #ffd700, #b8860b);
+    background-size: 300% 300%;
 }
+
+#target-hud-container.tier-arch::after {
+    display: block;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#target-hud-container.tier-arch {
+    border: none;
+    background: transparent;
+    box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+}
+
+/* GOD (RGB Rainbow Fluid) */
+#target-hud-container.tier-god::before {
+    display: block;
+    background: linear-gradient(45deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+    background-size: 400% 400%;
+    animation: fluidFlow 4s ease infinite;
+    /* Faster rainbow cycle */
+}
+
+#target-hud-container.tier-god::after {
+    display: block;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#target-hud-container.tier-god {
+    border: none;
+    background: transparent;
+    box-shadow: 0 0 40px rgba(255, 0, 0, 0.6), 0 0 20px rgba(0, 0, 255, 0.6);
+}
+
+/* ALPHA (Cyan/Blue Fluid) */
+#target-hud-container.tier-alpha::before {
+    display: block;
+    background: linear-gradient(45deg, #00ffff, #0099ff, #fff, #0099ff, #00ffff);
+    background-size: 300% 300%;
+}
+
+#target-hud-container.tier-alpha::after {
+    display: block;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#target-hud-container.tier-alpha {
+    border: none;
+    background: transparent;
+    box-shadow: 0 0 35px rgba(0, 255, 255, 0.5);
+}
+
+#target-hud-container.tier-alpha #target-name {
+    text-shadow: 0 0 5px rgba(0, 0, 0, 1);
+}
+
+/* OMEGA (Magenta/Purple Fluid) */
+#target-hud-container.tier-omega::before {
+    display: block;
+    background: linear-gradient(45deg, #ff00ff, #8b008b, #fff, #8b008b, #ff00ff);
+    background-size: 300% 300%;
+}
+
+#target-hud-container.tier-omega::after {
+    display: block;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+#target-hud-container.tier-omega {
+    border: none;
+    background: transparent;
+    box-shadow: 0 0 35px rgba(255, 0, 255, 0.5);
+}
+
+#target-name {
+    /* MATCHING LOOT LEDGER FONT */
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    /* Slightly larger for HUD */
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+
+    /* Default Clipping for Text Gradients */
+    background-image: none;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #fff;
+    /* Fallback */
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+    transition: all 0.2s;
+}
+
+/* TIER TEXT GRADIENTS (Exact copy from Loot Ledger) */
+
+/* Arch/Epic: Gold/White */
+#target-hud-container.tier-arch #target-name {
+    background-image: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+/* God: RGB Rainbow */
+#target-hud-container.tier-god #target-name {
+    background-image: linear-gradient(0deg,
+            #ff0000 0%, #ffff00 15%, #00ff00 30%,
+            #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    background-size: 100% 200%;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+/* Alpha: RGB Rainbow (matching loot ledger) */
+#target-hud-container.tier-alpha #target-name {
+    background-image: linear-gradient(0deg,
+            #ff0000 0%, #ffff00 15%, #00ff00 30%,
+            #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    background-size: 100% 200%;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+/* Omega: Magenta/White */
+#target-hud-container.tier-omega #target-name {
+    background-image: linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%);
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+/* Clean up old overrides */
+/* Removed old text-shadow overrides as they conflict with gradient text */
 
 #target-health-bg {
     width: 100%;
