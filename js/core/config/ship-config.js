@@ -53,4 +53,4 @@ const SHIP_CONFIG = {
  * PLAYER VITAL STATS
  */
 const PLAYER_HEALTH_MAX = 35000;
-const PLAYER_SPEED = 80; // Base engine acceleration force
+const PLAYER_SPEED = 240; // Base engine acceleration force (3x speed)
