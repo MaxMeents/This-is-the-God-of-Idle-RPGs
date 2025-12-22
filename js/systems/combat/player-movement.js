@@ -78,9 +78,34 @@ function updatePlayerMovement(dt, sc) {
         if (Math.abs(diff) < turnStep) player.rotation = targetRot;
         else player.rotation += Math.sign(diff) * turnStep;
 
-        if (d > 10) {
-            // Move direction: 1 (Fwd) or -1 (Rev during retreat)
-            const moveDirection = allWeaponsRecharging ? -1 : 1;
+        // BALANCED DEADZONE - Prevents jitter while allowing movement
+        const idealRange = sc.fullPowerDist * 1.2; // Target distance
+        const deadzone = sc.fullPowerDist * .1;   // Moderate tolerance
+
+        let shouldMove = false;
+        let moveDirection = 1;
+
+        if (allWeaponsRecharging) {
+            // Retreat mode: only move if dangerously close
+            if (d < idealRange * 0.3) {
+                shouldMove = true;
+                moveDirection = -1;
+            }
+        } else {
+            // Combat mode: only move if WAY out of position
+            if (d < idealRange - deadzone) {
+                // Extremely close - back up
+                shouldMove = true;
+                moveDirection = -1;
+            } else if (d > idealRange + deadzone) {
+                // Extremely far - approach
+                shouldMove = true;
+                moveDirection = 1;
+            }
+            // Huge deadzone: player stays still unless distance is extreme
+        }
+
+        if (shouldMove) {
             player.x += (dx / d) * PLAYER_SPEED * moveDirection;
             player.y += (dy / d) * PLAYER_SPEED * moveDirection;
         }

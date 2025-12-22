@@ -16,7 +16,7 @@ const WEAPON_CONFIG = {
         path: 'img/Laser Sprites/09.webp',
         fireRate: 5,        // Ticks between shots
         damage: 10,
-        speed: 340,         // Projectile travel speed (1.7x faster)
+        speed: 2200,         // Projectile travel speed (11x original)
         life: 8000,          // Time until projectile expires (ms)
         size: 1980,           // Projectile visual scaling
         offsetSide: -180,    // Positioning on ship (Left)
@@ -33,7 +33,7 @@ const WEAPON_CONFIG = {
         path: 'img/Laser Sprites/09.webp',
         fireRate: 5,
         damage: 10,
-        speed: 340,
+        speed: 2200,
         life: 8000,
         size: 1980,
         offsetSide: 180,     // Positioning on ship (Right)
@@ -54,7 +54,7 @@ const WEAPON_CONFIG = {
         path: 'img/Laser Sprites/02.webp',
         fireRate: 95,
         damage: 10,
-        speed: 500,
+        speed: 5500,
         life: 4000,
         size: 380,
         visualStretch: 5.0,

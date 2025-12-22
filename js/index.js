@@ -206,8 +206,16 @@ function changeStage(newStage) {
     const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[navStageId - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     travelTargetY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
-    isTraveling = true;
+
+    // Reposition player to center immediately
+    player.x = travelTargetX;
+    player.y = travelTargetY;
+
+    isTraveling = false; // Bypass the flying travel phase
     stageKillCount = 0;
+
+    // Manually trigger arrival logic
+    arriveAtNewStage();
 }
 
 function startTravelToNextStage() {
