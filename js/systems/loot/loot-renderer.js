@@ -138,7 +138,12 @@ function renderDetailLog(content, headerTitle, data) {
                 rows: gridRows,
                 scrollId: 'loot-log-scroll-area',
                 contentId: 'loot-log-content-area',
-                rows_in_block: 20
+                rows_in_block: 100, // Increased for larger pre-load buffer
+                callbacks: {
+                    clusterChanged: () => {
+                        if (window.lootObserver) window.lootObserver.observe();
+                    }
+                }
             });
         }
         return;
@@ -155,7 +160,12 @@ function renderDetailLog(content, headerTitle, data) {
             rows: listRows,
             scrollId: 'loot-log-scroll-area',
             contentId: 'loot-log-content-area',
-            rows_in_block: 50
+            rows_in_block: 100, // Increased for larger pre-load buffer
+            callbacks: {
+                clusterChanged: () => {
+                    if (window.lootObserver) window.lootObserver.observe();
+                }
+            }
         });
     }
 }
@@ -174,7 +184,7 @@ function renderGridItem(itemData) {
             </div>
              <div class="loot-icon-wrapper">
                 <div class="loot-icon-bg"></div>
-                <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" style="width: 40px; height: 40px;" loading="lazy">
+                <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}" style="width: 40px; height: 40px;">
             </div>
         </div>
     `;
@@ -194,7 +204,7 @@ function renderDetailRow(itemData) {
                 </div>
                 <div class="loot-icon-wrapper">
                     <div class="loot-icon-bg"></div>
-                    <img src="${itemCfg.icon}" class="loot-icon" alt="${itemCfg.name}" loading="lazy">
+                    <img data-src="${itemCfg.icon}" class="loot-icon lozad" alt="${itemCfg.name}">
                 </div>
             </div>
         </div>

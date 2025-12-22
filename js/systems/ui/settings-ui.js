@@ -65,6 +65,7 @@ const SettingsUI = {
                         ${this.createToggle('shieldBar', 'Player Shield Bar', 'Display the shield overlay on health bar.')}
                         ${this.createToggle('laserBar', 'Laser Ammo', 'Display the laser energy bar.')}
                         ${this.createToggle('bulletBar', 'Bullet Ammo', 'Display the bullet count bar.')}
+                        ${this.createToggle('radarEnabled', 'Tactical Radar', 'Display the tactical map overlay (Bottom Left).')}
                         ${this.createToggle('enemyHp', 'Enemy Health Bars', 'Show health bars above enemies (Performance Heavy).')}
                     </div>
 

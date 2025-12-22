@@ -14,6 +14,9 @@
  * -------------------------------------------------------------------------
  */
 
+// GLOBAL OBSERVER for Lazy Loading (Lozad.js)
+window.lootObserver = null;
+
 /**
  * INITIALIZE LOOT HUD
  * Creates the hidden container for the "Stairs" and the specialized trigger button.
@@ -31,6 +34,15 @@ function initLootSystem() {
 
     // Initialize the storage service (loot-persistence.js)
     if (typeof LootPersistence !== 'undefined') LootPersistence.init();
+
+    // Initialize Lozad Observer (Lazy Loading)
+    if (typeof lozad === 'function' && !window.lootObserver) {
+        window.lootObserver = lozad('.lozad', {
+            rootMargin: '800px 0px', // Significantly increased for faster pre-loading
+            threshold: 0.1
+        });
+        window.lootObserver.observe();
+    }
 
     // Create the "God's Loot Ledger" trigger button
     // PLACED INSIDE SPEED CONTROLS (Requested by User)

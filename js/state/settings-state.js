@@ -21,7 +21,8 @@ const SettingsState = {
         bulletBar: true,
         enemyHp: true,
         damageFont: 'Orbitron', // 'Orbitron' or 'Tektur'
-        trailLength: 6 // Range 2-10
+        trailLength: 6, // Range 2-10
+        radarEnabled: true
     },
 
     // Current Active Settings
@@ -100,6 +101,13 @@ const SettingsState = {
 
         // LOOT STAIRS
         // Changing this just stops new ones from spawning. Existing ones might stay or be cleared.
+
+        // RADAR
+        if (key === 'radarEnabled') {
+            if (typeof RadarSystem !== 'undefined') {
+                RadarSystem.toggle(value);
+            }
+        }
     }
 };
 

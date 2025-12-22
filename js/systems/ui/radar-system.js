@@ -33,8 +33,14 @@ const RadarSystem = {
 
         console.log("[RADAR] Initialized");
 
-        // Start Update Loop (1Hz)
-        this.start();
+        // Respect setting
+        if (typeof GAME_SETTINGS !== 'undefined') {
+            const isEnabled = GAME_SETTINGS.get('radarEnabled');
+            this.toggle(isEnabled);
+        } else {
+            // Start Update Loop (1Hz)
+            this.start();
+        }
     },
 
     start() {
@@ -47,6 +53,19 @@ const RadarSystem = {
 
     stop() {
         if (this.interval) clearInterval(this.interval);
+    },
+
+    toggle(isOn) {
+        const container = document.getElementById('radar-container');
+        if (container) {
+            container.style.display = isOn ? 'block' : 'none';
+        }
+
+        if (isOn) {
+            this.start();
+        } else {
+            this.stop();
+        }
     },
 
     draw() {
