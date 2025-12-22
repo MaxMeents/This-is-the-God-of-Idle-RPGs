@@ -8,7 +8,7 @@
  */
 
 const WEAPON_CONFIG = {
-    /**
+    /*
      * BULLET TURRETS (Sides)
      * High fire-rate projectile weapons.
      */
