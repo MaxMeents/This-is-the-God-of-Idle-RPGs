@@ -9,7 +9,7 @@
 /**
  * BACKGROUND ENVIRONMENT
  */
-const FLOOR_PATH = 'img/Texture Floor/maxmaxmax_333_Ocean_temple_floor_tile_design_wave_patterns_biol_31b2bdc2-1580-4081-86b9-2f7b711e9005_1.webp';
+const FLOOR_PATH = 'img/Texture Floor/bg_seamless.png';
 const FLOOR_TILE_SIZE = 46000; // Pixel width/height of a single tiling floor sprite
 
 /**

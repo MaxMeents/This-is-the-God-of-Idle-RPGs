@@ -22,9 +22,18 @@ const STAGE_CONFIG = {
      */
     STAGES: {
         1: {
-            kills: 3500, // Total kills needed to clear
-            enemies: { BlueDragon: 1000, GalaxyDragon: 1000, PhoenixSurrender: 1500 },
-            tierChances: { Arch: 0.02, God: 0.02, Omega: 0.02, Alpha: 0.02 } // Base % for elites
+            kills: 300,
+            enemies: {
+                GalaxyDragon: 40,
+                PhoenixSurrender: 40,
+                BlueDragon: 40,
+                BlackRedButterfly: 40,
+                BlueWhiteButterfly: 40,
+                GoldButterfly: 40,
+                GreenBlackButterfly: 30,
+                GalaxyButterfly: 30
+            },
+            tierChances: { Arch: 0.05, God: 0.005, Omega: 0.001, Alpha: 0.0 } // Low chance for > ARC
         },
         2: {
             kills: 500,
