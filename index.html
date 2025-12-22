@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="css/hud/speed-controls.css">
     <link rel="stylesheet" href="css/hud/skill-buttons.css">
     <link rel="stylesheet" href="css/hud/stage-nav.css">
+    <link rel="stylesheet" href="css/hud/location-display.css">
     <link rel="stylesheet" href="css/hud/target-hud.css">
     <link rel="stylesheet" href="css/hud/radar.css">
     <link rel="stylesheet" href="css/hud/pause-overlay.css">
@@ -51,6 +52,9 @@
     <div id="ui">
         <div id="fps" class="stat">FPS: 0</div>
     </div>
+
+    <!-- LOCATION DISPLAY: Cinematic title for the current zone -->
+    <div id="location-display"><span></span></div>
 
     <!-- STAGE NAVIGATION: Controls the switching between stages 1-9 -->
     <div id="stage-nav">
@@ -190,6 +194,7 @@
     <link rel="stylesheet" href="css/hud/settings-modal.css">
     <script src="js/state/settings-state.js"></script>
     <script src="js/systems/ui/settings-ui.js"></script>
+    <script src="js/systems/ui/location-display.js"></script>
 
     <!-- INPUT SYSTEM -->
     <script src="js/systems/input/gamepad-system.js"></script>

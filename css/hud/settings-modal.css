@@ -10,16 +10,20 @@
 /* -------------------------------------------------------------------------
    GEAR BUTTON (Top Right Trigger)
    ------------------------------------------------------------------------- */
-#settings-gear-btn {
+.settings-gear-btn {
     position: fixed;
-    top: 20px;
-    right: 320px;
-    /* Left of the Speed Control (which is ~280px wide + 20px padding) */
-    width: 50px;
-    height: 50px;
-    background: rgba(0, 34, 68, 0.8);
-    /* Royal Blue Tint */
-    border: 1px solid rgba(0, 150, 255, 0.3);
+    width: 25px;
+    height: 25px;
+    background: #fff;
+    background: linear-gradient(-45deg,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(200, 230, 255, 1) 45%,
+            rgba(255, 255, 255, 1) 50%,
+            rgba(200, 230, 255, 1) 55%,
+            rgba(255, 255, 255, 1) 100%);
+    background-size: 400% 400%;
+    animation: whiteShimmer 3s ease infinite;
+    border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
     cursor: pointer;
     z-index: 2000;
@@ -28,28 +32,65 @@
     align-items: center;
     backdrop-filter: blur(5px);
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.4), 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
-#settings-gear-btn:hover {
-    transform: scale(1.1);
-    border-color: #00ffff;
-    background: rgba(0, 50, 100, 0.9);
-    box-shadow: 0 0 25px rgba(0, 150, 255, 0.6);
+/* Corner Specific Positions */
+.gear-tr {
+    top: 0;
+    right: 0;
+}
+
+.gear-tl {
+    top: 0;
+    left: 0;
+}
+
+.gear-bl {
+    bottom: 0;
+    left: 0;
+}
+
+.gear-br {
+    bottom: 0;
+    right: 0;
+}
+
+.settings-gear-btn:hover {
+    transform: scale(2.3);
+    border-color: #fff;
+    background-size: 200% 200%;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 25px rgba(255, 255, 255, 0.4);
 }
 
 /* The Icon SVG itself */
 #settings-gear-icon {
-    width: 28px;
-    height: 28px;
-    fill: #fff;
+    width: 22.5px;
+    height: 22.5px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.2));
     animation: gearSpinSlow 10s linear infinite;
+    transition: all 0.3s ease;
 }
 
-#settings-gear-btn:hover #settings-gear-icon {
+.settings-gear-btn:hover #settings-gear-icon {
     animation: gearSpinFast 2s linear infinite;
-    fill: #00ffff;
-    /* Neon Cyan on hover */
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.3));
+}
+
+@keyframes whiteShimmer {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 @keyframes gearSpinSlow {

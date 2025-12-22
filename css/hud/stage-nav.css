@@ -14,9 +14,11 @@
 
 #stage-nav {
     position: fixed;
-    top: 30px;
+    top: 70px;
+    /* Moved down to give location header more room */
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.5);
+    transform-origin: top center;
     display: flex;
     align-items: center;
     gap: 30px;
@@ -72,9 +74,11 @@
 
 #challenge-btn {
     position: fixed;
-    top: 110px;
+    top: 115px;
+    /* Adjusted spacing for 0.5 scale */
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.5);
+    transform-origin: top center;
     background: linear-gradient(135deg, #fff9d6 0%, #ffcc00 50%, #b8860b 100%);
     background-size: 200% auto;
     color: #1a1a1a;
@@ -91,5 +95,5 @@
 }
 
 #challenge-btn:hover {
-    transform: translateX(-50%) translateY(-8px) scale(1.08);
+    transform: translateX(-50%) translateY(-8px) scale(0.55);
 }

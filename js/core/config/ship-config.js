@@ -25,7 +25,7 @@ const SHIP_CONFIG = {
     fullPowerDist: 8000,    // Distance at which full engine power kicks in
     thrustDist: 1500,       // Distance at which engines start firing
     reachDist: 200,         // "Near enough" distance to target
-    visualSize: 800,        // Scaling of the ship sprite
+    visualSize: 1600,       // Scaling of the ship sprite
     stopRange: 10,          // Pixel radius to snap to a complete stop
     turnSpeed: Math.PI * 3, // Radians per second
 
@@ -43,7 +43,7 @@ const SHIP_CONFIG = {
     shieldMaxHealthMult: 3, // Shield total Health = PlayerMaxHealth * 3
     shieldDuration: 10000,  // How long the shield stays up (ms)
     shieldCooldown: 15000,  // Recovery time after shield expires (ms)
-    shieldVisualSize: 1200, // Scaling of the shield effect
+    shieldVisualSize: 2400, // Scaling of the shield effect
 
     // SENSORS
     detectionRadius: 100000 // Max distance to look for enemies
