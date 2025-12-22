@@ -1,0 +1,791 @@
+/**
+ * TRAINING SIMULATION UI STYLES
+ * High-Tech "Command Deck" Aesthetic - AAA Grade
+ */
+
+#training-sim-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at center, rgba(10, 15, 25, 0.96) 0%, rgba(0, 0, 0, 0.99) 100%);
+    backdrop-filter: blur(15px);
+    z-index: 5000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+    font-family: 'Outfit', sans-serif;
+    color: #fff;
+    /* Holographic Scanline Overlay */
+    overflow: hidden;
+}
+
+#training-sim-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(0deg,
+            rgba(65, 105, 225, 0.03) 0px,
+            rgba(65, 105, 225, 0.03) 1px,
+            transparent 1px,
+            transparent 4px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+#training-sim-overlay.active {
+    opacity: 1;
+}
+
+/* --- LAYOUT GRID --- */
+/* --- LAYOUT GRID --- */
+.sim-container {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr 380px;
+    /* Slightly tighter columns */
+    height: 100vh;
+    gap: 15px;
+    /* Tighter gap */
+    padding: 15px;
+    /* Reduced padding to fit screen */
+    box-sizing: border-box;
+    max-width: 1920px;
+    margin: 0 auto;
+}
+
+/* --- LEFT: SECTOR NAVIGATION --- */
+.sim-sectors {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 20px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- ALIVE ANIMATIONS --- */
+@keyframes simShimmer {
+    0% {
+        background-position: 200% center;
+    }
+
+    100% {
+        background-position: -200% center;
+    }
+}
+
+@keyframes simShake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(0.5deg);
+    }
+
+    75% {
+        transform: rotate(-0.5deg);
+    }
+}
+
+@keyframes simBorderChase {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* New animation for active sector border */
+@keyframes rotateCentered {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+.sector-btn {
+    /* Base: Dark Square Panel */
+    background: rgba(10, 15, 25, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+    clip-path: polygon(0 0, 100% 0, 100% 88%, 93% 100%, 0 100%);
+    z-index: 1;
+}
+
+.sector-btn:hover {
+    transform: translateX(8px);
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(20, 25, 35, 0.9) !important;
+}
+
+/* Active State: The "Loot Box" Chase Border */
+.sector-btn.active {
+    background: transparent !important;
+    border: none;
+    box-shadow: 0 0 40px var(--tier-accent, rgba(255, 255, 255, 0.1));
+    transform: scale(1.05) translateX(12px);
+    z-index: 5;
+    clip-path: none;
+    /* Expand to full square when active for impact */
+    border-radius: 6px;
+}
+
+/* Core "Loot Ledger" Border Physic (Spinning conic ring) */
+.sector-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 600%;
+    background: var(--tier-conic, #fff);
+    transform: translate(-50%, -50%);
+    animation: rotateCentered 3s linear infinite;
+    z-index: -2;
+}
+
+/* Inner Mask (The Dark Square Core) */
+.sector-btn.active::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: #000;
+    z-index: -1;
+    border-radius: 4px;
+}
+
+/* TIER DEFINITIONS (Loot Ledger Canonical) */
+.tier-normal {
+    --tier-accent: #fff;
+    --tier-conic: #fff;
+    --tier-gradient: linear-gradient(0deg, #fff, #ccc, #fff);
+}
+
+.tier-epic {
+    --tier-accent: #ffd700;
+    --tier-conic: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
+    --tier-gradient: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+}
+
+.tier-god {
+    --tier-accent: #ff00ff;
+    --tier-conic: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
+    --tier-gradient: linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+}
+
+.tier-alpha {
+    --tier-accent: #00ffff;
+    --tier-conic: conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff);
+    --tier-gradient: linear-gradient(0deg, #00ffff 0%, #ffffff 50%, #00ffff 100%);
+}
+
+.tier-omega {
+    --tier-accent: #ff0000;
+    --tier-conic: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
+    --tier-gradient: linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%);
+}
+
+/* SECTOR TEXT STYLING (Loot Tier Flow) */
+.sector-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    font-weight: 700;
+    color: var(--tier-accent, #fff);
+    opacity: 0.6;
+}
+
+.sector-name {
+    font-size: 24px;
+    font-weight: 900;
+    font-family: 'Tektur', sans-serif;
+    letter-spacing: 1px;
+
+    /* Tier Flow Mixin */
+    background: var(--tier-gradient, #fff);
+    background-size: 100% 200%;
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: simTextFlow 2s linear infinite;
+
+    display: inline-block;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.sector-btn.active .sector-title {
+    opacity: 1;
+    color: #fff;
+    text-shadow: 0 0 5px var(--tier-accent);
+}
+
+.sector-btn.active .sector-name {
+    filter: drop-shadow(0 0 10px var(--tier-accent));
+}
+
+/* --- ALIVE TEXT MIXIN --- */
+.sim-title,
+.stat-val.gold,
+.alive-text {
+    /* Dynamic Gradient controlled by JS (Matches Loot Ledger) */
+    background: var(--sim-text-gradient, linear-gradient(90deg, #fff, #ccc, #fff));
+    background-size: 100% 200%;
+    /* Vertical Gradient Size */
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    /* Vertical Flow Animation */
+    animation: simTextFlow 2s linear infinite;
+
+    display: inline-block;
+}
+
+@keyframes simTextFlow {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% -200%;
+    }
+}
+
+/* Hyper-Shake on Hover Targets */
+.sector-btn:hover .sector-name,
+#engage-btn:hover .alive-text {
+    animation: simShimmer 1.5s linear infinite, simShake 0.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px var(--sim-accent, rgba(0, 255, 255, 0.8)));
+}
+
+/* --- CENTER: LEVEL GRID --- */
+.sim-grid-container {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+.sim-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+}
+
+.sim-title {
+    font-size: 36px;
+    font-weight: 900;
+    font-family: 'Tektur', sans-serif;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    text-shadow: 0 0 30px rgba(65, 105, 225, 0.4);
+}
+
+.sim-subtitle {
+    font-size: 12px;
+    color: #888;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.sim-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    gap: 10px;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+/* Scrollbar */
+.sim-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sim-grid::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sim-grid::-webkit-scrollbar-thumb {
+    background: #4169E1;
+    border-radius: 3px;
+}
+
+.level-node {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Monoton', cursive;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    aspect-ratio: 1;
+    position: relative;
+}
+
+.level-node::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.level-node:hover {
+    background: rgba(65, 105, 225, 0.2);
+    border-color: #4169E1;
+    color: #fff;
+    transform: scale(1.15);
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(65, 105, 225, 0.4);
+}
+
+.level-node.active {
+    background: var(--sim-accent, #4169E1);
+    color: #fff;
+    border-color: #fff;
+    box-shadow: 0 0 25px var(--sim-accent, rgba(65, 105, 225, 0.6));
+    text-shadow: 0 0 5px #fff;
+    transform: scale(1.1);
+    z-index: 5;
+
+    /* Pulse the node itself */
+    animation: thumbPulse 1.5s infinite;
+}
+
+.level-node.boss {
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    color: rgba(255, 204, 0, 0.6);
+    box-shadow: inset 0 0 15px rgba(255, 204, 0, 0.1);
+}
+
+.level-node.boss:hover,
+.level-node.boss.active {
+    border-color: #ffcc00;
+    color: #000;
+    background: #ffcc00;
+    box-shadow: 0 0 30px rgba(255, 204, 0, 0.6);
+}
+
+/* --- RIGHT: COMMAND DECK --- */
+.sim-command-deck {
+    background: rgba(10, 15, 20, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Preview Window */
+.sim-viewport {
+    width: 100%;
+    height: 350px;
+    background: radial-gradient(circle at center, #1a1a2e 0%, #000 70%);
+    border: 1px solid rgba(65, 105, 225, 0.3);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 80px #000;
+}
+
+.sim-viewport::after {
+    /* Holographic Grid Floor */
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background:
+        linear-gradient(rgba(65, 105, 225, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(65, 105, 225, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(500px) rotateX(60deg);
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+#sim-preview-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: relative;
+    z-index: 2;
+}
+
+.preview-overlay-ui {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-family: monospace;
+    color: #4169E1;
+    font-size: 11px;
+    letter-spacing: 2px;
+    pointer-events: none;
+    z-index: 3;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.preview-overlay-ui::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    background: #4169E1;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #4169E1;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* Stats */
+.sim-info {
+    border-left: 4px solid #4169E1;
+    padding-left: 15px;
+}
+
+.sim-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #666;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.stat-val {
+    color: #fff;
+    font-weight: 700;
+    font-family: 'Tektur', monospace;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.stat-val.gold {
+    color: #ffcc00;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.4);
+}
+
+/* Difficulty Toggle */
+.difficulty-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 10px;
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 50px;
+}
+
+.diff-node {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid #444;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    z-index: 2;
+}
+
+.diff-node::after {
+    /* Label on hover */
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-family: 'Outfit';
+    pointer-events: none;
+}
+
+.diff-node:hover::after {
+    opacity: 1;
+}
+
+.diff-node:hover {
+    transform: scale(1.3);
+    border-color: #fff;
+}
+
+/* Difficulty Tiers (Loot Ledger Replication) */
+.tier-circle {
+    /* Base Circle (The Gradient Ring) */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    /* Border handled by tier-specific classes, but usually 0 or transparent if using full gradient bg */
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0.5;
+    /* Inactive state dimmed */
+    filter: grayscale(1);
+
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* THE WHITE CENTER (Static Hole) */
+.tier-circle::before {
+    content: '';
+    position: absolute;
+    width: 32px;
+    /* 80% of 40px */
+    height: 32px;
+    background: #fff;
+    border-radius: 50%;
+    z-index: 1;
+    /* Sits on top of the gradient background */
+}
+
+.tier-circle.active {
+    opacity: 1;
+    filter: none;
+    /* The Ring Glows */
+    box-shadow: 0 0 15px currentColor;
+
+    /* THE SPINNING EFFECT */
+    animation: rotateScaled 3s linear infinite;
+}
+
+/* Rotate Animation */
+@keyframes rotateScaled {
+    from {
+        transform: scale(1.15) rotate(0deg);
+    }
+
+    to {
+        transform: scale(1.15) rotate(360deg);
+    }
+}
+
+/* TIER COLORS (Applied to Background for Gradient Ring) */
+.tier-normal {
+    background: #fff !important;
+    color: #fff;
+    border-color: #fff !important;
+}
+
+.tier-epic {
+    background: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700) !important;
+    color: #ffd700;
+    border-color: #ffd700 !important;
+}
+
+.tier-god {
+    background: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000) !important;
+    color: #ff00ff;
+    border-color: #ff00ff !important;
+}
+
+.tier-alpha {
+    background: conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff) !important;
+    color: #00ffff;
+    border-color: #00ffff !important;
+}
+
+.tier-omega {
+    background: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff) !important;
+    color: #ff0000;
+    /* Keeping Red Accent per config, though circle is pink/white */
+    border-color: #ff0000 !important;
+}
+
+/* Active State Enhancements */
+.diff-node.active.tier-normal {
+    box-shadow: 0 0 25px rgba(0, 255, 136, 0.6) !important;
+    background: rgba(0, 255, 136, 0.2) !important;
+}
+
+.diff-node.active.tier-epic {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.6) !important;
+    background: rgba(255, 215, 0, 0.2) !important;
+}
+
+.diff-node.active.tier-god {
+    box-shadow: 0 0 40px rgba(0, 191, 255, 0.8) !important;
+    background: rgba(0, 191, 255, 0.2) !important;
+}
+
+.diff-node.active.tier-alpha {
+    box-shadow: 0 0 50px rgba(255, 0, 255, 0.8) !important;
+    background: rgba(255, 0, 255, 0.2) !important;
+}
+
+.diff-node.active.tier-omega {
+    box-shadow: 0 0 60px rgba(255, 0, 0, 1.0) !important;
+    background: rgba(255, 0, 0, 0.3) !important;
+}
+
+.diff-node.active {
+    transform: scale(1.4);
+    border-width: 3px !important;
+}
+
+/* Action Button */
+#engage-btn {
+    margin-top: auto;
+    /* Hyper-active gradient stream */
+    /* Hyper-active gradient stream controlled by Difficulty Accent */
+    background: linear-gradient(45deg,
+            var(--sim-accent, #4169E1),
+            #000,
+            var(--sim-accent, #4169E1),
+            #fff);
+    background-size: 300% 300%;
+    border-color: var(--sim-accent, #fff);
+    padding: 24px;
+    font-family: 'Tektur', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 8px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(65, 105, 225, 0.4);
+    position: relative;
+    overflow: hidden;
+
+    /* DOUBLE ANIMATION: Pulse + Gradient Chase */
+    animation: btnPulse 2s infinite, simBorderChase 3s ease infinite;
+}
+
+#engage-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+    opacity: 0;
+    transform: scale(0.5);
+    transition: transform 0.4s, opacity 0.4s;
+}
+
+#engage-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 10px 40px var(--sim-accent, rgba(65, 105, 225, 0.6));
+    border-color: #fff;
+}
+
+#engage-btn:hover::before {
+    opacity: 1;
+    transform: scale(1.5);
+    transition: 0.4s;
+}
+
+#close-sim-btn {
+    position: absolute;
+    top: 40px;
+    right: 40px;
+    width: 48px;
+    height: 48px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+#close-sim-btn:hover {
+    background: #ff4444;
+    border-color: #ff4444;
+    transform: rotate(90deg);
+}

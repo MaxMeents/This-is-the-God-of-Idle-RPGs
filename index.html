@@ -32,6 +32,7 @@
     <link rel="stylesheet" href="css/hud/pause-overlay.css">
     <link rel="stylesheet" href="css/loot/loot-stairs.css">
     <link rel="stylesheet" href="css/loot/loot-ledger.css">
+    <link rel="stylesheet" href="css/hud/training-sim.css"> <!-- NEW: Simulation UI -->
     <link rel="stylesheet" href="css/modals/base-modal.css">
 
 </head>
@@ -58,6 +59,64 @@
         <div id="fps" class="stat">FPS: 0</div>
     </div>
 
+    <!-- TRAINING SIMULATION OVERLAY -->
+    <div id="training-sim-overlay">
+        <button id="close-sim-btn">×</button>
+        <div class="sim-container">
+            <!-- LEFT: SECTORS -->
+            <div class="sim-sectors" id="sim-sectors-list">
+                <!-- Generated via JS -->
+            </div>
+
+            <!-- CENTER: SUB-GRID -->
+            <div class="sim-grid-container">
+                <div class="sim-header">
+                    <div>
+                        <div class="sim-subtitle">TRAINING PROTOCOL</div>
+                        <div class="sim-title" id="sim-sector-title">SECTOR 1: GENESIS</div>
+                    </div>
+                </div>
+                <div class="sim-grid" id="sim-level-grid">
+                    <!-- Generated via JS -->
+                </div>
+            </div>
+
+            <!-- RIGHT: COMMAND DECK -->
+            <div class="sim-command-deck">
+                <div class="sim-viewport">
+                    <canvas id="sim-preview-canvas"></canvas>
+                    <div class="preview-overlay-ui">LIVE FEED // SIM_844</div>
+                </div>
+
+                <div class="sim-info">
+                    <h2 id="sim-level-name" style="margin: 0; font-family: 'Tektur'; font-size: 24px;">SELECT LEVEL</h2>
+                </div>
+
+                <div class="sim-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">ENEMY COUNT</span>
+                        <span class="stat-val" id="sim-enemy-count">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">DAMAGE EST.</span>
+                        <span class="stat-val" id="sim-dmg-est">--</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">REWARD MULTIPLIER</span>
+                        <span class="stat-val gold" id="sim-reward-mult">--</span>
+                    </div>
+                </div>
+
+                <!-- DIFFICULTY NODES -->
+                <div class="difficulty-selector" id="sim-difficulty-selector">
+                    <!-- Generated via JS -->
+                </div>
+
+                <button id="engage-btn"><span class="alive-text">ENGAGE SIMULATION</span></button>
+            </div>
+        </div>
+    </div>
+
     <!-- LOCATION DISPLAY: Cinematic title for the current zone -->
     <div id="location-display"><span></span></div>
 
@@ -75,6 +134,22 @@
     <div id="boss-health-container">
         <div id="boss-health-bar"></div>
     </div>
+
+    <!-- OPEN SIM BUTTON (Top Left near Stats) -->
+    <button id="open-sim-btn" style="
+        position: fixed; 
+        top: 80px; 
+        left: 20px; 
+        z-index: 1000;
+        background: rgba(0,0,0,0.8);
+        border: 1px solid #4169E1;
+        color: #4169E1;
+        padding: 8px 16px;
+        font-family: 'Tektur';
+        border-radius: 4px;
+        cursor: pointer;
+        transition: 0.2s;
+    ">OPEN SIMULATION</button>
 
     <!-- MAIN PLAYER CORE HUD (BOTTOM LEFT) -->
     <div id="hud-left-corner">
@@ -199,6 +274,8 @@
     <link rel="stylesheet" href="css/hud/settings-modal.css">
     <script src="js/state/settings-state.js"></script>
     <script src="js/systems/ui/settings-ui.js"></script>
+    <script src="js/core/config/simulation-config.js"></script> <!-- NEW -->
+    <script src="js/systems/ui/simulation-ui.js"></script> <!-- NEW -->
     <script src="js/systems/ui/location-display.js"></script>
 
     <!-- INPUT SYSTEM -->

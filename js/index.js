@@ -259,6 +259,7 @@ let canvas;
     // SETTINGS SYSTEM
     if (typeof SettingsState !== 'undefined') SettingsState.init();
     if (typeof SettingsUI !== 'undefined') SettingsUI.init();
+    if (typeof SimulationUI !== 'undefined') SimulationUI.init(); // NEW: Training Sim
 
     requestAnimationFrame(loop);
 })();
