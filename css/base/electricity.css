@@ -1,0 +1,45 @@
+/**
+ * LAYERED BACKGROUND STYLES
+ * 
+ * Manages the Z-depth sandwich:
+ * Body (Pure Black) -> #electricity-canvas -> #floor-overlay -> PIXI Game
+ * 
+ * LOCATED IN: css/base/electricity.css
+ */
+
+#floor-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2;
+    /* Middle layer - Positive Z-index for visibility */
+    mix-blend-mode: screen;
+    /* CRITICAL: Allows electricity underneath to show through black gaps */
+
+    /* Initially pointing to floor texture, actual size/pos sync'd via PixiRenderer */
+    background-image: url('../../img/Texture Floor/bg_seamless.png');
+    background-repeat: repeat;
+    background-color: transparent;
+}
+
+#electricity-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1;
+    /* Bottom-most visual layer */
+    background: transparent;
+    transform: translateZ(0);
+    /* Hardware accelerated */
+}
+
+#electricity-mount {
+    display: none;
+    /* Just a reference node in HTML */
+}

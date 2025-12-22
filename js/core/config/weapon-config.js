@@ -13,16 +13,16 @@ const WEAPON_CONFIG = {
      * High fire-rate projectile weapons.
      */
     bullet_left_side: {
-        path: 'img/Laser Sprites/01.webp',
-        fireRate: 10,        // Ticks between shots
+        path: 'img/Laser Sprites/09.webp',
+        fireRate: 5,        // Ticks between shots
         damage: 10,
-        speed: 500,         // Projectile travel speed
-        life: 2000,          // Time until projectile expires (ms)
-        size: 980,           // Projectile visual scaling
-        offsetSide: -140,    // Positioning on ship (Left)
+        speed: 200,         // Projectile travel speed
+        life: 8000,          // Time until projectile expires (ms)
+        size: 1980,           // Projectile visual scaling
+        offsetSide: -180,    // Positioning on ship (Left)
         offsetFront: 80,     // Positioning on ship (Forward)
         penetration: 5,      // How many enemies it can pass through
-        visualStretch: 1.0,  // Stretching factor for high-speed effect
+        visualStretch: 1,  // Stretching factor for high-speed effect
         maxAmmo: 50,         // Total capacity
         recoveryRate: 5,     // Recovery per tick
         tint: 0x00ffff,      // Laser color (Cyan)
@@ -30,16 +30,16 @@ const WEAPON_CONFIG = {
     },
 
     bullet_right_side: {
-        path: 'img/Laser Sprites/01.webp',
-        fireRate: 10,
+        path: 'img/Laser Sprites/09.webp',
+        fireRate: 5,
         damage: 10,
-        speed: 500,
-        life: 2000,
-        size: 980,
-        offsetSide: 140,     // Positioning on ship (Right)
+        speed: 200,
+        life: 8000,
+        size: 1980,
+        offsetSide: 180,     // Positioning on ship (Right)
         offsetFront: 80,
         penetration: 5,
-        visualStretch: 1.0,
+        visualStretch: 1,
         maxAmmo: 50,
         recoveryRate: 5,
         tint: 0x00ffff,

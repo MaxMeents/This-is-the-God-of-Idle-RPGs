@@ -133,9 +133,12 @@ function draw() {
     worldContainer.scale.set(window.zoom);
     worldContainer.position.set(cx - player.x * window.zoom, cy - player.y * window.zoom);
 
-    const bgSize = FLOOR_TILE_SIZE * window.zoom;
-    document.body.style.backgroundSize = `${bgSize}px ${bgSize}px`;
-    document.body.style.backgroundPosition = `${cx - player.x * window.zoom}px ${cy - player.y * window.zoom}px`;
+    const floorOverlay = document.getElementById('floor-overlay');
+    if (floorOverlay) {
+        const bgSize = FLOOR_TILE_SIZE * window.zoom;
+        floorOverlay.style.backgroundSize = `${bgSize}px ${bgSize}px`;
+        floorOverlay.style.backgroundPosition = `${cx - player.x * window.zoom}px ${cy - player.y * window.zoom}px`;
+    }
 
     // 2. LOD CALCULATION
     smoothedEnemies += (onScreenCount - smoothedEnemies) * 0.15;

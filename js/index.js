@@ -230,6 +230,7 @@ let canvas;
         preference: 'webgl'
     });
     canvas = app.canvas;
+    canvas.id = 'game-canvas'; // CRITICAL: Identify this canvas separate from UI canvases
     document.body.appendChild(app.canvas);
 
     worldContainer = new PIXI.Container();

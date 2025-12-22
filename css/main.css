@@ -160,9 +160,14 @@ body {
     }
 }
 
-canvas {
+#game-canvas {
     display: block;
     touch-action: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    /* Ensures Game Canvas (Z:10) is above Floor (Z:2) and Electricity (Z:1) */
 }
 
 /**

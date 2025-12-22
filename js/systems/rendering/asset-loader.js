@@ -109,7 +109,10 @@ function onAssetLoad() { window.reportAssetLoaded(); }
  * Applies floor background and triggers procedural texture baking.
  */
 function finalizeAssets() {
-    document.body.style.backgroundImage = `url("${FLOOR_PATH}")`;
+    const floorOverlay = document.getElementById('floor-overlay');
+    if (floorOverlay) {
+        floorOverlay.style.backgroundImage = `url("${FLOOR_PATH}")`;
+    }
     floorPattern = true;
 
     // Trigger Bakers (Defined in texture-baker.js)
