@@ -30,7 +30,7 @@ const SHIP_CONFIG = {
     turnSpeed: Math.PI * 3, // Radians per second
 
     // SHIELD CONFIGURATION (Protective Dome)
-    shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.webP',
+    shieldOnPath: 'img/Ship/Ship Shield Is On/Spritesheet/1024x1024/Ship Shield Is On_1024x1024_sheet.webp',
     shieldTurnOnPath: 'img/Ship/Ship Shield Turn On/Spritesheet/768x768/Ship Shield Turn On_768x768_sheet.webp',
     shieldOnFrames: 14,
     shieldOnCols: 4,

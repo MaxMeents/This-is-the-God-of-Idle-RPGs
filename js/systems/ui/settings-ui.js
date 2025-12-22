@@ -37,7 +37,8 @@ const SettingsUI = {
         const overlay = document.createElement('div');
         overlay.id = 'settings-modal-overlay';
         overlay.innerHTML = `
-            <div class="settings-panel">
+            <div class="settings-frame">
+                <div class="settings-panel">
                 <div class="settings-header">
                     <div class="settings-title">System Configuration</div>
                     <button class="settings-close-btn">&times;</button>
@@ -85,11 +86,12 @@ const SettingsUI = {
                 </div>
             </div>
 
-            <!-- Radar Preview Sidebar (Now outside panel but inside overlay) -->
+            <!-- Radar Preview Sidebar -->
             <div id="radar-preview-container">
                 <div class="radar-preview-label">Live Preview</div>
                 <canvas id="radar-theme-preview" width="200" height="200"></canvas>
             </div>
+            </div> <!-- Close settings-frame -->
         `;
         document.body.appendChild(overlay);
     },

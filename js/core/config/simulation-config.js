@@ -84,7 +84,14 @@ const SIMULATION_CONFIG = {
     BOSS_LEVELS: [50, 100, 150, 200, 250, 300, 350, 400, 450, 500],
 
     // Procedural Generator
+    _cachedLevels: null, // Cache to prevent regeneration
+
     generateLevels() {
+        // Return cached levels if already generated
+        if (this._cachedLevels) {
+            return this._cachedLevels;
+        }
+
         const levels = [];
         const enemies = ['GalaxyButterfly', 'BlueWhiteButterfly', 'GoldButterfly', 'GreenBlackButterfly', 'BlackRedButterfly', 'GalaxyDragon', 'BlueDragon', 'PhoenixSurrender'];
 
@@ -140,6 +147,7 @@ const SIMULATION_CONFIG = {
                 powerLevel: i * 500
             });
         }
+        this._cachedLevels = levels; // Cache for future calls
         return levels;
     }
 };

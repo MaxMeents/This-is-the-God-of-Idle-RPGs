@@ -276,6 +276,15 @@
     border-radius: 50%;
     box-shadow: 0 0 30px var(--prev-glow);
     display: none;
+    position: absolute;
+    /* Remove from flex flow */
+    left: calc(50% + 420px);
+    /* Position outside panel */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+
     z-index: 1000;
     pointer-events: none;
     overflow: hidden;
@@ -283,6 +292,7 @@
 
 #radar-preview-container.active {
     display: flex;
+    /* Internal flex for content is fine */
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -338,21 +348,100 @@
 /* -------------------------------------------------------------------------
    MODAL PANEL
    ------------------------------------------------------------------------- */
+/* Frame that sits behind the panel */
+.settings-frame {
+    position: relative;
+    /* Relative to overlay flex item */
+    /* Relative to overlay flex item */
+    width: 90%;
+    height: 95%;
+    /* background: url('../../img/UI/ui_box.jpg') no-repeat center center; */
+    /* background-size: 100% 100%; */
+    display: flex;
+    /* Turn into flex container */
+    justify-content: center;
+    /* Center horizontally */
+    align-items: center;
+    /* Center vertically */
+    z-index: 1050;
+    pointer-events: none;
+    /* Let clicks pass through */
+    opacity: 0;
+    animation: fadeIn 0.3s ease forwards 0.1s;
+}
+
 .settings-panel {
-    width: 800px;
-    max-width: 90%;
-    max-height: 66.67vh;
+    z-index: 1100;
+    /* Reset positioning since it's now flex-centered inside frame */
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none !important;
+    /* Remove old transform */
+    margin: 0;
+    pointer-events: auto;
+    /* Re-enable clicks since parent has none */
+
+    width: 85%;
+    max-width: 85%;
+    height: 85%;
+    max-height: 85%;
+
     /* 2/3 of viewport = 1/6 from top and bottom */
-    background: linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    /* 2/3 of viewport = 1/6 from top and bottom */
+    /* 2/3 of viewport = 1/6 from top and bottom */
+    /* 2/3 of viewport = 1/6 from top and bottom */
+
+    /* BACKGROUND & BORDER MAGIC */
+    /* BACKGROUND & BORDER MAGIC */
+    /* 1. Set a transparent border of the desired width (user requested 3px) */
+    border: 3px solid transparent;
     border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 100, 255, 0.1);
-    transform: translateY(20px);
-    transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+
+    /* 2. Define two background layers:
+       - Top layer: The main panel background (clipped to padding-box so it doesn't cover border)
+       - Bottom layer: The animated gradient (clipped to border-box so it shows through transparent border)
+    */
+    background:
+        linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%) padding-box,
+        linear-gradient(45deg, #0066ff, #00ccff, #001133, #0066ff) border-box;
+
+    /* 3. Define sizes: content bg matches box, border bg is larger for animation effect */
+    background-size: 100% 100%, 400% 400%;
+
+    /* 4. Animate the background position (affects both, but top layer is solid gradient so invisible change) */
+    animation: borderFlow 10s ease infinite;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 100, 255, 0.3);
+    /* Added glow */
+
     overflow: hidden;
-    /* Hide overflow on panel itself */
     display: flex;
     flex-direction: column;
+}
+
+/* Remove the old pseudo-element to prevent "lighting up" issues */
+/* Pseudo-element for the animated gradient border */
+/* .settings-panel::before { content: none; } */
+
+/* Clean up old pseudo-element */
+.settings-panel::before {
+    content: none;
+    display: none;
+}
+
+@keyframes borderFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 #settings-modal-overlay.active .settings-panel {
