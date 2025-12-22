@@ -31,6 +31,23 @@ const RadarSystem = {
         container.appendChild(this.canvas);
         document.getElementById('ui').appendChild(container);
 
+        // Add Zoom Control
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const currentRange = SettingsState.get('radarRange') || this.range;
+            const delta = e.deltaY > 0 ? 5000 : -5000;
+            let newRange = currentRange + delta;
+
+            // Constrain
+            newRange = Math.max(5000, Math.min(150000, newRange));
+
+            // Update State
+            SettingsState.set('radarRange', newRange);
+
+            // Force redraw immediately
+            this.draw();
+        }, { passive: false });
+
         console.log("[RADAR] Initialized");
 
         // Respect setting
@@ -75,7 +92,10 @@ const RadarSystem = {
         const h = this.canvas.height;
         const cx = w / 2;
         const cy = h / 2;
-        const scale = (w / 2) / this.range;
+
+        // Use setting if available
+        const currentRange = (typeof SettingsState !== 'undefined') ? SettingsState.get('radarRange') : this.range;
+        const scale = (w / 2) / (currentRange || this.range);
 
         // Clear
         ctx.clearRect(0, 0, w, h);

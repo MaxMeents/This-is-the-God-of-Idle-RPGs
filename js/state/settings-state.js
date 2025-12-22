@@ -22,7 +22,8 @@ const SettingsState = {
         enemyHp: true,
         damageFont: 'Orbitron', // 'Orbitron' or 'Tektur'
         trailLength: 6, // Range 2-10
-        radarEnabled: true
+        radarEnabled: true,
+        radarRange: 60000
     },
 
     // Current Active Settings
