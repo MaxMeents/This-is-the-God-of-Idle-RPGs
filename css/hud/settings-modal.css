@@ -134,12 +134,15 @@
     align-items: center;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.3s ease;
+    visibility: hidden;
+    /* Added to ensure children don't block clicks */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 #settings-modal-overlay.active {
     opacity: 1;
     pointer-events: all;
+    visibility: visible;
 }
 
 /* Custom Dropdown Component */
