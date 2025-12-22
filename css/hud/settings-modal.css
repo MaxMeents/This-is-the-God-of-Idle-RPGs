@@ -145,8 +145,8 @@
 /* Custom Dropdown Component */
 .setting-dropdown-container {
     position: relative;
-    min-width: 240px;
-    /* Widened for long font names */
+    min-width: 260px;
+    /* Widened to fit "Press Start 2P" and "Racing Sans One" */
 }
 
 .setting-dropdown-trigger {
@@ -221,7 +221,7 @@
     font-size: 14px;
     transition: all 0.1s;
     white-space: nowrap;
-    /* Prevent wrapping for long font names */
+    /* Keep font names on one line */
 }
 
 .setting-dropdown-option:hover,
@@ -431,8 +431,6 @@
 /* CONTENT AREA */
 .settings-content {
     padding: 30px;
-    padding-bottom: 200px;
-    /* HUGE buffer for dropdowns at the bottom */
     min-height: 300px;
 }
 

@@ -153,6 +153,7 @@ const SettingsUI = {
 
     toggleDropdown(key) {
         const container = document.getElementById(`dropdown-${key}`);
+        const list = container.querySelector('.setting-dropdown-options');
         const isOpen = container.classList.contains('open');
 
         // Close all others first
@@ -160,6 +161,20 @@ const SettingsUI = {
 
         if (!isOpen) {
             container.classList.add('open');
+
+            // Smart Positioning Logic
+            const rect = list.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.top;
+            const needsFlip = spaceBelow < rect.height + 20; // 20px padding
+
+            if (needsFlip) {
+                list.style.top = 'auto';
+                list.style.bottom = 'calc(100% + 5px)';
+            } else {
+                list.style.top = 'calc(100% + 5px)';
+                list.style.bottom = 'auto';
+            }
+
             this.highlightActive(container);
         }
     },
