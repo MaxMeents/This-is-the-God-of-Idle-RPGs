@@ -254,4 +254,7 @@ function applyDamageToPlayer(dmg) {
         player.health -= dmg;
         if (player.health <= 0) if (typeof softReset === 'function') softReset();
     }
+
+    // Trigger visual popup
+    if (typeof spawnIncomingDamage === 'function') spawnIncomingDamage(dmg);
 }

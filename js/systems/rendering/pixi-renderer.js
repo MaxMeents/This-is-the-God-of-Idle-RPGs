@@ -27,6 +27,7 @@ const enemySpritePool = [];
 const bulletSpritePool = [];
 const skillSpritePool = [];
 const damageTextPool = [];
+const incomingDamageTextPool = [];
 let playerSprite, shieldSprite;
 let leftBulletTex, rightBulletTex, laserTex;
 
@@ -106,6 +107,29 @@ function initRendererPools() {
         t.anchor.set(0.5); t.visible = false;
         if (typeof uiContainer !== 'undefined') uiContainer.addChild(t);
         damageTextPool.push(t);
+    }
+
+    // Incoming Damage Pool (Red, above health bar)
+    const incomingSize = typeof INCOMING_DAMAGE_POOL_SIZE !== 'undefined' ? INCOMING_DAMAGE_POOL_SIZE : 500;
+    for (let i = 0; i < incomingSize; i++) {
+        const t = new PIXI.Text({
+            text: '',
+            style: {
+                fill: '#ff0000',
+                fontWeight: '900',
+                fontSize: 32,
+                fontFamily: 'Orbitron',
+                stroke: '#000000',
+                strokeThickness: 4,
+                dropShadow: true,
+                dropShadowBlur: 4,
+                dropShadowColor: '#000000',
+                dropShadowDistance: 2
+            }
+        });
+        t.anchor.set(0.5); t.visible = false;
+        if (typeof uiContainer !== 'undefined') uiContainer.addChild(t);
+        incomingDamageTextPool.push(t);
     }
 }
 
@@ -274,53 +298,63 @@ function renderSkills() {
 }
 
 function renderDamageNumbers(cx, cy) {
-    for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
+    // 1. CLEAR POOLS
+    for (let i = 0; i < damageTextPool.length; i++) damageTextPool[i].visible = false;
+    for (let i = 0; i < incomingDamageTextPool.length; i++) incomingDamageTextPool[i].visible = false;
 
-    const targetFont = (typeof SettingsState !== 'undefined') ? SettingsState.get('damageFont') : 'Orbitron';
+    const ss = SettingsState;
+    const targetFont = ss.get('damageFont') || 'Orbitron';
+    const playerDmgSize = ss.get('outgoingDamageSize') || 28;
+    const incomingFont = ss.get('incomingDamageFont') || 'Orbitron';
+    const incomingSize = ss.get('incomingDamageSize') || 32;
+    const showShortMode = ss.get('shortNumbers');
     const now = performance.now();
 
-    // TIERED SHIMMER PALETTES
+    // 2. RENDER OUTGOING DAMAGE (Against Enemies)
     const PALETTES = [
-        ['#ffffff', '#cccccc'], // 0: Normal (Silver Shimmer)
-        ['#00ffff', '#ffffff', '#0099ff'], // 1: Arch (Blue Sparkle)
-        ['#ffd700', '#ffffff', '#ffaa00'], // 2: God (Gold/Rainbow)
-        ['#ff0000', '#ff8800', '#ff0000'], // 3: Omega (Lava/Red)
-        ['#ff00ff', '#00ffff', '#ff00ff']  // 4: Alpha (Bismuth/Neon)
+        ['#ffffff', '#cccccc'], ['#00ffff', '#ffffff', '#0099ff'], ['#ffd700', '#ffffff', '#ffaa00'], ['#ff0000', '#ff8800', '#ff0000'], ['#ff00ff', '#00ffff', '#ff00ff']
     ];
 
     for (let poolIdx of activeDamageIndices.slice(0, activeDamageCount)) {
         const t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
-        t.visible = true;
-        t.alpha = dn.life;
-        t.zIndex = 1000 + dn.critTier; // Ensure they stay on top
-
-        // Positioning with vertical stagger based on crit tier
+        t.visible = true; t.alpha = dn.life; t.zIndex = 1000 + dn.critTier;
         t.position.set((dn.x - player.x) * window.zoom + cx, (dn.y - player.y) * window.zoom + cy - (dn.critTier * 15));
 
         const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
-        const showShortMode = (typeof SettingsState !== 'undefined') ? SettingsState.get('shortNumbers') : true;
         const valTxt = showShortMode ? formatGodNumber(dn.val) : Math.floor(dn.val).toLocaleString();
         t.text = prefix ? `${prefix} ${valTxt}` : valTxt;
 
-        // Dynamic Font Switching
         if (t.style.fontFamily !== targetFont) t.style.fontFamily = targetFont;
+        if (t.style.fontSize !== playerDmgSize) t.style.fontSize = playerDmgSize;
 
-        // SHIMMER LOGIC
-        // PIXI 8 fix: avoid passing array to fill. Use single color and fluctuate effects.
         const palette = dn.isLucky ? ['#ffd700', '#ffffff'] : (PALETTES[dn.critTier] || PALETTES[0]);
         const shimmerIdx = (Math.sin(now * 0.01 + poolIdx) * 0.5 + 0.5);
-
-        // Pulse Scale for "Alive" feel
         const pulse = 1 + Math.sin(now * 0.02 + poolIdx) * 0.05 * dn.critTier;
         const baseScale = (1 + dn.critTier * 0.25) * (0.8 + window.zoom * 0.2);
         t.scale.set(baseScale * pulse);
 
-        // Update fill only if needed (Standard color strings/hex)
         const targetColor = shimmerIdx > 0.8 ? palette[1] : palette[0];
         if (t.style.fill !== targetColor) t.style.fill = targetColor;
-
-        // Shiny effect via oscillating stroke and shadow
         t.style.strokeThickness = 4 + (Math.sin(now * 0.015 + poolIdx) * 2 * (1 + dn.critTier / 2));
-        t.style.dropShadowBlur = 4 + (Math.sin(now * 0.015 + poolIdx) * 6 * (1 + dn.critTier / 2));
+    }
+
+    // 3. RENDER INCOMING DAMAGE (Above Health Bar)
+    for (let poolIdx of activeIncomingDamageIndices.slice(0, activeIncomingDamageCount)) {
+        const t = incomingDamageTextPool[poolIdx], dn = incomingDamageNumbers[poolIdx];
+        t.visible = true; t.alpha = dn.life; t.zIndex = 2000;
+        t.position.set(dn.x, dn.y);
+
+        const valTxt = showShortMode ? formatGodNumber(dn.val) : Math.floor(dn.val).toLocaleString();
+        t.text = `-${valTxt}`;
+
+        if (t.style.fontFamily !== incomingFont) t.style.fontFamily = incomingFont;
+        if (t.style.fontSize !== incomingSize) t.style.fontSize = incomingSize;
+
+        // Pulse effect for damage taken
+        const pulse = 1 + Math.sin(now * 0.03 + poolIdx) * 0.1;
+        t.scale.set(pulse);
+
+        // Red shimmer
+        t.style.fill = (Math.sin(now * 0.02 + poolIdx) > 0) ? '#ff0000' : '#ff5555';
     }
 }

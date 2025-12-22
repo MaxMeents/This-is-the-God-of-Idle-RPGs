@@ -125,6 +125,13 @@ function processSkillDamage() {
     }
 }
 
+const INCOMING_DAMAGE_POOL_SIZE = 500;
+const incomingDamageNumbers = Array.from({ length: INCOMING_DAMAGE_POOL_SIZE }, () => ({
+    x: 0, y: 0, val: 0, life: 0, vx: 0, vy: 0, active: false, isCrit: false
+}));
+const activeIncomingDamageIndices = new Int32Array(INCOMING_DAMAGE_POOL_SIZE);
+let activeIncomingDamageCount = 0;
+
 /**
  * DAMAGE SYSTEM (Floating Numbers)
  * Implements the "Crit-on-Crit" logic where damage can recursively multiply.
@@ -169,6 +176,38 @@ function spawnDamageNumber(x, y, val, lucky = false) {
         }
     }
 }
+
+/**
+ * SPAWN INCOMING DAMAGE (Above health bar)
+ */
+function spawnIncomingDamage(val) {
+    if (activeIncomingDamageCount >= INCOMING_DAMAGE_POOL_SIZE) return;
+
+    const radius = SettingsState.get('incomingDamageRadius') || 50;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * radius;
+
+    // Spawn screen position: Bottom Left area (Above health bar)
+    // Health bar top is approx window.innerHeight - 740px.
+    const baseX = 40;
+    const baseY = window.innerHeight - 740;
+
+    for (let i = 0; i < INCOMING_DAMAGE_POOL_SIZE; i++) {
+        if (!incomingDamageNumbers[i].active) {
+            const dn = incomingDamageNumbers[i];
+            dn.active = true;
+            dn.x = baseX + Math.cos(angle) * dist;
+            dn.y = baseY + Math.sin(angle) * dist;
+            dn.val = val;
+            dn.life = 1.0;
+            dn.vx = (Math.random() - 0.5) * 5;
+            dn.vy = -10 - Math.random() * 5;
+
+            activeIncomingDamageIndices[activeIncomingDamageCount++] = i;
+            return;
+        }
+    }
+}
 /**
  * UPDATE DAMAGE NUMBERS
  * Moves and ages floating text in the pool.
@@ -187,6 +226,20 @@ function updateDamageNumbers(dt) {
             dn.active = false;
             activeDamageIndices[i] = activeDamageIndices[activeDamageCount - 1];
             activeDamageCount--;
+        }
+    }
+
+    // Update Incoming Damage (Player taking hits)
+    for (let i = activeIncomingDamageCount - 1; i >= 0; i--) {
+        const idx = activeIncomingDamageIndices[i];
+        const dn = incomingDamageNumbers[idx];
+        dn.life -= 0.02 * dtMult;
+        dn.x += dn.vx * dtMult;
+        dn.y += dn.vy * dtMult;
+        if (dn.life <= 0) {
+            dn.active = false;
+            activeIncomingDamageIndices[i] = activeIncomingDamageIndices[activeIncomingDamageCount - 1];
+            activeIncomingDamageCount--;
         }
     }
 }

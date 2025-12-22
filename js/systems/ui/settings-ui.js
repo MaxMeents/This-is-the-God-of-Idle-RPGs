@@ -56,6 +56,10 @@ const SettingsUI = {
                         ${this.createSlider('trailLength', 'Trail Length', 'Adjust the length of the cursor stream.', 2, 10, 1)}
                         ${this.createToggle('damageNumbers', 'Damage Numbers', 'Show floating damage values on hit.')}
                         ${this.createToggle('shortNumbers', 'God Notation', 'Collapse large numbers into 3-digit shorthand (1k, 1m, 1a...).')}
+                        ${this.createDropdown('incomingDamageFont', 'Incoming Damage Font', 'Typeface for damage you take.', ['Orbitron', 'Tektur', 'Silkscreen', 'Press Start 2P', 'Bungee', 'Monoton', 'Righteous', 'Russo One', 'Wallpoet', 'Audiowide', 'Syncopate', 'Michroma', 'Stalinist One', 'Racing Sans One'])}
+                        ${this.createSlider('incomingDamageSize', 'Incoming Text Size', 'Font size for damage taken.', 10, 80, 2)}
+                        ${this.createSlider('incomingDamageRadius', 'Incoming Spawn Radius', 'Random scatter area above health bar.', 10, 200, 5)}
+                        ${this.createSlider('outgoingDamageSize', 'Outgoing Text Size', 'Font size for damage you deal.', 10, 80, 2)}
                         ${this.createDropdown('damageFont', 'Damage Font', 'Choose the typeface for floating damage.', ['Orbitron', 'Tektur', 'Silkscreen', 'Press Start 2P', 'Bungee', 'Monoton', 'Righteous', 'Russo One', 'Wallpoet', 'Audiowide', 'Syncopate', 'Michroma', 'Stalinist One', 'Racing Sans One'])}
                         ${this.createToggle('lootStairs', 'Loot Notification', 'Show the scrolling loot log on the right side.')}
                     </div>

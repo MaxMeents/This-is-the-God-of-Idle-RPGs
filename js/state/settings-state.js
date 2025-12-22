@@ -25,7 +25,11 @@ const SettingsState = {
         trailLength: 6, // Range 2-10
         radarEnabled: true,
         radarRange: 60000,
-        radarTheme: 'Snow White'
+        radarTheme: 'Snow White',
+        incomingDamageFont: 'Orbitron',
+        incomingDamageSize: 32,
+        incomingDamageRadius: 50,
+        outgoingDamageSize: 28
     },
 
     // Current Active Settings
