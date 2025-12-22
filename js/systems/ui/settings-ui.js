@@ -55,6 +55,7 @@ const SettingsUI = {
                         ${this.createToggle('mouseEffects', 'Cursor Effects', 'Enable the Poly-Art Stream trail and click bursts.')}
                         ${this.createSlider('trailLength', 'Trail Length', 'Adjust the length of the cursor stream.', 2, 10, 1)}
                         ${this.createToggle('damageNumbers', 'Damage Numbers', 'Show floating damage values on hit.')}
+                        ${this.createToggle('shortNumbers', 'God Notation', 'Collapse large numbers into 3-digit shorthand (1k, 1m, 1a...).')}
                         ${this.createDropdown('damageFont', 'Damage Font', 'Choose the typeface for floating damage.', ['Orbitron', 'Tektur', 'Silkscreen', 'Press Start 2P', 'Bungee', 'Monoton', 'Righteous', 'Russo One', 'Wallpoet', 'Audiowide', 'Syncopate', 'Michroma', 'Stalinist One', 'Racing Sans One'])}
                         ${this.createToggle('lootStairs', 'Loot Notification', 'Show the scrolling loot log on the right side.')}
                     </div>

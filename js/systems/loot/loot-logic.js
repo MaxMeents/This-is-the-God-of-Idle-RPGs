@@ -49,11 +49,18 @@ function rollForItem(itemKey, tierCfg, isLucky = false) {
     if (!itemCfg) return;
 
     // Chance scaling: Base * Tier Multiplier
-    const finalChance = itemCfg.baseChance * tierCfg.chanceMult;
+    let simRewardMult = 1.0;
+    if (window.simulationMode && typeof SIMULATION_CONFIG !== 'undefined') {
+        const levelId = window.simulationLevel?.id || 1;
+        const diffIdx = SIMULATION_CONFIG.DIFFICULTY.findIndex(d => d.id === (window.simulationDifficulty?.id || 'normal'));
+        simRewardMult = SIMULATION_CONFIG.getRewardScale(levelId, diffIdx);
+    }
+
+    const finalChance = itemCfg.baseChance * tierCfg.chanceMult * simRewardMult;
 
     if (Math.random() < finalChance) {
-        // Amount calculation: random(min, max) * Tier Amount Multiplier
-        let amount = Math.floor((itemCfg.min + Math.random() * (itemCfg.max - itemCfg.min + 1)) * tierCfg.amountMult);
+        // Amount calculation: random(min, max) * Tier Amount Multiplier * Sim Reward Mult
+        let amount = Math.floor((itemCfg.min + Math.random() * (itemCfg.max - itemCfg.min + 1)) * tierCfg.amountMult * simRewardMult);
 
         // LUKCY HIT: Doubles final loot amount (Defined in combat-config.js)
         if (isLucky) amount *= 2;
@@ -121,7 +128,7 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     el.innerHTML = `
         <div class="loot-box ${boxClass}">
             <div class="loot-text">
-                <span class="loot-amount ${amount > 10 ? 'bouncing' : ''}" ${amtStyle}>${amount.toLocaleString()}</span>
+                <span class="loot-amount ${amount > 10 ? 'bouncing' : ''}" ${amtStyle}>${formatGodNumber(amount)}</span>
                 <span class="loot-name ${flowClass}">${itemCfg.name}</span>
             </div>
         </div>

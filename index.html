@@ -107,6 +107,11 @@
                     </div>
                 </div>
 
+                <div class="sim-drops">
+                    <div class="stat-label" style="margin-bottom: 8px;">EXPECTED DROPS</div>
+                    <div id="sim-drops-list" class="drops-container"></div>
+                </div>
+
                 <!-- DIFFICULTY NODES -->
                 <div class="difficulty-selector" id="sim-difficulty-selector">
                     <!-- Generated via JS -->
@@ -123,7 +128,10 @@
     <!-- STAGE NAVIGATION: Controls the switching between stages 1-9 -->
     <div id="stage-nav">
         <div id="nav-left" class="nav-arrow disabled">◀</div>
-        <div id="stage-display">Stage 1 - 0/300</div>
+        <div id="stage-display">
+            <div class="stage-main">Stage 1 - 0/300</div>
+            <div class="stage-sub"></div>
+        </div>
         <div id="nav-right" class="nav-arrow disabled">▶</div>
     </div>
 
@@ -237,6 +245,7 @@
     <script src="js/core/config/world-config.js"></script>
     <script src="js/core/enemies.js"></script>
     <script src="js/core/state.js"></script>
+    <script src="js/core/utils.js"></script>
     <script src="js/systems/rendering/asset-registry.js"></script>
     <script src="js/systems/rendering/asset-loader.js"></script>
 

@@ -15,8 +15,18 @@
 function updateEnemies(dt, now, isFirstStep) {
     if (isTraveling) return;
 
+    const isSim = currentStage > 2000;
+    const sId = isSim ? (currentStage - 2000) : currentStage;
+
+    // MASTER SCALING (2500 Stages Logic)
+    let statsMultiplier = sId;
+    if (isSim) {
+        const diffIdx = SIMULATION_CONFIG.DIFFICULTY.findIndex(d => d.id === (window.simulationDifficulty?.id || 'normal'));
+        statsMultiplier = SIMULATION_CONFIG.getStatScale(sId, diffIdx);
+    }
+
     const sizeMult = currentStage > 2 ? 2 + (currentStage - 2) * 0.2 : (currentStage === 2 ? 2 : 1);
-    const dmgMult = currentStage >= 2 ? 2 : 1;
+    const dmgMult = statsMultiplier;
     const gameSpd = PERFORMANCE.GAME_SPEED;
 
     // ANIMATION DECIMATION: Sync with global simulation speed
@@ -27,7 +37,9 @@ function updateEnemies(dt, now, isFirstStep) {
     else if (gameSpd >= 10) animStride = 1.66;
     else if (gameSpd >= 5) animStride = 1.25;
 
-    const objectiveMet = stageKillCount >= (STAGE_CONFIG.STAGES[currentStage]?.kills || 300);
+    const objectiveMet = isSim ?
+        (stageKillCount >= (window.simulationLevel?.kills || 300)) :
+        (stageKillCount >= (STAGE_CONFIG.STAGES[currentStage]?.kills || 300));
 
     for (let i = 0; i < spawnIndex; i++) {
         const idx = i * STRIDE;
@@ -224,7 +236,9 @@ function processEnemyAttack(idx, cfg, dmgMult, d, animStride, tierIndex, targetR
 function spawnEnemy(i, typeKey, far = false) {
     const cfg = Enemy[typeKey];
     const idx = i * STRIDE;
-    const stageCoords = STAGE_CONFIG?.CLOCKWISE_GRID?.[currentStage - 1];
+    const isSim = currentStage > 2000;
+    const navStageId = isSim ? 1 : currentStage;
+    const stageCoords = STAGE_CONFIG?.CLOCKWISE_GRID?.[navStageId - 1];
     if (!stageCoords) return;
 
     const angle = Math.random() * Math.PI * 2;
@@ -232,18 +246,29 @@ function spawnEnemy(i, typeKey, far = false) {
     const centerX = (stageCoords[0] - 1) * STAGE_CONFIG.GRID_SIZE;
     const centerY = (stageCoords[1] - 1) * STAGE_CONFIG.GRID_SIZE;
 
-    const chances = STAGE_CONFIG.STAGES[currentStage]?.tierChances || {};
+    const chances = isSim ? { Arch: 0.1, God: 0.05, Omega: 0.02, Alpha: 0.01 } : (STAGE_CONFIG.STAGES[currentStage]?.tierChances || {});
     const roll = Math.random();
     let tier = 0;
-    if (roll < chances.Alpha) tier = 4;
-    else if (roll < (chances.Alpha + chances.Omega)) tier = 3;
-    else if (roll < (chances.Alpha + chances.Omega + chances.God)) tier = 2;
-    else if (roll < (chances.Alpha + chances.Omega + chances.God + chances.Arch)) tier = 1;
+    if (roll < (chances.Alpha || 0)) tier = 4;
+    else if (roll < ((chances.Alpha || 0) + (chances.Omega || 0))) tier = 3;
+    else if (roll < ((chances.Alpha || 0) + (chances.Omega || 0) + (chances.God || 0))) tier = 2;
+    else if (roll < ((chances.Alpha || 0) + (chances.Omega || 0) + (chances.God || 0) + (chances.Arch || chances.Epic || 0))) tier = 1;
+    const sId = isSim ? (currentStage - 2000) : currentStage;
+
+    let hMult = sId;
+    if (isSim) {
+        const diffIdx = SIMULATION_CONFIG.DIFFICULTY.findIndex(d => d.id === (window.simulationDifficulty?.id || 'normal'));
+        hMult = SIMULATION_CONFIG.getStatScale(sId, diffIdx);
+    }
+
+    const baseSpeed = [cfg.moveSpeed, cfg.archMoveSpeed, cfg.godMoveSpeed, cfg.omegaMoveSpeed, cfg.alphaMoveSpeed][tier] || cfg.moveSpeed;
+    // Speed increases slightly with level (0.1% per level)
+    const speedScale = 1 + (sId * 0.001);
 
     data[idx] = centerX + Math.cos(angle) * dist;
     data[idx + 1] = centerY + Math.sin(angle) * dist;
-    data[idx + 6] = [cfg.moveSpeed, cfg.archMoveSpeed, cfg.godMoveSpeed, cfg.omegaMoveSpeed, cfg.alphaMoveSpeed][tier] || cfg.moveSpeed;
-    data[idx + 8] = cfg.healthMax * LOOT_CONFIG.TIERS[tier].healthMult;
+    data[idx + 6] = baseSpeed * speedScale;
+    data[idx + 8] = cfg.healthMax * LOOT_CONFIG.TIERS[tier].healthMult * hMult;
     data[idx + 9] = 0;
     data[idx + 5] = Math.random() * cfg.walkFrames;
     data[idx + 10] = 0;

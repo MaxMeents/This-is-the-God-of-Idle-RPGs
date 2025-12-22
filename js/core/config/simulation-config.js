@@ -13,12 +13,50 @@ const SIMULATION_CONFIG = {
 
     // Difficulty Tiers (Aligned with Loot Ledger Logic)
     DIFFICULTY: [
-        { id: 'normal', name: 'Standard', desc: 'Baseline Simulation', color: '#aaaaaa', hpMod: 1.0, dmgMod: 1.0, dropMod: 1.0 },
-        { id: 'epic', name: 'Advanced', desc: 'Tactical Warfare', color: '#ffd700', hpMod: 10.0, dmgMod: 5.0, dropMod: 2.5 },
-        { id: 'god', name: 'Nightmare', desc: 'IMPOSSIBLE', color: '#ff00ff', hpMod: 100.0, dmgMod: 25.0, dropMod: 5.0 },
-        { id: 'alpha', name: 'Lethal', desc: 'EXTINCTION', color: '#00ffff', hpMod: 1000.0, dmgMod: 100.0, dropMod: 10.0 },
-        { id: 'omega', name: 'Extinction', desc: 'REALITY COLLAPSE', color: '#ff0000', hpMod: 10000.0, dmgMod: 1000.0, dropMod: 25.0 }
+        { id: 'normal', name: 'Standard', desc: 'Baseline Simulation', color: '#aaaaaa' },
+        { id: 'epic', name: 'Arch', desc: 'Tactical Warfare', color: '#ffd700' },
+        { id: 'god', name: 'Nightmare', desc: 'IMPOSSIBLE', color: '#ff00ff' },
+        { id: 'alpha', name: 'Lethal', desc: 'EXTINCTION', color: '#00ffff' },
+        { id: 'omega', name: 'Extinction', desc: 'REALITY COLLAPSE', color: '#ff0000' }
     ],
+
+    /**
+     * MASTER SCALING LOGIC (The "2500 Level" Rule)
+     * Calculates the true power of a scenario based on (TierIndex * 500) + LevelID.
+     */
+    getStatScale(levelId, tierIndex) {
+        const globalId = (tierIndex * 500) + levelId;
+
+        // 1. DIFFICULTY DELTA: 1.2x delta between each difficulty level index
+        let factor = Math.pow(1.2, globalId);
+
+        // 2. EXPONENTIAL HURDLES (Milestones)
+        // Multiples of 100: 25x
+        // Multiples of 25: 10x
+        // Multiples of 10: 5x
+        // Multiples of 5: 2x
+        // and so on...
+        if (globalId % 2500 === 0) factor *= 500;
+        else if (globalId % 1000 === 0) factor *= 250;
+        else if (globalId % 500 === 0) factor *= 100;
+        else if (globalId % 250 === 0) factor *= 50;
+        else if (globalId % 100 === 0) factor *= 25;
+        else if (globalId % 25 === 0) factor *= 10;
+        else if (globalId % 10 === 0) factor *= 5;
+        else if (globalId % 5 === 0) factor *= 2;
+
+        return factor;
+    },
+
+    /**
+     * REWARD SCALING
+     * Calculates the drop multiplier based on the stat scale.
+     */
+    getRewardScale(levelId, tierIndex) {
+        const statsScale = this.getStatScale(levelId, tierIndex);
+        // Logarithmic scaling for rewards: 1 + log10(scale + 1) * 2
+        return 1.0 + (Math.log10(statsScale + 1) * 2);
+    },
 
     // Procedural Name Components (Thematic: God Training)
     KEYWORDS: {
@@ -48,40 +86,54 @@ const SIMULATION_CONFIG = {
     // Procedural Generator
     generateLevels() {
         const levels = [];
-        // Enemy Mapping aligned with actual asset keys found in asset-loader.js / enemies.js
         const enemies = ['GalaxyButterfly', 'BlueWhiteButterfly', 'GoldButterfly', 'GreenBlackButterfly', 'BlackRedButterfly', 'GalaxyDragon', 'BlueDragon', 'PhoenixSurrender'];
 
         for (let i = 1; i <= this.TOTAL_LEVELS; i++) {
             const sectorIdx = Math.floor((i - 1) / 100);
 
+            // Archetype logic
+            let archetype = 'mixed';
+            if (i % 10 === 0) archetype = 'titan';
+            else if (i % 5 === 0) archetype = 'swarm';
+
+            let levelEnemies = {};
+            let archetypePrefix = "";
+
+            if (archetype === 'titan') {
+                const dragon = enemies[5 + (i % 3)]; // Pick a Dragon
+                levelEnemies[dragon] = 1;
+                archetypePrefix = "Titan ";
+            } else if (archetype === 'swarm') {
+                const butterfly = enemies[i % 5]; // Pick a Butterfly
+                levelEnemies[butterfly] = 50 + (i * 2);
+                archetypePrefix = "Swarm ";
+            } else {
+                const e1 = enemies[i % enemies.length];
+                const e2 = enemies[(i + 3) % enemies.length];
+                levelEnemies[e1] = 10 + Math.floor(i * 0.5);
+                levelEnemies[e2] = 5 + Math.floor(i * 0.2);
+            }
+
             // Generate Name
             const pIdx = Math.min(this.KEYWORDS.PREFIX.length - 1, Math.floor((i - 1) / 25));
             const nIdx = i % this.KEYWORDS.NOUN.length;
             const suffix = this.KEYWORDS.SUFFIX[i % this.KEYWORDS.SUFFIX.length];
-            const name = `${this.KEYWORDS.PREFIX[pIdx]} ${this.KEYWORDS.NOUN[nIdx]} // ${suffix}`;
+            const name = `${archetypePrefix}${this.KEYWORDS.PREFIX[pIdx]} ${this.KEYWORDS.NOUN[nIdx]} // ${suffix}`;
 
-            // Determine Enemy Composition
-            // Cycle through enemies based on 50-level blocks
-            const enemyType = enemies[Math.floor((i - 1) / 20) % enemies.length];
-
-            // Count scales with level
-            const count = 5 + Math.floor(i * 0.5);
-
-            // Calculate Base Drops based on LOOT_CONFIG
-            // This relies on LOOT_CONFIG being loaded. 
-            // We reference global LOOT_CONFIG if available, or just store keys.
+            // Calculate Base Drops
             let potentialDrops = [];
+            const mainEnemy = Object.keys(levelEnemies)[0];
             if (typeof LOOT_CONFIG !== 'undefined') {
-                potentialDrops = (LOOT_CONFIG.ENEMY_DROPS[enemyType] || []).concat(LOOT_CONFIG.GLOBAL_DROPS);
+                potentialDrops = (LOOT_CONFIG.ENEMY_DROPS[mainEnemy] || []).slice(0, 3).concat(LOOT_CONFIG.GLOBAL_DROPS.slice(0, 2));
             }
 
             levels.push({
                 id: i,
                 name: name,
                 sector: sectorIdx + 1,
-                enemies: { [enemyType]: count }, // Main enemy type + count
+                enemies: levelEnemies,
                 potentialDrops: potentialDrops,
-                powerLevel: i * 500 // Base DMG
+                powerLevel: i * 500
             });
         }
         return levels;

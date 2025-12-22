@@ -89,7 +89,7 @@ function renderHoursIndex(content, headerTitle, data) {
         btn.className = `loot-log-hour-btn ${isDisabled ? 'disabled' : ''}`;
         btn.innerHTML = `
             <span class="hour-text">${hour} ${i === 0 ? '<small>(Current)</small>' : ''}</span>
-            <span class="hour-count" id="log-count-${hour.replace(':', '-')}">${isDisabled ? 'No History' : count + ' Drops Recorded'}</span>
+            <span class="hour-count" id="log-count-${hour.replace(':', '-')}">${isDisabled ? 'No History' : formatGodNumber(count) + ' Drops Recorded'}</span>
             <div class="fleur-de-lis">📜</div>
         `;
 
@@ -179,7 +179,7 @@ function renderGridItem(itemData) {
     return `
         <div class="loot-grid-item loot-tier-${itemData.tier}">
             <div class="loot-text">
-                <span class="loot-amount" style="font-size: 14px;">${itemData.amount.toLocaleString()}</span>
+                <span class="loot-amount" style="font-size: 14px;">${formatGodNumber(itemData.amount)}</span>
                 <span class="loot-name shimmer-text" style="font-size: 11px;">${itemCfg.name}</span>
             </div>
              <div class="loot-icon-wrapper">
@@ -198,7 +198,7 @@ function renderDetailRow(itemData) {
             <div class="loot-item in-log">
                 <div class="loot-box">
                     <div class="loot-text">
-                        <span class="loot-amount">${itemData.amount.toLocaleString()}</span>
+                        <span class="loot-amount">${formatGodNumber(itemData.amount)}</span>
                         <span class="loot-name shimmer-text">${itemCfg.name}</span>
                     </div>
                 </div>

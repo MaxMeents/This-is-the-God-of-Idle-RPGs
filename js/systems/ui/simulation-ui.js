@@ -170,85 +170,60 @@ const SimulationUI = {
     },
 
     updateCommandDeck(id) {
-        // Regenerate or Fetch Data
         const allLevels = SIMULATION_CONFIG.generateLevels();
         const levelData = allLevels[id - 1];
+        if (!levelData) return;
 
-        // Update Title with specific font class for the name
         this.levelName.innerHTML = `<span class="text-tech-grid" style="font-size: 24px;">${levelData.name}</span>`;
 
-        // Find Difficulty Object
-        const difficulty = SIMULATION_CONFIG.DIFFICULTY.find(d => d.id === this.selectedDifficulty);
+        const totalCount = Object.values(levelData.enemies).reduce((a, b) => a + b, 0);
+        this.enemyCount.innerText = formatGodNumber(totalCount);
 
-        // Enemy Stats Logic
-        const baseCount = Object.values(levelData.enemies)[0];
-        // Math matches user request: "How many you have to fight"
-        const count = Math.floor(baseCount * difficulty.dropMod);
-        const baseDmg = levelData.powerLevel;
-        const dmg = (baseDmg * difficulty.dmgMod).toLocaleString();
+        // Intensity scaling for DMG Est
+        const diffIdx = SIMULATION_CONFIG.DIFFICULTY.findIndex(d => d.id === this.selectedDifficulty);
+        const diff = SIMULATION_CONFIG.DIFFICULTY[diffIdx];
 
-        this.enemyCount.innerText = count;
-        this.dmgEst.innerText = `${dmg} DPS`;
-        this.rewardMult.innerText = `${difficulty.dropMod}x`;
-        this.rewardMult.style.color = difficulty.color; // Dynamic color
+        // MASTER CALCULATION
+        const masterScale = SIMULATION_CONFIG.getStatScale(id, diffIdx);
 
-        // Render Drops
-        this.renderDrops(levelData.potentialDrops);
+        const estDmg = 10 * masterScale; // Base 10 * scale
+        this.dmgEst.innerText = `${formatGodNumber(estDmg)} DPS`;
 
-        // Update Preview
-        this.renderSectorPreview(levelData, count);
+        // REWARD MULTIPLIER: Also scales with master logic
+        const rewardMult = SIMULATION_CONFIG.getRewardScale(id, diffIdx);
+        this.rewardMult.innerText = `x${formatGodNumber(rewardMult)}`;
+        this.rewardMult.style.color = diff.color; // Dynamic color
+
+        this.renderSectorPreview(levelData, totalCount);
+        this.updateDrops(levelData);
     },
 
-    renderDrops(dropKeys) {
-        // Create or Clear Drops Container (Hot-inject logic)
-        let dropsContainer = document.getElementById('sim-drops-row');
-        if (!dropsContainer) {
-            // Hot-inject layout of drop container
-            const parent = document.querySelector('.sim-stats');
-            dropsContainer = document.createElement('div');
-            dropsContainer.id = 'sim-drops-row';
-            dropsContainer.style.marginTop = '10px';
-            dropsContainer.style.display = 'flex';
-            dropsContainer.style.gap = '8px';
-            dropsContainer.style.flexWrap = 'wrap';
-            parent.appendChild(dropsContainer);
+    updateDrops(levelData) {
+        const container = document.getElementById('sim-drops-list');
+        if (!container) return;
+        container.innerHTML = '';
 
-            const label = document.createElement('div');
-            label.className = 'stat-label';
-            label.innerText = 'EXPECTED DROPS';
-            label.style.width = '100%';
-            label.style.marginBottom = '5px';
-            dropsContainer.appendChild(label);
-        } else {
-            // Keep the label, clear the rest
-            // Remove all img children
-            const images = dropsContainer.querySelectorAll('img');
-            images.forEach(img => img.remove());
+        if (!levelData.potentialDrops || levelData.potentialDrops.length === 0) {
+            container.innerHTML = '<span style="color: #444; font-size: 12px;">NO GUARANTEED DROPS</span>';
+            return;
         }
 
-        if (!dropKeys || dropKeys.length === 0) return;
-
-        dropKeys.forEach(key => {
-            const item = LOOT_CONFIG.ITEMS[key];
-            if (!item) return;
+        levelData.potentialDrops.forEach(dropId => {
+            const drop = LOOT_CONFIG.ITEMS[dropId];
+            if (!drop) return;
 
             const img = document.createElement('img');
-            img.src = item.icon;
-            img.title = `${item.name} (${item.tier})`;
-            img.style.width = '32px';
-            img.style.height = '32px';
-            img.style.border = '1px solid #333';
-            img.style.borderRadius = '4px';
+            img.src = drop.icon;
+            img.title = drop.name;
+            img.className = 'sim-drop-icon';
 
-            // Border Color based on Tier (Consistent with config)
-            let borderColor = '#fff';
-            if (item.tier === 'epic') borderColor = '#ffd700';
-            if (item.tier === 'god') borderColor = '#00BFFF';
-            if (item.tier === 'alpha') borderColor = '#ff00ff';
-            if (item.tier === 'omega') borderColor = '#ff0000';
-            img.style.borderColor = borderColor;
+            // Add tier-specific glow mapping
+            const tier = drop.tier || 'normal';
+            const tierColor = SIMULATION_CONFIG.DIFFICULTY.find(d => d.id === tier)?.color || '#fff';
+            img.style.border = `1px solid ${tierColor}`;
+            img.style.boxShadow = `0 0 5px ${tierColor}44`;
 
-            dropsContainer.appendChild(img);
+            container.appendChild(img);
         });
     },
 
@@ -312,32 +287,12 @@ const SimulationUI = {
     buildDifficultySelector() {
         const container = this.difficultySelector;
         container.innerHTML = '';
-        container.style.justifyContent = 'center';
-        container.style.gap = '20px';
 
         SIMULATION_CONFIG.DIFFICULTY.forEach(diff => {
-            // Replicating Loot Ledger Circle Logic
-            // Structure: Circle -> Inner Dot -> Glow on Active
-
             const node = document.createElement('div');
             node.className = `tier-circle tier-${diff.id} ${diff.id === this.selectedDifficulty ? 'active' : ''}`;
 
-            // Inline Styles to mimic the Loot Ledger aesthetic perfectly
-            // User requested "the same dots used for filter in loot ledger"
-            node.style.width = '40px';
-            node.style.height = '40px';
-            node.style.borderRadius = '50%';
-            node.style.border = `2px solid ${diff.color}`;
-            node.style.background = 'rgba(0,0,0,0.8)';
-            node.style.cursor = 'pointer';
-            node.style.position = 'relative';
-            node.style.boxShadow = diff.id === this.selectedDifficulty ? `0 0 20px ${diff.color}` : 'none';
-            node.style.transition = 'all 0.3s ease';
-
-            node.title = `${diff.name}: ${diff.desc}`;
-
-            // Structure now handled entirely by CSS ::before (White Center) matching Loot Ledger
-
+            // Interaction
             node.addEventListener('click', () => this.selectDifficulty(diff.id));
             container.appendChild(node);
         });
@@ -351,7 +306,6 @@ const SimulationUI = {
         this.updateCommandDeck(this.selectedLevelId); // Refresh Stats
 
         // DYNAMIC COLOR & GRADIENT UPDATE
-        // Syncs with Loot Ledger styles (loot.css)
         this.overlay.style.setProperty('--sim-accent', diff.color);
 
         const TEXT_GRADIENTS = {
@@ -378,17 +332,22 @@ const SimulationUI = {
     },
 
     engage() {
-        // Find Difficulty Object
+        if (!this.selectedLevelId) return;
+
         const diffObj = SIMULATION_CONFIG.DIFFICULTY.find(d => d.id === this.selectedDifficulty);
+        const allLevels = SIMULATION_CONFIG.generateLevels();
+        const levelData = allLevels[this.selectedLevelId - 1];
+
         console.log(`[SIM] Engaging Level ${this.selectedLevelId} [${diffObj.name}]`);
+
+        window.simulationMode = true;
+        window.simulationLevel = levelData;
+        window.simulationDifficulty = diffObj;
+
         this.close();
 
-        // FUTURE INTEGRATION:
-        // combatSystem.loadSimulation(this.selectedLevel, diffObj.hpMod, diffObj.dmgMod);
         if (typeof changeStage === 'function') {
-            // For now, this just changes the procedural stage ID
-            // Actual difficulty modifier application would happen in enemy spawner logic
-            // changeStage(this.selectedLevelId); 
+            changeStage(2000 + this.selectedLevelId);
         }
     }
 };

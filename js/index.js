@@ -53,7 +53,20 @@ function init(firstLoad = false) {
  */
 function prepareStagePool(stageId) {
     spawnList.length = 0;
-    const cfg = STAGE_CONFIG.STAGES[stageId];
+
+    let cfg;
+    if (stageId > 2000) {
+        // Simulation Level
+        cfg = window.simulationLevel;
+        if (!cfg) {
+            const simId = stageId - 2000;
+            const allLevels = SIMULATION_CONFIG.generateLevels();
+            cfg = allLevels[simId - 1];
+        }
+    } else {
+        cfg = STAGE_CONFIG.STAGES[stageId];
+    }
+
     if (!cfg) return;
 
     for (const [type, count] of Object.entries(cfg.enemies)) {
@@ -75,7 +88,10 @@ function prepareStagePool(stageId) {
  */
 function handleSpawning() {
     if (isTraveling) return;
-    const cfg = STAGE_CONFIG.STAGES[currentStage];
+
+    // Check if it's a simulation or a standard stage
+    const isSim = currentStage > 2000;
+    const cfg = isSim ? (window.simulationLevel || true) : STAGE_CONFIG.STAGES[currentStage];
     if (!cfg) return;
 
     const population = spawnList.length;
@@ -103,6 +119,9 @@ function changeStage(newStage) {
     if (isTraveling) return;
     currentStage = newStage;
 
+    const isSim = currentStage > 2000;
+    const navStageId = isSim ? 1 : currentStage; // Coords default to Stage 1 center for Sim
+
     prepareStagePool(currentStage);
     spawnIndex = 0;
     data.fill(0);
@@ -125,14 +144,14 @@ function changeStage(newStage) {
     heads.fill(-1);
     occupiedCount = 0;
 
-    // Reset combat timers to prevent immediate triggers at high speeds
+    // Reset combat timers
     Object.keys(weaponTimers).forEach(k => weaponTimers[k] = 0);
     Object.keys(weaponAmmo).forEach(k => weaponAmmo[k] = WEAPON_CONFIG[k].maxAmmo);
     Object.keys(weaponRechargeMode).forEach(k => weaponRechargeMode[k] = false);
     lastCombatUpdate = performance.now();
     lastTargetUpdate = performance.now();
 
-    const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
+    const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[navStageId - 1];
     travelTargetX = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     travelTargetY = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
     isTraveling = true;

@@ -209,14 +209,43 @@ function updateAmmoAndSkillsUI() {
  * NAV & STAGE HANDLER
  */
 function updateStageNavigationUI() {
-    const targetKills = STAGE_CONFIG.STAGES[currentStage]?.kills || 300;
-    const stageTxt = `Stage ${currentStage} - ${stageKillCount}/${targetKills}`;
-    if (stageTxt !== lastStageTxt) {
-        elStageDisp.innerText = stageTxt;
-        elPrevArr.classList.toggle('disabled', currentStage <= 1);
-        elNextArr.classList.toggle('disabled', !(currentStage <= highestStageCleared && currentStage < 9));
-        elChallengeBtn.style.display = (currentStage > highestStageCleared && !isTraveling) ? 'block' : 'none';
-        lastStageTxt = stageTxt;
+    const isSim = currentStage > 2000;
+    let targetKills, mainTxt, subTxt;
+
+    if (isSim) {
+        const level = window.simulationLevel || SIMULATION_CONFIG.generateLevels()[(currentStage - 2000) - 1];
+        targetKills = level?.kills || 300;
+
+        // Find sector name from config
+        const sectors = [
+            { id: 1, name: 'GENESIS' },
+            { id: 2, name: 'AWAKENING' },
+            { id: 3, name: 'ASCENSION' },
+            { id: 4, name: 'DIVINITY' },
+            { id: 5, name: 'ETERNITY' }
+        ];
+        const sectorName = sectors.find(s => s.id === level.sector)?.name || "UNKNOWN";
+
+        mainTxt = `SECTOR ${sectorName} // AREA ${level.id}`;
+        subTxt = level.name;
+    } else {
+        targetKills = STAGE_CONFIG.STAGES[currentStage]?.kills || 300;
+        mainTxt = `STAGE ${currentStage}`;
+        subTxt = `${stageKillCount} / ${targetKills} TARGETS`;
+    }
+
+    const fullCheck = `${mainTxt}|${subTxt}|${stageKillCount}`;
+    if (fullCheck !== lastStageTxt) {
+        const elMain = elStageDisp.querySelector('.stage-main');
+        const elSub = elStageDisp.querySelector('.stage-sub');
+
+        if (elMain) elMain.innerText = isSim ? mainTxt : `${mainTxt} - ${formatGodNumber(stageKillCount)}/${formatGodNumber(targetKills)}`;
+        if (elSub) elSub.innerText = subTxt;
+
+        elPrevArr.classList.toggle('disabled', currentStage <= 1 || isSim);
+        elNextArr.classList.toggle('disabled', isSim || !(currentStage <= highestStageCleared && currentStage < 9));
+        elChallengeBtn.style.display = (currentStage > highestStageCleared && !isTraveling && !isSim) ? 'block' : 'none';
+        lastStageTxt = fullCheck;
     }
 
     if (bossMode !== lastBossMode) {

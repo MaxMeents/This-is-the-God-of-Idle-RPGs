@@ -298,7 +298,9 @@ function renderDamageNumbers(cx, cy) {
         t.position.set((dn.x - player.x) * window.zoom + cx, (dn.y - player.y) * window.zoom + cy - (dn.critTier * 15));
 
         const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
-        t.text = prefix ? `${prefix} ${dn.val}` : dn.val;
+        const showShortMode = (typeof SettingsState !== 'undefined') ? SettingsState.get('shortNumbers') : true;
+        const valTxt = showShortMode ? formatGodNumber(dn.val) : Math.floor(dn.val).toLocaleString();
+        t.text = prefix ? `${prefix} ${valTxt}` : valTxt;
 
         // Dynamic Font Switching
         if (t.style.fontFamily !== targetFont) t.style.fontFamily = targetFont;

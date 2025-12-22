@@ -18,18 +18,67 @@ const LootPersistence = {
     STORAGE_KEY: 'god_loot_ledger_v1',
     BUFFER: '', // Raw CSV-like string: "id:time:amt:lucky:tier,..."
 
-    /**
-     * INITIALIZE PERSISTENCE
-     * Loads the raw buffer from localStorage on game start.
-     * Affected by: Browser privacy settings (localStorage availability).
-     */
     init() {
-        const stored = localStorage.getItem(this.STORAGE_KEY);
-        if (stored) {
-            this.BUFFER = stored;
-            console.log(`[LOOT] Persistence loaded: ${this.BUFFER.split(',').length} entries`);
+        try {
+            const stored = localStorage.getItem(this.STORAGE_KEY);
+            if (stored) {
+                this.BUFFER = stored;
+                console.log(`[LOOT] Persistence loaded: ${this.BUFFER.split(',').length} entries`);
+            } else {
+                console.log("[LOOT] No existing persistence found");
+            }
+        } catch (e) {
+            console.error("[LOOT] Critical failure loading LocalStorage - Clearning corrupted buffer");
+            localStorage.clear();
+        }
+    },
+
+    /**
+     * SAFE SET ITEM
+     * Wraps localStorage.setItem with error handling and purge logic.
+     */
+    safeSetItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                console.warn("[LOOT] LocalStorage Full! Purging oldest data...");
+                this.purgeOldestData();
+                try {
+                    localStorage.setItem(key, value);
+                } catch (retryError) {
+                    console.error("[LOOT] Still failing after purge. Skipping save.");
+                }
+            }
+        }
+    },
+
+    /**
+     * PURGE OLDEST DATA
+     * Removes the oldest hour of loot data to make space.
+     */
+    purgeOldestData() {
+        if (!this.hourCounts) this.syncMemory();
+        const hours = Object.keys(this.hourCounts).sort();
+        if (hours.length > 0) {
+            const oldest = hours[0];
+            const hourKey = this.STORAGE_KEY + '_hour_' + oldest.replace(':', '_');
+            localStorage.removeItem(hourKey);
+            delete this.hourCounts[oldest];
+            this.safeSetItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
+
+            // Also trim the main BUFFER if needed
+            const entries = this.BUFFER.split(',');
+            // Remove first 100 entries as a quick trim
+            if (entries.length > 100) {
+                this.BUFFER = entries.slice(100).join(',');
+                this.safeSetItem(this.STORAGE_KEY, this.BUFFER);
+            }
+            console.log(`[LOOT] Purged hour: ${oldest}`);
         } else {
-            console.log("[LOOT] No existing persistence found");
+            // If no hours, just clear everything as a last resort
+            localStorage.clear();
+            this.BUFFER = '';
         }
     },
 
@@ -57,7 +106,14 @@ const LootPersistence = {
         // 1. RAW BUFFER UPDATE (The Source of Truth)
         if (this.BUFFER) this.BUFFER += ',';
         this.BUFFER += entry;
-        localStorage.setItem(this.STORAGE_KEY, this.BUFFER);
+
+        // BUFFER CAP: Max ~5000 entries (approx 150kb) to prevent LS bloat
+        const entries = this.BUFFER.split(',');
+        if (entries.length > 5000) {
+            this.BUFFER = entries.slice(-5000).join(',');
+        }
+
+        this.safeSetItem(this.STORAGE_KEY, this.BUFFER);
 
         // 2. LIVE CACHE UPDATE (Fixes the delay/missed drops issue)
         // We must update the hourCounts and specific Hour Data in localStorage immediately
@@ -71,7 +127,7 @@ const LootPersistence = {
         // Increment Count
         if (!this.hourCounts[hourLabel]) this.hourCounts[hourLabel] = 0;
         this.hourCounts[hourLabel]++;
-        localStorage.setItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
+        this.safeSetItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
 
         // Update Specific Hour Data Cache
         const itemKey = Object.keys(LOOT_CONFIG.ITEMS).find(k => LOOT_CONFIG.ITEMS[k].id === id);
@@ -99,10 +155,14 @@ const LootPersistence = {
 
             // Add and Sort (Newest first)
             hourList.push(newEntry);
+
+            // HOUR LIMIT: Max 500 entries per hour to save space
+            if (hourList.length > 500) hourList = hourList.slice(-500);
+
             hourList.sort((a, b) => b.rawTime - a.rawTime);
 
             // Write back to LS
-            localStorage.setItem(hourKey, JSON.stringify(hourList));
+            this.safeSetItem(hourKey, JSON.stringify(hourList));
         }
 
         // 3. LIVE UI UPDATE (If modal is visible)
@@ -116,7 +176,7 @@ const LootPersistence = {
             if (typeof logViewState !== 'undefined' && logViewState.currentView === 'index') {
                 const countEl = document.getElementById(`log-count-${safeHour}`);
                 if (countEl) {
-                    countEl.innerText = `${this.hourCounts[hourLabel]} Drops Recorded`; // Use live count
+                    countEl.innerText = `${formatGodNumber(this.hourCounts[hourLabel])} Drops Recorded`; // Use live count
 
                     const btn = countEl.closest('.loot-log-hour-btn');
                     if (btn && btn.classList.contains('disabled')) {
@@ -201,13 +261,13 @@ const LootPersistence = {
         });
 
         // Save counts to localStorage
-        localStorage.setItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
+        this.safeSetItem(this.STORAGE_KEY + '_counts', JSON.stringify(this.hourCounts));
 
         // Save each hour's data separately
         Object.keys(hourData).forEach(hourLabel => {
             const hourKey = this.STORAGE_KEY + '_hour_' + hourLabel.replace(':', '_');
             hourData[hourLabel].sort((a, b) => b.rawTime - a.rawTime);
-            localStorage.setItem(hourKey, JSON.stringify(hourData[hourLabel]));
+            this.safeSetItem(hourKey, JSON.stringify(hourData[hourLabel]));
         });
 
         console.log(`[LOOT] Cached ${Object.keys(this.hourCounts).length} hours to localStorage`);

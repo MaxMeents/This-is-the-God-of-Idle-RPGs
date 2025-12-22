@@ -20,6 +20,7 @@ const SettingsState = {
         laserBar: true,
         bulletBar: true,
         enemyHp: true,
+        shortNumbers: true, // God Notation (1.23k etc)
         damageFont: 'Orbitron', // 'Orbitron' or 'Tektur'
         trailLength: 6, // Range 2-10
         radarEnabled: true,
