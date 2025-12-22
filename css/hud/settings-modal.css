@@ -204,6 +204,85 @@
     border-radius: 3px;
 }
 
+/* Radar Preview in Modal */
+#radar-preview-container {
+    --prev-accent: rgba(0, 150, 255, 0.5);
+    --prev-bg: #000;
+    --prev-glow: rgba(0, 150, 255, 0.2);
+    --prev-grid: rgba(0, 150, 255, 0.1);
+
+    position: absolute;
+    /* Position to the right of the panel, centered vertically */
+    left: calc(50% + 420px);
+    top: 50%;
+    transform: translateY(-50%);
+
+    width: 200px;
+    height: 200px;
+    background: var(--prev-bg);
+    border: 2px solid var(--prev-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 30px var(--prev-glow);
+    display: none;
+    z-index: 1000;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+#radar-preview-container.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    animation: previewFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes previewFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50%) translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(-50%) translateX(0);
+    }
+}
+
+.radar-preview-label {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--prev-accent);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+#radar-theme-preview {
+    width: 100%;
+    height: 100%;
+}
+
+/* Ensure that if the screen is too small, the preview overlays the left side of the panel slightly rather than being hidden */
+@media (max-width: 1300px) {
+    #radar-preview-container {
+        left: auto;
+        right: 40px;
+        top: 40px;
+        transform: none;
+        width: 150px;
+        height: 150px;
+    }
+}
+
 /* -------------------------------------------------------------------------
    MODAL PANEL
    ------------------------------------------------------------------------- */
@@ -216,7 +295,8 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 100, 255, 0.1);
     transform: translateY(20px);
     transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    overflow: hidden;
+    overflow: visible;
+    /* Changed from hidden to allow dropdowns to overlay */
     display: flex;
     flex-direction: column;
 }
@@ -233,6 +313,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-top-left-radius: 16px;
+    /* Match panel radius since overflow is visible */
+    border-top-right-radius: 16px;
 }
 
 .settings-title {

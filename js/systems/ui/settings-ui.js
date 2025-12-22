@@ -78,6 +78,12 @@ const SettingsUI = {
                     </div>
                 </div>
             </div>
+
+            <!-- Radar Preview Sidebar (Now outside panel but inside overlay) -->
+            <div id="radar-preview-container">
+                <div class="radar-preview-label">Live Preview</div>
+                <canvas id="radar-theme-preview" width="200" height="200"></canvas>
+            </div>
         `;
         document.body.appendChild(overlay);
     },
@@ -132,7 +138,9 @@ const SettingsUI = {
                     <div class="setting-desc">${desc}</div>
                 </div>
                 <div class="setting-dropdown-container" id="dropdown-${key}" data-key="${key}" data-options='${JSON.stringify(options)}'>
-                    <div class="setting-dropdown-trigger" onclick="SettingsUI.toggleDropdown('${key}')">
+                    <div class="setting-dropdown-trigger" 
+                         ${key === 'damageFont' ? `style="font-family: '${current}', sans-serif;"` : ''} 
+                         onclick="SettingsUI.toggleDropdown('${key}')">
                         ${current}
                     </div>
                     <div class="setting-dropdown-options">
@@ -159,21 +167,53 @@ const SettingsUI = {
     selectOption(key, value) {
         SettingsState.set(key, value);
         const container = document.getElementById(`dropdown-${key}`);
-        container.querySelector('.setting-dropdown-trigger').innerText = value;
+        const trigger = container.querySelector('.setting-dropdown-trigger');
+        trigger.innerText = value;
+        if (key === 'damageFont') {
+            trigger.style.fontFamily = `'${value}', sans-serif`;
+        }
         container.classList.remove('open');
         this.updateTogglesFromState();
     },
 
     previewOption(key, value) {
         if (key === 'radarTheme' && typeof RadarSystem !== 'undefined') {
+            // HUD Update
             RadarSystem.updateTheme(value);
+
+            // Modal Preview Update
+            const previewContainer = document.getElementById('radar-preview-container');
+            if (previewContainer) {
+                previewContainer.classList.add('active');
+                RadarSystem.drawPreview('radar-theme-preview', value);
+            }
+        } else if (key === 'damageFont') {
+            const container = document.getElementById(`dropdown-${key}`);
+            const trigger = container.querySelector('.setting-dropdown-trigger');
+            if (trigger) {
+                trigger.style.fontFamily = `'${value}', sans-serif`;
+                trigger.innerText = value;
+            }
         }
     },
 
     revertPreview(key) {
+        const current = SettingsState.get(key);
         if (key === 'radarTheme' && typeof RadarSystem !== 'undefined') {
-            const current = SettingsState.get(key);
             RadarSystem.updateTheme(current);
+
+            // Hide Modal Preview
+            const previewContainer = document.getElementById('radar-preview-container');
+            if (previewContainer) {
+                previewContainer.classList.remove('active');
+            }
+        } else if (key === 'damageFont') {
+            const container = document.getElementById(`dropdown-${key}`);
+            const trigger = container.querySelector('.setting-dropdown-trigger');
+            if (trigger) {
+                trigger.style.fontFamily = `'${current}', sans-serif`;
+                trigger.innerText = current;
+            }
         }
     },
 
@@ -191,6 +231,7 @@ const SettingsUI = {
         document.getElementById('settings-gear-btn').addEventListener('click', () => {
             this.isOpen = true;
             document.getElementById('settings-modal-overlay').classList.add('active');
+            document.body.classList.add('settings-active');
             // Pause game only if not already paused? 
             // Ideally settings should pause game logic.
             if (window.gamePaused === false && typeof window.togglePause === 'function') {
@@ -202,6 +243,7 @@ const SettingsUI = {
         const close = () => {
             this.isOpen = false;
             document.getElementById('settings-modal-overlay').classList.remove('active');
+            document.body.classList.remove('settings-active');
             // Unpause? Maybe user wants to stay paused. Let's leave manual unpause for now or unpause if we auto-paused.
             // For safety, let the user decide when to unpause via the existing large pause overlay.
         };

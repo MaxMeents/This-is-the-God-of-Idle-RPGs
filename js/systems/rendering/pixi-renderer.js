@@ -88,7 +88,21 @@ function initRendererPools() {
     }
 
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
-        const t = new PIXI.Text({ text: '', style: { fill: 0xffffff, fontWeight: '900', fontSize: 24, fontFamily: 'Orbitron', stroke: 0x000000, strokeThickness: 3 } });
+        const t = new PIXI.Text({
+            text: '',
+            style: {
+                fill: '#ffffff',
+                fontWeight: '900',
+                fontSize: 28,
+                fontFamily: 'Orbitron',
+                stroke: '#000000',
+                strokeThickness: 4,
+                dropShadow: true,
+                dropShadowBlur: 4,
+                dropShadowColor: '#000000',
+                dropShadowDistance: 2
+            }
+        });
         t.anchor.set(0.5); t.visible = false;
         if (typeof uiContainer !== 'undefined') uiContainer.addChild(t);
         damageTextPool.push(t);
@@ -257,29 +271,51 @@ function renderSkills() {
 }
 
 function renderDamageNumbers(cx, cy) {
-    // SPRITE SANITATION (Cleanup)
-    // -------------------------------------------------------------------------
-    // CRITICAL: Reset all damage text sprites to invisible before rendering.
-    // This prevents expired damage numbers from "sticking" on screen forever.
-    // Without this loop, damage text accumulates and causes severe lag.
-    // SOURCE: Gold Standard renderer.js line 308
-    // -------------------------------------------------------------------------
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) damageTextPool[i].visible = false;
 
-    // FONT VISUAL SETTING
     const targetFont = (typeof SettingsState !== 'undefined') ? SettingsState.get('damageFont') : 'Orbitron';
+    const now = performance.now();
+
+    // TIERED SHIMMER PALETTES
+    const PALETTES = [
+        ['#ffffff', '#cccccc'], // 0: Normal (Silver Shimmer)
+        ['#00ffff', '#ffffff', '#0099ff'], // 1: Arch (Blue Sparkle)
+        ['#ffd700', '#ffffff', '#ffaa00'], // 2: God (Gold/Rainbow)
+        ['#ff0000', '#ff8800', '#ff0000'], // 3: Omega (Lava/Red)
+        ['#ff00ff', '#00ffff', '#ff00ff']  // 4: Alpha (Bismuth/Neon)
+    ];
 
     for (let poolIdx of activeDamageIndices.slice(0, activeDamageCount)) {
         const t = damageTextPool[poolIdx], dn = damageNumbers[poolIdx];
-        t.visible = true; t.alpha = dn.life; t.zIndex = dn.critTier;
+        t.visible = true;
+        t.alpha = dn.life;
+        t.zIndex = 1000 + dn.critTier; // Ensure they stay on top
+
+        // Positioning with vertical stagger based on crit tier
         t.position.set((dn.x - player.x) * window.zoom + cx, (dn.y - player.y) * window.zoom + cy - (dn.critTier * 15));
+
         const prefix = dn.isLucky ? CRIT_CONFIG.LUCKY_PREFIXES[dn.critTier] : CRIT_CONFIG.TIER_PREFIXES[dn.critTier];
         t.text = prefix ? `${prefix} ${dn.val}` : dn.val;
 
         // Dynamic Font Switching
         if (t.style.fontFamily !== targetFont) t.style.fontFamily = targetFont;
 
-        t.style.fill = dn.isLucky ? 0xffd700 : CRIT_CONFIG.TIER_COLORS[dn.critTier];
-        t.scale.set((1 + dn.critTier * 0.2) * (0.8 + window.zoom * 0.2));
+        // SHIMMER LOGIC
+        // PIXI 8 fix: avoid passing array to fill. Use single color and fluctuate effects.
+        const palette = dn.isLucky ? ['#ffd700', '#ffffff'] : (PALETTES[dn.critTier] || PALETTES[0]);
+        const shimmerIdx = (Math.sin(now * 0.01 + poolIdx) * 0.5 + 0.5);
+
+        // Pulse Scale for "Alive" feel
+        const pulse = 1 + Math.sin(now * 0.02 + poolIdx) * 0.05 * dn.critTier;
+        const baseScale = (1 + dn.critTier * 0.25) * (0.8 + window.zoom * 0.2);
+        t.scale.set(baseScale * pulse);
+
+        // Update fill only if needed (Standard color strings/hex)
+        const targetColor = shimmerIdx > 0.8 ? palette[1] : palette[0];
+        if (t.style.fill !== targetColor) t.style.fill = targetColor;
+
+        // Shiny effect via oscillating stroke and shadow
+        t.style.strokeThickness = 4 + (Math.sin(now * 0.015 + poolIdx) * 2 * (1 + dn.critTier / 2));
+        t.style.dropShadowBlur = 4 + (Math.sin(now * 0.015 + poolIdx) * 6 * (1 + dn.critTier / 2));
     }
 }

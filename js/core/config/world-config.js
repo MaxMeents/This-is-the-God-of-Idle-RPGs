@@ -10,7 +10,7 @@
  * BACKGROUND ENVIRONMENT
  */
 const FLOOR_PATH = 'img/Texture Floor/bg_seamless.png';
-const FLOOR_TILE_SIZE = 46000; // Pixel width/height of a single tiling floor sprite
+const FLOOR_TILE_SIZE = 4600; // Pixel width/height of a single tiling floor sprite
 
 /**
  * CAMERA & ZOOM LIMITS

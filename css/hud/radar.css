@@ -41,4 +41,9 @@
     display: block;
 }
 
+/* Force HUD radar to front when settings are open */
+body.settings-active #radar-container {
+    z-index: 12000;
+}
+
 /* Optional: Radar sweeping animation could be added here if desired */
