@@ -17,10 +17,10 @@ const RadarSystem = {
     // Theme Definitions
     THEMES: {
         'Cyber Blue': {
-            accent: 'rgba(0, 213, 255, 0.8)',
-            glow: 'rgba(0, 213, 255, 0.3)',
-            grid: 'rgba(0, 213, 255, 0.1)',
-            bg: 'rgba(0, 10, 20, 0.9)',
+            accent: 'rgba(255, 255, 255, 0.9)', // White Accent
+            glow: 'rgba(0, 150, 255, 0.4)',     // Blue Glow
+            grid: 'rgba(0, 150, 255, 0.15)',    // Blue Grid
+            bg: 'rgba(0, 20, 50, 0.9)',        // Deep Blue BG
             player: '#ffffff',
             arrow: '#00ffff'
         },

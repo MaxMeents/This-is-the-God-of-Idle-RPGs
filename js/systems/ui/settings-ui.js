@@ -55,7 +55,7 @@ const SettingsUI = {
                         ${this.createToggle('mouseEffects', 'Cursor Effects', 'Enable the Poly-Art Stream trail and click bursts.')}
                         ${this.createSlider('trailLength', 'Trail Length', 'Adjust the length of the cursor stream.', 2, 10, 1)}
                         ${this.createToggle('damageNumbers', 'Damage Numbers', 'Show floating damage values on hit.')}
-                        ${this.createSelector('damageFont', 'Damage Font', 'Choose the typeface for floating damage.', ['Orbitron', 'Tektur'])}
+                        ${this.createDropdown('damageFont', 'Damage Font', 'Choose the typeface for floating damage.', ['Orbitron', 'Tektur', 'Silkscreen', 'Press Start 2P', 'Bungee', 'Monoton', 'Righteous', 'Russo One', 'Wallpoet', 'Audiowide', 'Syncopate', 'Michroma', 'Stalinist One', 'Racing Sans One'])}
                         ${this.createToggle('lootStairs', 'Loot Notification', 'Show the scrolling loot log on the right side.')}
                     </div>
 
@@ -66,7 +66,7 @@ const SettingsUI = {
                         ${this.createToggle('laserBar', 'Laser Ammo', 'Display the laser energy bar.')}
                         ${this.createToggle('bulletBar', 'Bullet Ammo', 'Display the bullet count bar.')}
                         ${this.createToggle('radarEnabled', 'Tactical Radar', 'Display the tactical map overlay (Bottom Left).')}
-                        ${this.createSelector('radarTheme', 'Radar Theme', 'Choose the color scheme for the tactical radar.', ['Cyber Blue', 'Emerald Green', 'Amber Alert', 'Blood Moon', 'Neon Orchid', 'Monochrome'])}
+                        ${this.createDropdown('radarTheme', 'Radar Theme', 'Choose the color scheme for the tactical radar.', ['Cyber Blue', 'Emerald Green', 'Amber Alert', 'Blood Moon', 'Neon Orchid', 'Monochrome'])}
                         ${this.createToggle('enemyHp', 'Enemy Health Bars', 'Show health bars above enemies (Performance Heavy).')}
                     </div>
 
@@ -113,20 +113,77 @@ const SettingsUI = {
         `;
     },
 
-    createSelector(key, label, desc, options) {
+    createDropdown(key, label, desc, options) {
         const current = SettingsState.get(key) || options[0];
-        const optString = options.join(',');
+        const optionsHtml = options.map(opt => {
+            const style = key === 'damageFont' ? `style="font-family: '${opt}', sans-serif;"` : '';
+            return `<div class="setting-dropdown-option ${opt === current ? 'active' : ''}" 
+                        data-value="${opt}" 
+                        ${style}
+                        onmouseenter="SettingsUI.previewOption('${key}', '${opt}')"
+                        onmouseleave="SettingsUI.revertPreview('${key}')"
+                        onclick="SettingsUI.selectOption('${key}', '${opt}')">${opt}</div>`;
+        }).join('');
+
         return `
             <div class="setting-row">
                 <div>
                     <div class="setting-label">${label}</div>
                     <div class="setting-desc">${desc}</div>
                 </div>
-                <button class="setting-selector" data-key="${key}" data-options="${optString}" onclick="SettingsUI.cycleOption('${key}', this)">
-                    ${current}
-                </button>
+                <div class="setting-dropdown-container" id="dropdown-${key}" data-key="${key}" data-options='${JSON.stringify(options)}'>
+                    <div class="setting-dropdown-trigger" onclick="SettingsUI.toggleDropdown('${key}')">
+                        ${current}
+                    </div>
+                    <div class="setting-dropdown-options">
+                        ${optionsHtml}
+                    </div>
+                </div>
             </div>
         `;
+    },
+
+    toggleDropdown(key) {
+        const container = document.getElementById(`dropdown-${key}`);
+        const isOpen = container.classList.contains('open');
+
+        // Close all others first
+        document.querySelectorAll('.setting-dropdown-container').forEach(c => c.classList.remove('open'));
+
+        if (!isOpen) {
+            container.classList.add('open');
+            this.highlightActive(container);
+        }
+    },
+
+    selectOption(key, value) {
+        SettingsState.set(key, value);
+        const container = document.getElementById(`dropdown-${key}`);
+        container.querySelector('.setting-dropdown-trigger').innerText = value;
+        container.classList.remove('open');
+        this.updateTogglesFromState();
+    },
+
+    previewOption(key, value) {
+        if (key === 'radarTheme' && typeof RadarSystem !== 'undefined') {
+            RadarSystem.updateTheme(value);
+        }
+    },
+
+    revertPreview(key) {
+        if (key === 'radarTheme' && typeof RadarSystem !== 'undefined') {
+            const current = SettingsState.get(key);
+            RadarSystem.updateTheme(current);
+        }
+    },
+
+    highlightActive(container) {
+        const options = container.querySelectorAll('.setting-dropdown-option');
+        const current = SettingsState.get(container.dataset.key);
+        options.forEach(opt => {
+            if (opt.dataset.value === current) opt.classList.add('highlighted');
+            else opt.classList.remove('highlighted');
+        });
     },
 
     setupListeners() {
@@ -167,7 +224,59 @@ const SettingsUI = {
                 e.target.classList.add('active');
                 const targetId = `tab-${e.target.dataset.tab}`;
                 document.getElementById(targetId).classList.add('active');
+
+                // Close any open dropdowns when switching tabs
+                document.querySelectorAll('.setting-dropdown-container').forEach(c => c.classList.remove('open'));
             });
+        });
+
+        // Global Click to close dropdowns
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.setting-dropdown-container')) {
+                document.querySelectorAll('.setting-dropdown-container').forEach(c => c.classList.remove('open'));
+            }
+        });
+
+        // Keyboard Support for open dropdown
+        document.addEventListener('keydown', (e) => {
+            if (!this.isOpen) return;
+            const openDropdown = document.querySelector('.setting-dropdown-container.open');
+            if (!openDropdown) return;
+
+            const key = openDropdown.dataset.key;
+            const options = JSON.parse(openDropdown.dataset.options);
+            const highlighted = openDropdown.querySelector('.setting-dropdown-option.highlighted');
+            let currentIndex = highlighted ? options.indexOf(highlighted.dataset.value) : options.indexOf(SettingsState.get(key));
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                currentIndex = (currentIndex + 1) % options.length;
+                this.updateHighlighted(openDropdown, options[currentIndex]);
+                this.previewOption(key, options[currentIndex]);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                currentIndex = (currentIndex - 1 + options.length) % options.length;
+                this.updateHighlighted(openDropdown, options[currentIndex]);
+                this.previewOption(key, options[currentIndex]);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlighted) this.selectOption(key, highlighted.dataset.value);
+            } else if (e.key === 'Escape') {
+                openDropdown.classList.remove('open');
+                this.revertPreview(key);
+            }
+        });
+    },
+
+    updateHighlighted(container, value) {
+        const options = container.querySelectorAll('.setting-dropdown-option');
+        options.forEach(opt => {
+            if (opt.dataset.value === value) {
+                opt.classList.add('highlighted');
+                opt.scrollIntoView({ block: 'nearest' });
+            } else {
+                opt.classList.remove('highlighted');
+            }
         });
     },
 
