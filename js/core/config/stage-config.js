@@ -22,18 +22,18 @@ const STAGE_CONFIG = {
      */
     STAGES: {
         1: {
-            kills: 300,
+            kills: 4000,
             enemies: {
-                GalaxyDragon: 40,
-                PhoenixSurrender: 40,
-                BlueDragon: 40,
-                BlackRedButterfly: 40,
-                BlueWhiteButterfly: 40,
-                GoldButterfly: 40,
-                GreenBlackButterfly: 30,
-                GalaxyButterfly: 30
+                GalaxyDragon: 500,
+                PhoenixSurrender: 500,
+                BlueDragon: 500,
+                BlackRedButterfly: 500,
+                BlueWhiteButterfly: 500,
+                GoldButterfly: 500,
+                GreenBlackButterfly: 500,
+                GalaxyButterfly: 500
             },
-            tierChances: { Arch: 0.05, God: 0.005, Omega: 0.001, Alpha: 0.0 } // Low chance for > ARC
+            tierChances: { Arch: 0.1, God: 0.05, Omega: 0.02, Alpha: 0.01 }
         },
         2: {
             kills: 500,

@@ -258,10 +258,9 @@ const SimulationUI = {
         this.previewContainer.removeChildren();
         this.previewSprites = [];
 
-        const enemyType = Object.keys(levelData.enemies)[0];
+        // All available types for the swarm
+        const allTypes = ['GalaxyDragon', 'BlueDragon', 'PhoenixSurrender', 'GalaxyButterfly', 'BlueWhiteButterfly', 'GoldButterfly', 'GreenBlackButterfly', 'BlackRedButterfly'];
 
-        let texture = null;
-        // Asset Mapping (Should match asset-loader.js keys)
         const assetKeyMap = {
             'GalaxyDragon': 'img/Enemies/GalaxyDragon.png',
             'BlueDragon': 'img/Enemies/BlueDragon.png',
@@ -273,37 +272,33 @@ const SimulationUI = {
             'BlackRedButterfly': 'img/Enemies/BlackRedButterfly.png'
         };
 
-        const path = assetKeyMap[enemyType];
-
-        if (path) {
-            texture = PIXI.Texture.from(path);
-        }
-
-        if (!texture) return; // Wait for load
-
-        // CROWD LOGIC: "Show how many... attacking in place"
-        // We can't show 500, but we can show a representative "cloud"
-        const displayCount = Math.min(20, Math.ceil(Math.sqrt(count))); // 5-20 sprites
+        // User requested 4000 enemies.
+        const displayCount = 4000;
 
         for (let i = 0; i < displayCount; i++) {
+            // Randomly select a texture for diversity
+            const randomType = allTypes[Math.floor(Math.random() * allTypes.length)];
+            const path = assetKeyMap[randomType];
+            const texture = PIXI.Texture.from(path);
+
             const sprite = new PIXI.Sprite(texture);
             sprite.anchor.set(0.5);
 
-            // Randomize position in a cloud around center
+            // Randomize position in a larger cloud for 4000 units
             const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * 100; // 100px radius
+            const dist = Math.random() * 250; // Larger radius
 
             sprite.x = Math.cos(angle) * dist;
             sprite.y = Math.sin(angle) * dist;
 
-            // Randomize Scale slightly
-            const scaleBase = 0.3;
-            sprite.scale.set(scaleBase + Math.random() * 0.2);
+            // Randomize Scale (Smaller to fit 4000)
+            const scaleBase = 0.08;
+            sprite.scale.set(scaleBase + Math.random() * 0.1);
 
             // Store specialized animation data
             sprite.animData = {
-                speed: 0.02 + Math.random() * 0.03,
-                range: 10 + Math.random() * 20,
+                speed: 0.05 + Math.random() * 0.1,
+                range: 5 + Math.random() * 10,
                 offset: Math.random() * Math.PI * 2,
                 startX: sprite.x,
                 startY: sprite.y
@@ -363,7 +358,7 @@ const SimulationUI = {
             'normal': 'linear-gradient(90deg, #fff, #ccc, #fff)',
             'epic': 'linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%)',
             'god': 'linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%)',
-            'alpha': 'linear-gradient(0deg, #00ffff 0%, #ffffff 50%, #00ffff 100%)',
+            'alpha': 'linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%)',
             'omega': 'linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%)'
         };
 

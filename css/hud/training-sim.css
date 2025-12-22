@@ -71,11 +71,11 @@
 /* --- ALIVE ANIMATIONS --- */
 @keyframes simShimmer {
     0% {
-        background-position: 200% center;
+        background-position: -200% center;
     }
 
     100% {
-        background-position: -200% center;
+        background-position: 200% center;
     }
 }
 
@@ -122,7 +122,18 @@
 
 .sector-btn {
     /* Base: Dark Square Panel */
-    background: rgba(10, 15, 25, 0.8) !important;
+    background-color: rgba(10, 15, 25, 0.95) !important;
+
+    /* THE MOVEMENT: Horizontal Color Shimmer (Left-to-Right) */
+    background-image: linear-gradient(90deg,
+            transparent 0%,
+            var(--tier-shimmer, rgba(255, 255, 255, 0.03)) 25%,
+            rgba(255, 255, 255, 0.01) 50%,
+            var(--tier-shimmer, rgba(255, 255, 255, 0.03)) 75%,
+            transparent 100%) !important;
+    background-size: 200% 100% !important;
+    animation: simShimmer 4s linear infinite;
+
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 24px 20px;
     border-radius: 4px;
@@ -137,7 +148,9 @@
 .sector-btn:hover {
     transform: translateX(8px);
     border-color: rgba(255, 255, 255, 0.4);
-    background: rgba(20, 25, 35, 0.9) !important;
+    /* Intensify shimmer on hover */
+    background-size: 150% auto !important;
+    animation-duration: 2s;
 }
 
 /* Active State: The "Loot Box" Chase Border */
@@ -166,45 +179,61 @@
     z-index: -2;
 }
 
-/* Inner Mask (The Dark Square Core) */
+/* Inner Mask (The Dark Square Core) - Adding Shimmer Here for Active State */
 .sector-btn.active::after {
     content: '';
     position: absolute;
     inset: 2px;
-    background: #000;
+    background-color: #000;
+
+    /* Shimmer inside the active border */
+    background-image: linear-gradient(90deg,
+            transparent 0%,
+            var(--tier-shimmer, rgba(255, 255, 255, 0.1)) 25%,
+            rgba(255, 255, 255, 0.02) 50%,
+            var(--tier-shimmer, rgba(255, 255, 255, 0.1)) 75%,
+            transparent 100%);
+    background-size: 200% 100%;
+    animation: simShimmer 3s linear infinite;
+
     z-index: -1;
     border-radius: 4px;
 }
 
-/* TIER DEFINITIONS (Loot Ledger Canonical) */
+/* TIER DEFINITIONS (Loot Ledger Canonical + Shimmer Colors) */
 .tier-normal {
     --tier-accent: #fff;
     --tier-conic: #fff;
     --tier-gradient: linear-gradient(0deg, #fff, #ccc, #fff);
+    --tier-shimmer: rgba(255, 255, 255, 0.05);
 }
 
 .tier-epic {
     --tier-accent: #ffd700;
     --tier-conic: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
     --tier-gradient: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+    --tier-shimmer: rgba(255, 215, 0, 0.15);
 }
 
 .tier-god {
     --tier-accent: #ff00ff;
     --tier-conic: conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000);
     --tier-gradient: linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    --tier-shimmer: rgba(255, 0, 255, 0.2);
 }
 
 .tier-alpha {
     --tier-accent: #00ffff;
     --tier-conic: conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff);
-    --tier-gradient: linear-gradient(0deg, #00ffff 0%, #ffffff 50%, #00ffff 100%);
+    --tier-gradient: linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%);
+    --tier-shimmer: rgba(0, 255, 255, 0.2);
 }
 
 .tier-omega {
     --tier-accent: #ff0000;
     --tier-conic: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
     --tier-gradient: linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%);
+    --tier-shimmer: rgba(255, 0, 0, 0.2);
 }
 
 /* SECTOR TEXT STYLING (Loot Tier Flow) */
