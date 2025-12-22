@@ -114,7 +114,7 @@ function createLootLogModal() {
                 
                 <div id="filters-drops" class="tier-filters">
                     <div class="tier-circle tier-normal active" onclick="toggleLogTier('normal')"></div>
-                    <div class="tier-circle tier-epic active" onclick="toggleLogTier('epic')"></div>
+                    <div class="tier-circle tier-arch active" onclick="toggleLogTier('arch')"></div>
                     <div class="tier-circle tier-god active" onclick="toggleLogTier('god')"></div>
                     <div class="tier-circle tier-omega active" onclick="toggleLogTier('omega')"></div>
                     <div class="tier-circle tier-alpha active" onclick="toggleLogTier('alpha')"></div>

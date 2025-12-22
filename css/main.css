@@ -870,16 +870,18 @@ input[type=range]::-webkit-slider-thumb {
     text-shadow: none;
 }
 
-/* ARCH (Gold/White Fluid) */
+/* ARCH (Gold/Dark Gold Fluid - NO WHITE) */
 #target-hud-container.tier-arch::before {
     display: block;
-    background: linear-gradient(45deg, #b8860b, #ffd700, #fff, #ffd700, #b8860b);
+    background: linear-gradient(45deg, #b8860b, #ffd700, #daa520, #ffd700, #b8860b);
     background-size: 300% 300%;
+    animation: fluidFlow 3s ease infinite;
 }
 
 #target-hud-container.tier-arch::after {
     display: block;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.85);
+    /* Significantly Darker for Contrast */
 }
 
 #target-hud-container.tier-arch {
@@ -887,6 +889,7 @@ input[type=range]::-webkit-slider-thumb {
     background: transparent;
     box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
 }
+
 
 /* GOD (RGB Rainbow Fluid) */
 #target-hud-container.tier-god::before {
@@ -971,14 +974,17 @@ input[type=range]::-webkit-slider-thumb {
 
 /* TIER TEXT GRADIENTS (Exact copy from Loot Ledger) */
 
-/* Arch/Epic: Gold/White */
+/* ARCH (Gold/White Fluid Text) */
 #target-hud-container.tier-arch #target-name {
     background-image: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
+    background-size: 100% 200%;
     -webkit-text-fill-color: transparent;
     text-shadow: none;
+    animation: textFlowVertical 2s linear infinite;
+    /* Text flows up */
 }
 
-/* God: RGB Rainbow */
+/* GOD (RGB Rainbow Fluid Text) */
 #target-hud-container.tier-god #target-name {
     background-image: linear-gradient(0deg,
             #ff0000 0%, #ffff00 15%, #00ff00 30%,
@@ -986,9 +992,11 @@ input[type=range]::-webkit-slider-thumb {
     background-size: 100% 200%;
     -webkit-text-fill-color: transparent;
     text-shadow: none;
+    animation: textFlowVertical 1.5s linear infinite;
+    /* Fast rainbow flow */
 }
 
-/* Alpha: RGB Rainbow (matching loot ledger) */
+/* ALPHA (Cyan/Rainbow Fluid Text) */
 #target-hud-container.tier-alpha #target-name {
     background-image: linear-gradient(0deg,
             #ff0000 0%, #ffff00 15%, #00ff00 30%,
@@ -996,17 +1004,31 @@ input[type=range]::-webkit-slider-thumb {
     background-size: 100% 200%;
     -webkit-text-fill-color: transparent;
     text-shadow: none;
+    animation: textFlowVertical 2s linear infinite;
 }
 
-/* Omega: Magenta/White */
+/* OMEGA (Magenta/White Fluid Text) */
 #target-hud-container.tier-omega #target-name {
     background-image: linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%);
+    background-size: 100% 200%;
     -webkit-text-fill-color: transparent;
     text-shadow: none;
+    animation: textFlowVertical 2s linear infinite;
 }
 
 /* Clean up old overrides */
 /* Removed old text-shadow overrides as they conflict with gradient text */
+
+/* Reusing the vertical flow animation if present, or defining it */
+@keyframes textFlowVertical {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 0% -200%;
+    }
+}
 
 #target-health-bg {
     width: 100%;

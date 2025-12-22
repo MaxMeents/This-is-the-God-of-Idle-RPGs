@@ -111,7 +111,7 @@ function addLootToHistory(itemKey, amount, isLucky = false, forcedTier = null) {
     if (tier === 'god' || tier === 'alpha' || tier === 'omega') {
         boxClass = Math.random() > 0.5 ? 'box-cw' : 'box-ccw';
         flowClass = (boxClass === 'box-cw') ? 'flow-down' : 'flow-up';
-    } else if (tier === 'epic') {
+    } else if (tier === 'arch') {
         flowClass = Math.random() > 0.5 ? 'flow-up' : 'flow-down';
     }
 

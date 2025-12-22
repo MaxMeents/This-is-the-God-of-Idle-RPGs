@@ -105,12 +105,12 @@
 
 /* Lower Tiers: No Chasing */
 .loot-tier-normal .loot-box::before,
-.loot-tier-epic .loot-box::before {
+.loot-tier-arch .loot-box::before {
     display: none;
 }
 
 .loot-tier-normal .loot-box,
-.loot-tier-epic .loot-box {
+.loot-tier-arch .loot-box {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -180,7 +180,7 @@ body {
     background: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
 }
 
-.loot-tier-epic .loot-icon-bg {
+.loot-tier-arch .loot-icon-bg {
     background: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
 }
 
@@ -292,8 +292,8 @@ body {
     -webkit-background-clip: border-box;
 }
 
-/* Epic Tier: White & Gold Pulsating */
-.loot-tier-epic .loot-name {
+/* Arch Tier: White & Gold Pulsating */
+.loot-tier-arch .loot-name {
     background-image: linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%);
     background-size: 100% 200%;
 }
@@ -456,12 +456,12 @@ body {
 
 /* Disable shimmer for lower tiers if desired, or keep subtle */
 .loot-log-row.loot-tier-normal .loot-item.in-log::before,
-.loot-log-row.loot-tier-epic .loot-item.in-log::before {
+.loot-log-row.loot-tier-arch .loot-item.in-log::before {
     display: none;
 }
 
 .loot-log-row.loot-tier-normal .loot-item.in-log,
-.loot-log-row.loot-tier-epic .loot-item.in-log {
+.loot-log-row.loot-tier-arch .loot-item.in-log {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -925,7 +925,7 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     color: #fff;
 }
 
-.tier-circle.tier-epic {
+.tier-circle.tier-arch {
     background: conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700);
     color: #ffd700;
 }
@@ -1093,7 +1093,7 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     background: rgba(255, 0, 0, 0.05);
 }
 
-.loot-grid-item.loot-tier-epic {
+.loot-grid-item.loot-tier-arch {
     border-color: #ffd700;
     background: rgba(255, 215, 0, 0.05);
 }
@@ -1160,7 +1160,7 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     background: conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff);
 }
 
-.loot-log-row.loot-tier-epic .loot-icon-bg {
+.loot-log-row.loot-tier-arch .loot-icon-bg {
     background: conic-gradient(from 0deg, #ffd700, #fff, #ffd700, #fff, #ffd700);
 }
 
@@ -1182,7 +1182,7 @@ input[type=range].zoom-slider::-webkit-slider-thumb:hover {
     border-left-color: #ff0000;
 }
 
-.loot-tier-epic.loot-log-row {
+.loot-tier-arch.loot-log-row {
     border-left-color: #ffd700;
 }
 

@@ -23,7 +23,7 @@ let logViewState = {
     currentView: 'index',   // 'index' (Hours List) or 'detail' (Item list for specific hour)
     currentHour: null,
     timeScope: 'all',       // 'session', 'today', 'all'
-    activeTiers: new Set(['normal', 'epic', 'god', 'alpha', 'omega']),
+    activeTiers: new Set(['normal', 'arch', 'god', 'alpha', 'omega']),
     activeCategory: 'drops',
     zoom: 1.0,              // 0.0 (Minimal/Grid) to 1.0 (Detailed/List)
     clusterize: null,       // Pointer to the active Virtual Scroll instance

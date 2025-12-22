@@ -109,7 +109,7 @@ const SimulationUI = {
             { id: 5, name: 'ETERNITY', range: '401-500' }
         ];
 
-        const tiers = ['normal', 'epic', 'god', 'alpha', 'omega'];
+        const tiers = ['normal', 'arch', 'god', 'alpha', 'omega'];
 
         sectors.forEach((sec, idx) => {
             const tier = tiers[idx];
@@ -310,7 +310,7 @@ const SimulationUI = {
 
         const TEXT_GRADIENTS = {
             'normal': 'linear-gradient(90deg, #fff, #ccc, #fff)',
-            'epic': 'linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%)',
+            'arch': 'linear-gradient(0deg, #ffd700 0%, #ffffff 50%, #ffd700 100%)',
             'god': 'linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%)',
             'alpha': 'linear-gradient(0deg, #ff0000 0%, #ffff00 15%, #00ff00 30%, #00ffff 50%, #0000ff 70%, #ff00ff 85%, #ff0000 100%)',
             'omega': 'linear-gradient(0deg, #ff00ff 0%, #ffffff 50%, #ff00ff 100%)'
@@ -318,7 +318,7 @@ const SimulationUI = {
 
         const CONIC_GRADIENTS = {
             'normal': '#fff',
-            'epic': 'conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700)',
+            'arch': 'conic-gradient(from 0deg, #ffd700, #ffffff, #ffd700, #ffffff, #ffd700)',
             'god': 'conic-gradient(from 0deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff, #ff0000)',
             'alpha': 'conic-gradient(from 0deg, #00ffff, #fff, #00ffff, #fff, #00ffff)',
             'omega': 'conic-gradient(from 0deg, #fff, #ff00ff, #fff, #ff00ff, #fff)'
