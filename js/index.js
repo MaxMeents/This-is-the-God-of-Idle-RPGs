@@ -50,7 +50,12 @@ function init(firstLoad = false) {
     prepareStagePool(currentStage);
 
     // Position player
-    const [gx, gy] = STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
+    // For Simulation Mode (Stage > 2000), default to Area 1 coordinates [1, 1]
+    const gridPos = (currentStage > 2000 || !STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1])
+        ? STAGE_CONFIG.CLOCKWISE_GRID[0]
+        : STAGE_CONFIG.CLOCKWISE_GRID[currentStage - 1];
+
+    const [gx, gy] = gridPos;
     player.x = (gx - 1) * STAGE_CONFIG.GRID_SIZE;
     player.y = (gy - 1) * STAGE_CONFIG.GRID_SIZE;
     data.fill(0);

@@ -394,19 +394,21 @@
 
     /* BACKGROUND & BORDER MAGIC */
     /* BACKGROUND & BORDER MAGIC */
-    /* 1. Set a transparent border of the desired width (user requested 3px) */
-    border: 3px solid transparent;
+    /* 1. Set a transparent border of the desired width (scrollbar width = 12px) */
+    border: 12px solid transparent;
     border-radius: 16px;
 
-    /* 2. Define two background layers:
-       - Top layer: The main panel background (clipped to padding-box so it doesn't cover border)
-       - Bottom layer: The animated gradient (clipped to border-box so it shows through transparent border)
-    */
-    background:
-        linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%) padding-box,
-        linear-gradient(45deg, #0066ff, #00ccff, #001133, #0066ff) border-box;
+    /* 2. Explicit background definitions for maximum stability */
+    background-image:
+        linear-gradient(135deg, #001122 0%, #002244 50%, #000811 100%),
+        /* Top: Main Panel */
+        linear-gradient(45deg, #0066ff, #00ccff, #001133, #0066ff);
+    /* Bottom: Animated Border */
 
-    /* 3. Define sizes: content bg matches box, border bg is larger for animation effect */
+    background-origin: padding-box, border-box;
+    background-clip: padding-box, border-box;
+
+    /* 3. Define sizes */
     background-size: 100% 100%, 400% 400%;
 
     /* 4. Animate the background position (affects both, but top layer is solid gradient so invisible change) */
