@@ -162,10 +162,11 @@ const SettingsUI = {
         if (!isOpen) {
             container.classList.add('open');
 
-            // Smart Positioning Logic
-            const rect = list.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.top;
-            const needsFlip = spaceBelow < rect.height + 20; // 20px padding
+            // Smart Positioning Logic (Uses container/trigger rect for stability)
+            const rect = container.getBoundingClientRect();
+            const listHeight = list.scrollHeight || 280; // Fallback to max-height
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const needsFlip = spaceBelow < listHeight + 10;
 
             if (needsFlip) {
                 list.style.top = 'auto';
