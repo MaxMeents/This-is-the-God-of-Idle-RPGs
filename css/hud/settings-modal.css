@@ -394,8 +394,8 @@
 
     /* BACKGROUND & BORDER MAGIC */
     /* BACKGROUND & BORDER MAGIC */
-    /* 1. Set a transparent border of the desired width (scrollbar width = 12px) */
-    border: 12px solid transparent;
+    /* 1. Set a transparent border of the desired width (user requested 3px) */
+    border: 3px solid transparent;
     border-radius: 16px;
 
     /* 2. Explicit background definitions for maximum stability */
