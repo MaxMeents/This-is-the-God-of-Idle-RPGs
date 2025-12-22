@@ -17,52 +17,60 @@ const RadarSystem = {
     // Theme Definitions
     THEMES: {
         'Cyber Blue': {
-            accent: 'rgba(255, 255, 255, 0.9)', // White Accent
-            glow: 'rgba(0, 150, 255, 0.4)',     // Blue Glow
-            grid: 'rgba(0, 150, 255, 0.15)',    // Blue Grid
-            bg: 'rgba(0, 20, 50, 0.9)',        // Deep Blue BG
-            player: '#ffffff',
-            arrow: '#00ffff'
+            accent: '#4169E1',
+            glow: 'rgba(65, 105, 225, 0.4)',
+            grid: '#4169E1', // Royal Blue Grid
+            bg: '#ffffff',   // Forced White
+            player: '#003366',
+            arrow: '#0099ff'
         },
         'Emerald Green': {
-            accent: 'rgba(0, 255, 136, 0.8)',
-            glow: 'rgba(0, 255, 136, 0.3)',
-            grid: 'rgba(0, 255, 136, 0.1)',
-            bg: 'rgba(0, 15, 5, 0.9)',
-            player: '#ffffff',
-            arrow: '#00ff88'
+            accent: 'rgba(0, 200, 100, 0.8)',
+            glow: 'rgba(0, 200, 100, 0.3)',
+            grid: 'rgba(0, 200, 100, 0.2)', // Increased
+            bg: 'rgba(210, 255, 230, 0.95)', // Pale Green
+            player: '#004422',
+            arrow: '#00aa55'
         },
         'Amber Alert': {
-            accent: 'rgba(255, 170, 0, 0.8)',
-            glow: 'rgba(255, 170, 0, 0.3)',
-            grid: 'rgba(255, 170, 0, 0.1)',
-            bg: 'rgba(20, 10, 0, 0.9)',
-            player: '#ffffff',
-            arrow: '#ffaa00'
+            accent: 'rgba(255, 140, 0, 0.8)',
+            glow: 'rgba(255, 140, 0, 0.3)',
+            grid: 'rgba(255, 140, 0, 0.1)',
+            bg: 'rgba(255, 245, 220, 0.95)', // Warm Cream
+            player: '#553300',
+            arrow: '#ff8800'
         },
         'Blood Moon': {
-            accent: 'rgba(255, 0, 68, 0.8)',
-            glow: 'rgba(255, 0, 68, 0.3)',
-            grid: 'rgba(255, 0, 68, 0.1)',
-            bg: 'rgba(20, 0, 5, 0.9)',
-            player: '#ffffff',
-            arrow: '#ff0044'
+            accent: 'rgba(255, 0, 50, 0.8)',
+            glow: 'rgba(255, 0, 50, 0.3)',
+            grid: 'rgba(255, 0, 50, 0.1)',
+            bg: '#ffffff', // Forced White
+            player: '#550011',
+            arrow: '#ff0033'
         },
         'Neon Orchid': {
-            accent: 'rgba(221, 0, 255, 0.8)',
-            glow: 'rgba(221, 0, 255, 0.3)',
-            grid: 'rgba(221, 0, 255, 0.1)',
-            bg: 'rgba(15, 0, 20, 0.9)',
-            player: '#ffffff',
-            arrow: '#dd00ff'
+            accent: 'rgba(200, 0, 255, 0.8)',
+            glow: 'rgba(200, 0, 255, 0.3)',
+            grid: 'rgba(200, 0, 255, 0.1)',
+            bg: 'rgba(245, 230, 255, 0.95)', // Light Lavender
+            player: '#440055',
+            arrow: '#bb00ff'
         },
         'Monochrome': {
-            accent: 'rgba(255, 255, 255, 0.6)',
-            glow: 'rgba(255, 255, 255, 0.2)',
-            grid: 'rgba(255, 255, 255, 0.05)',
-            bg: 'rgba(10, 10, 10, 0.9)',
-            player: '#ffffff',
-            arrow: '#cccccc'
+            accent: 'rgba(100, 100, 100, 0.9)',
+            glow: 'rgba(0, 0, 0, 0.2)',
+            grid: 'rgba(0, 0, 0, 0.3)',
+            bg: '#ffffff', // Forced White
+            player: '#000000',
+            arrow: '#222222'
+        },
+        'Snow White': {
+            accent: '#4169E1', // Royal Blue
+            glow: 'rgba(65, 105, 225, 0.1)',
+            grid: '#4169E1', // Royal Blue Grid
+            bg: '#ffffff',   // Pure Flat White
+            player: '#000000',
+            arrow: '#0044cc'
         }
     },
 
@@ -185,21 +193,36 @@ const RadarSystem = {
         // Draw Background Circle (Canvas level)
         ctx.clearRect(0, 0, w, h);
 
-        ctx.beginPath();
-        ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
-        ctx.fillStyle = theme.bg;
-        ctx.fill();
-
-        // Draw Grid
+        // Draw Grid (Aligned to North/South/East/West)
         ctx.strokeStyle = theme.grid;
-        ctx.lineWidth = 1;
-        for (let i = 1; i < 4; i++) {
-            ctx.beginPath();
-            ctx.arc(cx, cy, (cx / 4) * i, 0, Math.PI * 2);
-            ctx.stroke();
-        }
+        ctx.lineWidth = 1.8;
 
-        // Horizontal/Vertical lines
+        // Define a grid unit that represents a fixed world size (e.g. 15000 units)
+        // This ensures the pattern "grows/shrinks" with the world as requested
+        const worldUnitStep = 15000;
+        const scale = (w / 2) / this.range; // Use default range for preview
+        const gridBoxSize = worldUnitStep * scale;
+
+        // 1. Concentric Circles (Synchronized with world units)
+        [gridBoxSize, gridBoxSize * 2, gridBoxSize * 3].forEach(radius => {
+            if (radius > (w / 2)) return; // Don't draw outside the container
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        // 2. Square Box Grid (Centered outwards)
+        ctx.beginPath();
+        // Vertical
+        for (let x = cx + gridBoxSize; x <= w; x += gridBoxSize) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        for (let x = cx - gridBoxSize; x >= 0; x -= gridBoxSize) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        // Horizontal
+        for (let y = cy + gridBoxSize; y <= h; y += gridBoxSize) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        for (let y = cy - gridBoxSize; y >= 0; y -= gridBoxSize) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        ctx.stroke();
+
+        // 3. Main Crosshairs (Bold)
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
         ctx.moveTo(0, cy); ctx.lineTo(w, cy);
         ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
@@ -251,6 +274,46 @@ const RadarSystem = {
         ctx.clearRect(0, 0, w, h);
 
         const theme = this.THEMES[this.currentTheme] || this.THEMES['Cyber Blue'];
+
+        // Draw Theme Background (Ensures perfect theme control)
+        ctx.beginPath();
+        ctx.arc(cx, cy, cx - 1, 0, Math.PI * 2);
+        ctx.fillStyle = theme.bg;
+        ctx.fill();
+
+        // Draw Tactical Grid Lines (Synced with Zoom)
+        ctx.strokeStyle = theme.grid;
+        ctx.lineWidth = 1.8;
+
+        // Define a grid unit that represents a fixed world size (e.g. 15000 units)
+        // This ensures the pattern "grows/shrinks" with the world as requested
+        const worldUnitStep = 15000;
+        const gridBoxSize = worldUnitStep * scale;
+
+        // 1. Concentric Circles (Touching cardinal points)
+        [gridBoxSize, gridBoxSize * 2, gridBoxSize * 3, gridBoxSize * 4].forEach(radius => {
+            if (radius > (w / 2)) return;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        // 2. Square Box Grid (Centered)
+        ctx.beginPath();
+        // Vertical lines branching from center
+        for (let x = cx + gridBoxSize; x <= w; x += gridBoxSize) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        for (let x = cx - gridBoxSize; x >= 0; x -= gridBoxSize) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+        // Horizontal lines branching from center
+        for (let y = cy + gridBoxSize; y <= h; y += gridBoxSize) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        for (let y = cy - gridBoxSize; y >= 0; y -= gridBoxSize) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+        ctx.stroke();
+
+        // 3. Main Crosshairs (Bold)
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(0, cy); ctx.lineTo(w, cy);
+        ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
+        ctx.stroke();
 
         // Draw Player (Center Dot)
         ctx.beginPath();

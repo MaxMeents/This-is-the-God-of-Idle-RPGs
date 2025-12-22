@@ -24,7 +24,7 @@ const SettingsState = {
         trailLength: 6, // Range 2-10
         radarEnabled: true,
         radarRange: 60000,
-        radarTheme: 'Cyber Blue'
+        radarTheme: 'Snow White'
     },
 
     // Current Active Settings

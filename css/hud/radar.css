@@ -7,10 +7,10 @@
  */
 
 #radar-container {
-    --radar-accent: rgba(0, 255, 136, 0.5);
-    --radar-glow: rgba(0, 255, 136, 0.2);
-    --radar-grid: rgba(0, 255, 136, 0.1);
-    --radar-bg: #000;
+    --radar-accent: rgba(0, 100, 200, 0.6);
+    --radar-glow: rgba(0, 0, 0, 0.1);
+    --radar-grid: rgba(0, 0, 0, 0.05);
+    --radar-bg: #ffffff;
 
     position: fixed;
     bottom: 20px;
@@ -18,20 +18,12 @@
     width: 200px;
     height: 200px;
     border-radius: 50%;
-    background: var(--radar-bg);
+    background-color: #ffffff !important;
     /* Sci-Fi Border */
-    border: 2px solid var(--radar-accent);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px var(--radar-glow);
-    z-index: 100;
-
-    /* Grid & Sweeper Effect */
-    background-image:
-        radial-gradient(circle, transparent 0%, transparent 69%, var(--radar-accent) 70%, transparent 71%),
-        linear-gradient(var(--radar-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--radar-grid) 1px, transparent 1px);
-    background-size: 100% 100%, 25px 25px, 25px 25px;
+    border: 1px solid var(--radar-accent);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    backdrop-filter: blur(5px);
+    /* backdrop-filter: blur(5px); - Removed to clarify theme backgrounds */
 }
 
 #radar-canvas {
