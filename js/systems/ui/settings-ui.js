@@ -66,7 +66,7 @@ const SettingsUI = {
                         ${this.createToggle('laserBar', 'Laser Ammo', 'Display the laser energy bar.')}
                         ${this.createToggle('bulletBar', 'Bullet Ammo', 'Display the bullet count bar.')}
                         ${this.createToggle('radarEnabled', 'Tactical Radar', 'Display the tactical map overlay (Bottom Left).')}
-                        ${this.createDropdown('radarTheme', 'Radar Theme', 'Choose the color scheme for the tactical radar.', ['Cyber Blue', 'Emerald Green', 'Amber Alert', 'Blood Moon', 'Neon Orchid', 'Monochrome'])}
+                        ${this.createDropdown('radarTheme', 'Radar Theme', 'Choose the color scheme for the tactical radar.', ['Cyber Blue', 'Emerald Green', 'Orangish', 'Blood Moon', 'Neon Orchid', 'Monochrome', 'Snow White'])}
                         ${this.createToggle('enemyHp', 'Enemy Health Bars', 'Show health bars above enemies (Performance Heavy).')}
                     </div>
 

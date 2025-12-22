@@ -145,7 +145,8 @@
 /* Custom Dropdown Component */
 .setting-dropdown-container {
     position: relative;
-    min-width: 180px;
+    min-width: 240px;
+    /* Widened for long font names */
 }
 
 .setting-dropdown-trigger {
@@ -188,8 +189,10 @@
     border: 1px solid rgba(0, 150, 255, 0.6);
     border-radius: 6px;
     z-index: 100;
-    max-height: 250px;
+    max-height: 280px;
+    /* Increased to show more options */
     overflow-y: auto;
+    overflow-x: hidden;
     display: none;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
 }
@@ -217,6 +220,8 @@
     color: #ccc;
     font-size: 14px;
     transition: all 0.1s;
+    white-space: nowrap;
+    /* Prevent wrapping for long font names */
 }
 
 .setting-dropdown-option:hover,
@@ -231,18 +236,24 @@
     background: rgba(0, 255, 255, 0.05);
 }
 
-/* Scrollbar styling for dropdown */
+/* Scrollbar styling for dropdown - More visible */
 .setting-dropdown-options::-webkit-scrollbar {
     width: 6px;
 }
 
 .setting-dropdown-options::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .setting-dropdown-options::-webkit-scrollbar-thumb {
-    background: rgba(0, 150, 255, 0.4);
-    border-radius: 3px;
+    background: rgba(0, 212, 255, 0.8);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setting-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 255, 255, 1);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 /* Radar Preview in Modal */
@@ -420,6 +431,8 @@
 /* CONTENT AREA */
 .settings-content {
     padding: 30px;
+    padding-bottom: 200px;
+    /* HUGE buffer for dropdowns at the bottom */
     min-height: 300px;
 }
 

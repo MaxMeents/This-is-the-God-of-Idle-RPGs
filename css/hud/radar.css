@@ -7,23 +7,42 @@
  */
 
 #radar-container {
-    --radar-accent: rgba(0, 100, 200, 0.6);
-    --radar-glow: rgba(0, 0, 0, 0.1);
-    --radar-grid: rgba(0, 0, 0, 0.05);
+    --radar-accent: #4169E1;
+    --radar-glow: rgba(65, 105, 225, 0.4);
+    --radar-grid: #4169E1;
     --radar-bg: #ffffff;
 
     position: fixed;
     bottom: 20px;
-    left: 120px;
+    left: 280px;
+    /* Moved over to clear bars */
     width: 200px;
     height: 200px;
     border-radius: 50%;
     background-color: #ffffff !important;
-    /* Sci-Fi Border */
-    border: 1px solid var(--radar-accent);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.1), inset 0 0 10px rgba(0, 0, 0, 0.05);
+
+    /* Premium Animated Border - Doubled thickness & Theme Aware */
+    padding: 8px;
+    background: linear-gradient(#fff, #fff) padding-box,
+        conic-gradient(from var(--border-angle, 0deg),
+            var(--radar-accent), var(--radar-racing, #000033), var(--radar-accent), #000000, var(--radar-accent)) border-box;
+    border: 8px solid transparent;
+    box-shadow: 0 0 40px var(--radar-glow);
     overflow: hidden;
-    /* backdrop-filter: blur(5px); - Removed to clarify theme backgrounds */
+    animation: rotate-border 3s linear infinite;
+    z-index: 100;
+}
+
+@property --border-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes rotate-border {
+    to {
+        --border-angle: 360deg;
+    }
 }
 
 #radar-canvas {
@@ -31,6 +50,7 @@
     height: 100%;
     border-radius: 50%;
     display: block;
+    background: #fff;
 }
 
 /* Force HUD radar to front when settings are open */

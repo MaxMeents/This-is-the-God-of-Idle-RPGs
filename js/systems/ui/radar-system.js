@@ -19,8 +19,9 @@ const RadarSystem = {
         'Cyber Blue': {
             accent: '#4169E1',
             glow: 'rgba(65, 105, 225, 0.4)',
-            grid: '#4169E1', // Royal Blue Grid
-            bg: '#ffffff',   // Forced White
+            grid: '#4169E1',
+            racing: '#1e3a8a', // Darker Blue
+            bg: '#ffffff',
             player: '#003366',
             arrow: '#0099ff'
         },
@@ -32,11 +33,11 @@ const RadarSystem = {
             player: '#004422',
             arrow: '#00aa55'
         },
-        'Amber Alert': {
+        'Orangish': {
             accent: 'rgba(255, 140, 0, 0.8)',
             glow: 'rgba(255, 140, 0, 0.3)',
             grid: 'rgba(255, 140, 0, 0.1)',
-            bg: 'rgba(255, 245, 220, 0.95)', // Warm Cream
+            bg: '#ffffff', // Forced White
             player: '#553300',
             arrow: '#ff8800'
         },
@@ -66,9 +67,10 @@ const RadarSystem = {
         },
         'Snow White': {
             accent: '#4169E1', // Royal Blue
-            glow: 'rgba(65, 105, 225, 0.1)',
-            grid: '#4169E1', // Royal Blue Grid
-            bg: '#ffffff',   // Pure Flat White
+            glow: 'rgba(65, 105, 225, 0.3)',
+            grid: '#4169E1',
+            racing: '#000033', // Deep Midnight
+            bg: '#ffffff',
             player: '#000000',
             arrow: '#0044cc'
         }
@@ -127,9 +129,8 @@ const RadarSystem = {
 
     start() {
         if (this.interval) clearInterval(this.interval);
-        // Updates once per second as requested
-        this.interval = setInterval(() => this.draw(), 1000);
-        // Also draw immediately
+        // Boosted to 30fps for smooth racing animations
+        this.interval = setInterval(() => this.draw(), 33);
         this.draw();
     },
 
@@ -161,6 +162,7 @@ const RadarSystem = {
             container.style.setProperty('--radar-glow', theme.glow);
             container.style.setProperty('--radar-grid', theme.grid);
             container.style.setProperty('--radar-bg', theme.bg);
+            container.style.setProperty('--radar-racing', theme.racing || '#000033');
         }
 
         // Force redraw to update canvas elements (player dot, arrow)
@@ -281,8 +283,19 @@ const RadarSystem = {
         ctx.fillStyle = theme.bg;
         ctx.fill();
 
-        // Draw Tactical Grid Lines (Synced with Zoom)
+        // Draw Tactical Grid Lines (Synced with Zoom + Pulsing Racing Colors)
+        const time = Date.now() * 0.002;
+        const pulse = Math.sin(time) * 0.5 + 0.5;
+
         ctx.strokeStyle = theme.grid;
+        // Apply pulsing opacity based on theme grid
+        ctx.globalAlpha = 0.4 + pulse * 0.4;
+
+        if (this.currentTheme === 'Snow White' || this.currentTheme === 'Cyber Blue') {
+            ctx.shadowBlur = 5 * pulse;
+            ctx.shadowColor = theme.accent;
+        }
+
         ctx.lineWidth = 1.8;
 
         // Define a grid unit that represents a fixed world size (e.g. 15000 units)
@@ -366,16 +379,18 @@ const RadarSystem = {
                 else if (rank === 3) { radius = 8; color = '#ff00ff'; }
                 else if (rank >= 4) { radius = 10; color = '#0000ff'; }
 
+                ctx.shadowBlur = 0; // Reset shadow for dots
                 ctx.beginPath();
                 ctx.arc(rx, ry, radius, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
             }
         }
+        ctx.shadowBlur = 0; // Final cleanup
     }
 };
 
 // Auto-init logic if UI exists, otherwise wait
 setTimeout(() => {
     if (document.getElementById('ui')) RadarSystem.init();
-}, 1000);
+}, 500);
