@@ -14,6 +14,60 @@ const RadarSystem = {
     range: 60000, // World units covered (Increased to catch far spawns)
     size: 200,    // CSS Size (Canvas resolution matches)
 
+    // Theme Definitions
+    THEMES: {
+        'Cyber Blue': {
+            accent: 'rgba(0, 213, 255, 0.8)',
+            glow: 'rgba(0, 213, 255, 0.3)',
+            grid: 'rgba(0, 213, 255, 0.1)',
+            bg: 'rgba(0, 10, 20, 0.9)',
+            player: '#ffffff',
+            arrow: '#00ffff'
+        },
+        'Emerald Green': {
+            accent: 'rgba(0, 255, 136, 0.8)',
+            glow: 'rgba(0, 255, 136, 0.3)',
+            grid: 'rgba(0, 255, 136, 0.1)',
+            bg: 'rgba(0, 15, 5, 0.9)',
+            player: '#ffffff',
+            arrow: '#00ff88'
+        },
+        'Amber Alert': {
+            accent: 'rgba(255, 170, 0, 0.8)',
+            glow: 'rgba(255, 170, 0, 0.3)',
+            grid: 'rgba(255, 170, 0, 0.1)',
+            bg: 'rgba(20, 10, 0, 0.9)',
+            player: '#ffffff',
+            arrow: '#ffaa00'
+        },
+        'Blood Moon': {
+            accent: 'rgba(255, 0, 68, 0.8)',
+            glow: 'rgba(255, 0, 68, 0.3)',
+            grid: 'rgba(255, 0, 68, 0.1)',
+            bg: 'rgba(20, 0, 5, 0.9)',
+            player: '#ffffff',
+            arrow: '#ff0044'
+        },
+        'Neon Orchid': {
+            accent: 'rgba(221, 0, 255, 0.8)',
+            glow: 'rgba(221, 0, 255, 0.3)',
+            grid: 'rgba(221, 0, 255, 0.1)',
+            bg: 'rgba(15, 0, 20, 0.9)',
+            player: '#ffffff',
+            arrow: '#dd00ff'
+        },
+        'Monochrome': {
+            accent: 'rgba(255, 255, 255, 0.6)',
+            glow: 'rgba(255, 255, 255, 0.2)',
+            grid: 'rgba(255, 255, 255, 0.05)',
+            bg: 'rgba(10, 10, 10, 0.9)',
+            player: '#ffffff',
+            arrow: '#cccccc'
+        }
+    },
+
+    currentTheme: 'Cyber Blue',
+
     init() {
         if (document.getElementById('radar-canvas')) return;
 
@@ -51,9 +105,12 @@ const RadarSystem = {
         console.log("[RADAR] Initialized");
 
         // Respect setting
-        if (typeof GAME_SETTINGS !== 'undefined') {
-            const isEnabled = GAME_SETTINGS.get('radarEnabled');
+        if (typeof SettingsState !== 'undefined') {
+            const isEnabled = SettingsState.get('radarEnabled');
             this.toggle(isEnabled);
+
+            const theme = SettingsState.get('radarTheme');
+            if (theme) this.updateTheme(theme);
         } else {
             // Start Update Loop (1Hz)
             this.start();
@@ -85,6 +142,23 @@ const RadarSystem = {
         }
     },
 
+    updateTheme(themeName) {
+        const theme = this.THEMES[themeName];
+        if (!theme) return;
+
+        this.currentTheme = themeName;
+        const container = document.getElementById('radar-container');
+        if (container) {
+            container.style.setProperty('--radar-accent', theme.accent);
+            container.style.setProperty('--radar-glow', theme.glow);
+            container.style.setProperty('--radar-grid', theme.grid);
+            container.style.setProperty('--radar-bg', theme.bg);
+        }
+
+        // Force redraw to update canvas elements (player dot, arrow)
+        this.draw();
+    },
+
     draw() {
         if (!player || !this.ctx) return;
         const ctx = this.ctx;
@@ -100,10 +174,12 @@ const RadarSystem = {
         // Clear
         ctx.clearRect(0, 0, w, h);
 
+        const theme = this.THEMES[this.currentTheme] || this.THEMES['Cyber Blue'];
+
         // Draw Player (Center Blue Dot)
         ctx.beginPath();
         ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#00ffff'; // Cyan/Blue
+        ctx.fillStyle = theme.player;
         ctx.fill();
 
         // Draw Player Facing Arrow (Blue ^)
@@ -116,7 +192,7 @@ const RadarSystem = {
         ctx.moveTo(-4, -6);
         ctx.lineTo(0, -12); // Tip
         ctx.lineTo(4, -6);
-        ctx.strokeStyle = '#00ffff';
+        ctx.strokeStyle = theme.arrow;
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.restore();

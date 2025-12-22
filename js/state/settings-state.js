@@ -23,7 +23,8 @@ const SettingsState = {
         damageFont: 'Orbitron', // 'Orbitron' or 'Tektur'
         trailLength: 6, // Range 2-10
         radarEnabled: true,
-        radarRange: 60000
+        radarRange: 60000,
+        radarTheme: 'Cyber Blue'
     },
 
     // Current Active Settings
@@ -107,6 +108,12 @@ const SettingsState = {
         if (key === 'radarEnabled') {
             if (typeof RadarSystem !== 'undefined') {
                 RadarSystem.toggle(value);
+            }
+        }
+
+        if (key === 'radarTheme') {
+            if (typeof RadarSystem !== 'undefined') {
+                RadarSystem.updateTheme(value);
             }
         }
     }

@@ -7,23 +7,28 @@
  */
 
 #radar-container {
+    --radar-accent: rgba(0, 255, 136, 0.5);
+    --radar-glow: rgba(0, 255, 136, 0.2);
+    --radar-grid: rgba(0, 255, 136, 0.1);
+    --radar-bg: #000;
+
     position: fixed;
     bottom: 20px;
     left: 120px;
     width: 200px;
     height: 200px;
     border-radius: 50%;
-    background: #000;
+    background: var(--radar-bg);
     /* Sci-Fi Border */
-    border: 2px solid rgba(0, 255, 136, 0.5);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 255, 136, 0.2);
+    border: 2px solid var(--radar-accent);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px var(--radar-glow);
     z-index: 100;
 
     /* Grid & Sweeper Effect */
     background-image:
-        radial-gradient(circle, transparent 0%, transparent 69%, rgba(0, 255, 136, 0.3) 70%, transparent 71%),
-        linear-gradient(rgba(0, 255, 136, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px);
+        radial-gradient(circle, transparent 0%, transparent 69%, var(--radar-accent) 70%, transparent 71%),
+        linear-gradient(var(--radar-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--radar-grid) 1px, transparent 1px);
     background-size: 100% 100%, 25px 25px, 25px 25px;
     overflow: hidden;
     backdrop-filter: blur(5px);
