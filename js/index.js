@@ -35,6 +35,15 @@ function init(firstLoad = false) {
     if (firstLoad) {
         window.zoom = 0.05;
         window.targetZoom = 0.05;
+
+        // BOOT INTO SIMULATION LEVEL 1 (Sector 1 // Area 1)
+        if (typeof SIMULATION_CONFIG !== 'undefined') {
+            const allLevels = SIMULATION_CONFIG.generateLevels();
+            window.simulationMode = true;
+            window.simulationLevel = allLevels[0];
+            window.simulationDifficulty = SIMULATION_CONFIG.DIFFICULTY[0];
+            currentStage = 2001;
+        }
     }
 
     // Prepare the spawn list for the current stage
@@ -95,9 +104,19 @@ function handleSpawning() {
     if (!cfg) return;
 
     const population = spawnList.length;
-    for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < population; i++) {
-        spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
-        spawnIndex++;
+
+    // SIMULATION: Spawn all enemies at once
+    if (isSim) {
+        while (spawnIndex < population) {
+            spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
+            spawnIndex++;
+        }
+    } else {
+        // NORMAL: Progressive spawning
+        for (let i = 0; i < PERFORMANCE.SPAWNS_PER_FRAME && spawnIndex < population; i++) {
+            spawnEnemy(spawnIndex, spawnList[spawnIndex], true);
+            spawnIndex++;
+        }
     }
 }
 
@@ -105,11 +124,23 @@ function handleSpawning() {
  * GAME OVER / RESET
  */
 function softReset() {
-    currentStage = 1;
+    const mode = (typeof SettingsState !== 'undefined') ? SettingsState.get('progressionMode') : 'Farm';
+
+    // In Progress mode, go back one stage on death. In Farm mode, stay on current stage.
+    let targetStage = currentStage;
+    if (mode === 'Progress') {
+        targetStage = Math.max(1, currentStage - 1);
+    }
+
     lastGridUpdate = 0;
     lastTargetUpdate = 0;
     lastCombatUpdate = 0;
-    init();
+
+    // Use changeStage to handle pool resets correctly
+    changeStage(targetStage);
+
+    // Reset player health for continuation
+    player.health = PLAYER_HEALTH_MAX;
 }
 
 /**
@@ -122,6 +153,14 @@ function changeStage(newStage) {
     const isSim = currentStage > 2000;
     const navStageId = isSim ? 1 : currentStage; // Coords default to Stage 1 center for Sim
 
+    // Update simulation level data if in simulation mode
+    if (isSim && typeof SIMULATION_CONFIG !== 'undefined') {
+        const simId = currentStage - 2000;
+        const allLevels = SIMULATION_CONFIG.generateLevels();
+        window.simulationLevel = allLevels[simId - 1];
+        window.simulationDifficulty = window.simulationDifficulty || SIMULATION_CONFIG.DIFFICULTY[0];
+    }
+
     prepareStagePool(currentStage);
     spawnIndex = 0;
     data.fill(0);
@@ -132,6 +171,12 @@ function changeStage(newStage) {
     damageNumbers.forEach(dn => dn.active = false);
     activeBulletIndices.fill(0);
     activeDamageIndices.fill(0);
+    stageKillCount = 0;
+
+    // Reset Incoming Damage
+    activeIncomingDamageCount = 0;
+    incomingDamageNumbers.forEach(dn => dn.active = false);
+    activeIncomingDamageIndices.fill(0);
 
     fxData.fill(0);
     activeFxCount = 0;
@@ -272,13 +317,13 @@ let canvas;
         window.targetZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, window.targetZoom));
     });
 
-    initUIListeners();
-    if (typeof initLootSystem === 'function') initLootSystem();
-
     // SETTINGS SYSTEM
     if (typeof SettingsState !== 'undefined') SettingsState.init();
     if (typeof SettingsUI !== 'undefined') SettingsUI.init();
     if (typeof SimulationUI !== 'undefined') SimulationUI.init(); // NEW: Training Sim
+
+    initUIListeners();
+    if (typeof initLootSystem === 'function') initLootSystem();
 
     requestAnimationFrame(loop);
 })();

@@ -29,7 +29,8 @@ const SettingsState = {
         incomingDamageFont: 'Orbitron',
         incomingDamageSize: 32,
         incomingDamageRadius: 50,
-        outgoingDamageSize: 28
+        outgoingDamageSize: 28,
+        progressionMode: 'Farm' // 'Farm' or 'Progress'
     },
 
     // Current Active Settings

@@ -70,14 +70,20 @@ function initUIListeners() {
 
     if (btnLeft) {
         btnLeft.addEventListener('click', () => {
-            if (currentStage > 1 && typeof changeStage === 'function') changeStage(currentStage - 1);
+            if (currentStage > 2000) {
+                if (currentStage > 2001) changeStage(currentStage - 1);
+            } else {
+                if (currentStage > 1) changeStage(currentStage - 1);
+            }
         });
     }
 
     if (btnRight) {
         btnRight.addEventListener('click', () => {
-            if (currentStage <= highestStageCleared && currentStage < 9 && typeof changeStage === 'function') {
-                changeStage(currentStage + 1);
+            if (currentStage > 2000) {
+                if (currentStage < 2500) changeStage(currentStage + 1);
+            } else {
+                if (currentStage < 9) changeStage(currentStage + 1);
             }
         });
     }
@@ -87,6 +93,31 @@ function initUIListeners() {
             if (currentStage < 9 && typeof changeStage === 'function') changeStage(currentStage + 1);
         });
     }
+
+    const btnFarm = document.getElementById('mode-farm-btn');
+    const btnProgress = document.getElementById('mode-progress-btn');
+
+    const updateModeUI = () => {
+        const mode = SettingsState.get('progressionMode') || 'Farm';
+        if (btnFarm) btnFarm.classList.toggle('active', mode === 'Farm');
+        if (btnProgress) btnProgress.classList.toggle('active', mode === 'Progress');
+    };
+
+    if (btnFarm) {
+        btnFarm.addEventListener('click', () => {
+            SettingsState.set('progressionMode', 'Farm');
+            updateModeUI();
+        });
+    }
+
+    if (btnProgress) {
+        btnProgress.addEventListener('click', () => {
+            SettingsState.set('progressionMode', 'Progress');
+            updateModeUI();
+        });
+    }
+
+    updateModeUI();
 
     console.log("[UI] Event listeners attached");
 }

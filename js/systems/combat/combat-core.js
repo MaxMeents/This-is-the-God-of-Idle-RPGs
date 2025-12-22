@@ -30,9 +30,25 @@ function update(dt, now, isFirstStep, s) {
      * 1. STAGE PROGRESSION
      * Checks if current stage requirements are met to trigger travel.
      */
-    const currentStageCfg = STAGE_CONFIG?.STAGES?.[currentStage];
-    if (!isTraveling && currentStageCfg && stageKillCount >= (currentStageCfg.kills || 300) && currentStage < 10) {
-        if (typeof startTravelToNextStage === 'function') startTravelToNextStage();
+    const isSim = currentStage > 2000;
+    let targetKills = 0;
+
+    if (isSim) {
+        // Simulation mode
+        const level = window.simulationLevel;
+        targetKills = level?.kills || 0;
+    } else {
+        // Normal stage mode
+        const currentStageCfg = STAGE_CONFIG?.STAGES?.[currentStage];
+        targetKills = currentStageCfg?.kills || 300;
+    }
+
+    if (!isTraveling && targetKills > 0 && stageKillCount >= targetKills) {
+        // Reset kill count and restart the stage
+        stageKillCount = 0;
+        if (typeof changeStage === 'function') {
+            changeStage(currentStage);
+        }
     }
 
     /**

@@ -127,11 +127,15 @@ const SIMULATION_CONFIG = {
                 potentialDrops = (LOOT_CONFIG.ENEMY_DROPS[mainEnemy] || []).slice(0, 3).concat(LOOT_CONFIG.GLOBAL_DROPS.slice(0, 2));
             }
 
+            // Calculate total enemy count for this level
+            const totalEnemies = Object.values(levelEnemies).reduce((sum, count) => sum + count, 0);
+
             levels.push({
                 id: i,
                 name: name,
                 sector: sectorIdx + 1,
                 enemies: levelEnemies,
+                kills: totalEnemies, // Total enemies = kill requirement
                 potentialDrops: potentialDrops,
                 powerLevel: i * 500
             });

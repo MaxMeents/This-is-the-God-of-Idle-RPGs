@@ -224,14 +224,18 @@ function updateStageNavigationUI() {
             { id: 4, name: 'DIVINITY' },
             { id: 5, name: 'ETERNITY' }
         ];
-        const sectorName = sectors.find(s => s.id === level.sector)?.name || "UNKNOWN";
+        const sector = sectors.find(s => s.id === level.sector);
+        const sectorName = sector?.name || "UNKNOWN";
 
-        mainTxt = `SECTOR ${sectorName} // AREA ${level.id}`;
+        // Show Area as 1-100 within each sector
+        const areaInSector = ((level.id - 1) % 100) + 1;
+
+        mainTxt = `SECTOR ${sectorName} // AREA ${areaInSector}`;
         subTxt = level.name;
     } else {
         targetKills = STAGE_CONFIG.STAGES[currentStage]?.kills || 300;
-        mainTxt = `STAGE ${currentStage}`;
-        subTxt = `${stageKillCount} / ${targetKills} TARGETS`;
+        mainTxt = `SECTOR 1 // AREA ${currentStage}`;
+        subTxt = `TARGETS: ${formatGodNumber(stageKillCount)} / ${formatGodNumber(targetKills)}`;
     }
 
     const fullCheck = `${mainTxt}|${subTxt}|${stageKillCount}`;
@@ -239,13 +243,21 @@ function updateStageNavigationUI() {
         const elMain = elStageDisp.querySelector('.stage-main');
         const elSub = elStageDisp.querySelector('.stage-sub');
 
-        if (elMain) elMain.innerText = isSim ? mainTxt : `${mainTxt} - ${formatGodNumber(stageKillCount)}/${formatGodNumber(targetKills)}`;
+        if (elMain) elMain.innerText = mainTxt;
         if (elSub) elSub.innerText = subTxt;
 
-        elPrevArr.classList.toggle('disabled', currentStage <= 1 || isSim);
-        elNextArr.classList.toggle('disabled', isSim || !(currentStage <= highestStageCleared && currentStage < 9));
+        elPrevArr.classList.toggle('disabled', (currentStage <= 1 && !isSim) || (isSim && currentStage <= 2001));
+        elNextArr.classList.toggle('disabled', (!isSim && currentStage >= 9) || (isSim && currentStage >= 2500));
         elChallengeBtn.style.display = (currentStage > highestStageCleared && !isTraveling && !isSim) ? 'block' : 'none';
         lastStageTxt = fullCheck;
+    }
+
+    // Update kill tracker
+    const elKillCount = document.getElementById('kill-count');
+    const elKillTarget = document.getElementById('kill-target');
+    if (elKillCount && elKillTarget) {
+        elKillCount.innerText = formatGodNumber(stageKillCount);
+        elKillTarget.innerText = formatGodNumber(targetKills);
     }
 
     if (bossMode !== lastBossMode) {

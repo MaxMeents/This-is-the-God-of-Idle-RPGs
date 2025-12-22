@@ -125,12 +125,16 @@ function processSkillDamage() {
     }
 }
 
-const INCOMING_DAMAGE_POOL_SIZE = 500;
+// Incoming Damage Numbers Pool
 const incomingDamageNumbers = Array.from({ length: INCOMING_DAMAGE_POOL_SIZE }, () => ({
     x: 0, y: 0, val: 0, life: 0, vx: 0, vy: 0, active: false, isCrit: false
 }));
 const activeIncomingDamageIndices = new Int32Array(INCOMING_DAMAGE_POOL_SIZE);
 let activeIncomingDamageCount = 0;
+
+// Batching Trackers
+let lastPlayerDamageTime = 0;
+let lastPlayerDamageIdx = -1;
 
 /**
  * DAMAGE SYSTEM (Floating Numbers)
@@ -157,6 +161,17 @@ function spawnDamageNumber(x, y, val, lucky = false) {
     // MULTIPLY DAMAGE BASED ON CRIT TIER
     const finalVal = val * CRIT_CONFIG.MULTIPLIERS[critTier];
 
+    // BATCHING LOGIC: Combine damage if it occurs within 100ms
+    const now = performance.now();
+    if (now - lastPlayerDamageTime < 100 && lastPlayerDamageIdx !== -1) {
+        const prevDn = damageNumbers[lastPlayerDamageIdx];
+        if (prevDn.active && prevDn.critTier === critTier) {
+            prevDn.val += finalVal;
+            prevDn.life = 1.0; // Refresh life to keep it visible
+            return;
+        }
+    }
+
     // ALLOCATE TO DAMAGE POOL
     for (let i = 0; i < DAMAGE_POOL_SIZE; i++) {
         if (!damageNumbers[i].active) {
@@ -172,6 +187,9 @@ function spawnDamageNumber(x, y, val, lucky = false) {
             dn.vy = -5 - Math.random() * 2;
 
             activeDamageIndices[activeDamageCount++] = i;
+
+            lastPlayerDamageTime = now;
+            lastPlayerDamageIdx = i;
             return;
         }
     }

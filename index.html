@@ -126,13 +126,26 @@
     <div id="location-display"><span></span></div>
 
     <!-- STAGE NAVIGATION: Controls the switching between stages 1-9 -->
-    <div id="stage-nav">
-        <div id="nav-left" class="nav-arrow disabled">◀</div>
-        <div id="stage-display">
-            <div class="stage-main">Stage 1 - 0/300</div>
-            <div class="stage-sub"></div>
+    <div id="sector-nav-container">
+        <div id="stage-nav">
+            <div id="nav-left" class="nav-arrow disabled">◀</div>
+            <div id="stage-display">
+                <div class="stage-main">Sector 1 // Area 1</div>
+                <div class="stage-sub"></div>
+
+                <!-- KILL TRACKER -->
+                <div id="kill-tracker">
+                    <span id="kill-count">0</span> / <span id="kill-target">0</span>
+                </div>
+            </div>
+            <div id="nav-right" class="nav-arrow disabled">▶</div>
         </div>
-        <div id="nav-right" class="nav-arrow disabled">▶</div>
+
+        <!-- COMBAT PROGRESSION TOGGLE -->
+        <div id="combat-mode-container">
+            <button id="mode-farm-btn" class="mode-btn">FARM</button>
+            <button id="mode-progress-btn" class="mode-btn">PROGRESS</button>
+        </div>
     </div>
 
     <!-- CHALLENGE BUTTON: Appears when a stage is cleared but user hasn't moved on -->
@@ -205,6 +218,7 @@
         <div id="auto-btn-container">
             <div id="auto-btn" class="active">AUTO</div>
         </div>
+
     </div>
 
     <!-- SKILL ACTIVATION: Three tiers of power -->
@@ -243,6 +257,7 @@
     <script src="js/core/config/combat-config.js"></script>
     <script src="js/core/config/loot-config.js"></script>
     <script src="js/core/config/world-config.js"></script>
+    <script src="js/core/config/simulation-config.js"></script>
     <script src="js/core/enemies.js"></script>
     <script src="js/core/state.js"></script>
     <script src="js/core/utils.js"></script>
@@ -283,7 +298,6 @@
     <link rel="stylesheet" href="css/hud/settings-modal.css">
     <script src="js/state/settings-state.js"></script>
     <script src="js/systems/ui/settings-ui.js"></script>
-    <script src="js/core/config/simulation-config.js"></script> <!-- NEW -->
     <script src="js/systems/ui/simulation-ui.js"></script> <!-- NEW -->
     <script src="js/systems/ui/location-display.js"></script>
 
