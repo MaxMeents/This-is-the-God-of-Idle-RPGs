@@ -242,27 +242,58 @@ function updatePlayerShield(dt, sc) {
  * SPATIAL TARGETING
  */
 function findNearestEnemy() {
+    // 1. NaN SAFETY - Critical Freeze Prevention
+    if (isNaN(player.x) || isNaN(player.y)) {
+        player.x = travelTargetX;
+        player.y = travelTargetY;
+        return;
+    }
+
     let closestDistSq = Infinity;
     let found = -1;
     const maxDetectionSq = SHIP_CONFIG.detectionRadius ** 2;
-    const pgx = Math.floor((player.x + GRID_WORLD_OFFSET) / GRID_CELL);
-    const pgy = Math.floor((player.y + GRID_WORLD_OFFSET) / GRID_CELL);
+
+    // 2. PERFORMANCE OPTIMIZATION - Linear Scan for Extreme Ranges
+    // If we're checking more than 1/4 of the grid (r > 100), a linear scan
+    // of active enemies is MUCH faster than checking hundreds of thousands of grid cells.
     const r = Math.ceil(SHIP_CONFIG.detectionRadius / GRID_CELL);
 
-    for (let ox = -r; ox <= r; ox++) {
-        const row = (pgy + ox);
-        if (row < 0 || row >= GRID_DIM) continue;
-        for (let oy = -r; oy <= r; oy++) {
-            const col = (pgx + oy);
-            if (col < 0 || col >= GRID_DIM) continue;
-            let ptr = heads[row * GRID_DIM + col];
-            while (ptr !== -1) {
-                const idx = ptr * STRIDE;
-                if (data[idx + 8] > 0) {
-                    const dSq = (data[idx] - player.x) ** 2 + (data[idx + 1] - player.y) ** 2;
-                    if (dSq < closestDistSq && dSq < maxDetectionSq) { closestDistSq = dSq; found = ptr; }
+    if (r > 100) {
+        for (let i = 0; i < spawnIndex; i++) {
+            const idx = i * STRIDE;
+            if (data[idx + 8] > 0) {
+                const dSq = (data[idx] - player.x) ** 2 + (data[idx + 1] - player.y) ** 2;
+                if (dSq < closestDistSq && dSq < maxDetectionSq) {
+                    closestDistSq = dSq;
+                    found = i;
                 }
-                ptr = next[ptr];
+            }
+        }
+    } else {
+        // 3. GRID SCAN (Optimized for standard ranges)
+        const pgx = Math.floor((player.x + GRID_WORLD_OFFSET) / GRID_CELL);
+        const pgy = Math.floor((player.y + GRID_WORLD_OFFSET) / GRID_CELL);
+
+        for (let ox = -r; ox <= r; ox++) {
+            const row = (pgy + ox);
+            if (row < 0 || row >= GRID_DIM) continue;
+            for (let oy = -r; oy <= r; oy++) {
+                const col = (pgx + oy);
+                if (col < 0 || col >= GRID_DIM) continue;
+
+                let ptr = heads[row * GRID_DIM + col];
+                let safety = 0; // LOOP TRAP
+                while (ptr !== -1 && safety++ < totalEnemies) {
+                    const idx = ptr * STRIDE;
+                    if (data[idx + 8] > 0) {
+                        const dSq = (data[idx] - player.x) ** 2 + (data[idx + 1] - player.y) ** 2;
+                        if (dSq < closestDistSq && dSq < maxDetectionSq) {
+                            closestDistSq = dSq;
+                            found = ptr;
+                        }
+                    }
+                    ptr = next[ptr];
+                }
             }
         }
     }

@@ -39,8 +39,14 @@ function updatePlayerMovement(dt, sc) {
             const speed = PLAYER_SPEED * 50; // Massively accelerated
             const travelStep = speed * (dt / 16.6) * gameSpd;
             const moveDist = Math.min(d, travelStep);
-            player.x += (dx / d) * moveDist;
-            player.y += (dy / d) * moveDist;
+
+            if (d > 0.1) {
+                player.x += (dx / d) * moveDist;
+                player.y += (dy / d) * moveDist;
+            } else {
+                player.x = travelTargetX;
+                player.y = travelTargetY;
+            }
         }
         player.shipState = 'FULL';
         const jitter = 0.8 + Math.random() * 0.4;
@@ -105,9 +111,10 @@ function updatePlayerMovement(dt, sc) {
             // Huge deadzone: player stays still unless distance is extreme
         }
 
-        if (shouldMove) {
-            player.x += (dx / d) * PLAYER_SPEED * moveDirection;
-            player.y += (dy / d) * PLAYER_SPEED * moveDirection;
+        if (shouldMove && d > 0.1) {
+            const timeScale = (dt / 16.6) * gameSpd;
+            player.x += (dx / d) * PLAYER_SPEED * moveDirection * timeScale;
+            player.y += (dy / d) * PLAYER_SPEED * moveDirection * timeScale;
         }
 
         // VISUAL STATE MANAGEMENT
@@ -124,5 +131,11 @@ function updatePlayerMovement(dt, sc) {
             player.shipState = 'IDLE';
             player.shipFrame = (player.shipFrame + animSpd) % sc.idleFrames;
         }
+    }
+
+    // FINAL CATCH-ALL SAFETY: Emergency Recovery
+    if (isNaN(player.x) || isNaN(player.y)) {
+        player.x = travelTargetX;
+        player.y = travelTargetY;
     }
 }

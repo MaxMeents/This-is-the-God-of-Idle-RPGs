@@ -42,10 +42,10 @@ const Enemy = {
         omegaChargeSpeed: 7500,
         alphaChargeSpeed: 18000,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 4,
-        omegaChargeDistanceMult: 8,
-        alphaChargeDistanceMult: 15
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     PhoenixSurrender: {
         folderName: 'Phoenix Surrender',
@@ -85,10 +85,10 @@ const Enemy = {
         omegaChargeSpeed: 9000,
         alphaChargeSpeed: 24000,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 4,
-        omegaChargeDistanceMult: 10,
-        alphaChargeDistanceMult: 20
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     BlueDragon: {
         folderName: 'Blue Dragon',
@@ -128,10 +128,10 @@ const Enemy = {
         omegaChargeSpeed: 6600,
         alphaChargeSpeed: 16500,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 100,
-        omegaChargeDistanceMult: 200,
-        alphaChargeDistanceMult: 400
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     BlackRedButterfly: {
         folderName: 'Black Red Butterfly',
@@ -171,10 +171,10 @@ const Enemy = {
         omegaChargeSpeed: 7500,
         alphaChargeSpeed: 16500,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 6,
-        omegaChargeDistanceMult: 12,
-        alphaChargeDistanceMult: 24
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     BlueWhiteButterfly: {
         folderName: 'Blue White Butterfly',
@@ -214,10 +214,10 @@ const Enemy = {
         omegaChargeSpeed: 8400,
         alphaChargeSpeed: 19500,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 7,
-        omegaChargeDistanceMult: 15,
-        alphaChargeDistanceMult: 30
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     GoldButterfly: {
         folderName: 'Gold Butterfly',
@@ -257,10 +257,10 @@ const Enemy = {
         omegaChargeSpeed: 6600,
         alphaChargeSpeed: 15000,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 5,
-        omegaChargeDistanceMult: 10,
-        alphaChargeDistanceMult: 20
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     GreenBlackButterfly: {
         folderName: 'Green Black Butterfly',
@@ -300,10 +300,10 @@ const Enemy = {
         omegaChargeSpeed: 6000,
         alphaChargeSpeed: 13500,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 8,
-        omegaChargeDistanceMult: 16,
-        alphaChargeDistanceMult: 32
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     },
     GalaxyButterfly: {
         folderName: 'Galaxy Butterfly',
@@ -343,9 +343,9 @@ const Enemy = {
         omegaChargeSpeed: 5400,
         alphaChargeSpeed: 12000,
         chargeDistanceMult: 3,
-        archChargeDistanceMult: 3,
-        godChargeDistanceMult: 10,
-        omegaChargeDistanceMult: 20,
-        alphaChargeDistanceMult: 40
+        archChargeDistanceMult: 15,
+        godChargeDistanceMult: 24,
+        omegaChargeDistanceMult: 36,
+        alphaChargeDistanceMult: 60
     }
 };

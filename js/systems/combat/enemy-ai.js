@@ -170,8 +170,9 @@ function updateEnemies(dt, now, isFirstStep) {
                 else if (tierIndex === 4) speedCap = cfg.alphaChargeSpeed || speedCap;
             }
 
-            const moveX = steerX * (Math.min(speedCap, mag * 20) / mag);
-            const moveY = steerY * (Math.min(speedCap, mag * 20) / mag);
+            const timeScale = (dt / 16.6) * gameSpd;
+            const moveX = steerX * (Math.min(speedCap, mag * 20) / mag) * timeScale;
+            const moveY = steerY * (Math.min(speedCap, mag * 20) / mag) * timeScale;
 
             data[idx] += moveX;
             data[idx + 1] += moveY;

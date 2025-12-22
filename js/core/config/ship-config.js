@@ -46,7 +46,7 @@ const SHIP_CONFIG = {
     shieldVisualSize: 4800, // Scaling of the shield effect
 
     // SENSORS
-    detectionRadius: 100000 // Max distance to look for enemies
+    detectionRadius: 1000000 // Max distance to look for enemies - increased to make range "not a factor"
 };
 
 /**
